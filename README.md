@@ -1,22 +1,37 @@
-# stars-game
+# stars-decomp
 
-Decompile **Stars! 2.6i** (16-bit Windows 3.x, `original/stars26i.exe`) into C, recompile it to
-WebAssembly, and run it in a browser with the Windows 3.11 look and feel preserved.
+Decompile **Stars! 2.6i** (16-bit Windows 3.x, `original/stars26i.exe`) into C source that people can
+read, and prove every function behaves exactly like the original machine code.
 
-- Plan and tool list: [docs/PLAN.md](docs/PLAN.md)
-- Work tracking: `bd ready` (beads, prefix `stars`)
+- Plan, decisions and phases: [docs/PLAN.md](docs/PLAN.md)
+- Rules for decompiled code: [docs/CONVENTIONS.md](docs/CONVENTIONS.md)
+- Rebuild `re/`, the inventory and the screen captures from your own copy: [docs/TOOLING.md](docs/TOOLING.md)
+- Work tracking: `bd ready` (beads, prefix `stars-decomp`)
 
-## Folder layout
+## Where to look
 
-| Path | What it is | In git? |
-|------|------------|---------|
-| `original/` | The untouched Stars! 2.6i files. Read-only (`chmod 444`). Never edit, never commit. | no |
-| `private/` | `code.txt`: registration serials. Never commit, never paste into issues or logs. | no |
-| `docs/` | Plan, conventions, function inventory. | yes |
-| `re/` | Generated RE working files (Ghidra project, dumps, frame captures). Safe to delete and regenerate. | no |
+| Path | What it is | Read it when |
+|------|------------|--------------|
+| `src/` | **The decompiled game.** `segNN.c` holds the functions of original code segment NN; `stars.h` the game structs, `globals.h` the named globals. | You want to read the game. Start here. |
+| `tests/scenarios/` | Differential tests, one `test_segNN.c` per segment: each runs the original function and the C function from the same memory and compares every byte. | You want the evidence that a function is right. |
+| `docs/` | `PLAN.md` and `CONVENTIONS.md`. | You want the why. |
+| `harness/` | Test machinery: runs the original x86 code in the Unicorn emulator next to the C code. | You are changing how tests run. |
+| `runtime/` | Test machinery: the Win16 API (KERNEL, USER, GDI, ...) and the segmented memory model the original code and the C code both run on. | You are changing how tests run. |
+| `tools/` | Generators, lint, progress report, `nedump` (NE file dumper), vendored Wine spec files. | You are changing the tooling. |
+| `ghidra/` | Ghidra scripts that export the function inventory, globals and per-function pseudo-C. | You are regenerating Ghidra output. |
+| `third_party/` | Vendored SoftFloat 3e (exact x87 80-bit arithmetic) and font licences. | Rarely. |
 
-Directories created later by the tracked tasks (`runtime/`, `harness/`, `src/`, `tools/`, `ghidra/`,
-`tests/`, `web/`) are described in [docs/PLAN.md](docs/PLAN.md#directory-layout).
+Local only, never committed: `original/` (the game files, read-only), `private/` (registration
+serials), `re/` (Ghidra project and exports, regenerable), `build/`, `docs/functions.csv` and
+`docs/inventory.md` (the function inventory).
+
+## Build and test
+
+```
+make doctor   # check the required tools
+make test     # build everything, run every test (needs original/stars26i.exe)
+python3 tools/progress.py   # decompilation progress per segment
+```
 
 ## Original files (SHA-256)
 

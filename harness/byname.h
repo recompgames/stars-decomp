@@ -5,18 +5,13 @@
  * the DECOMP side of the log. This header renames each listed runtime function to a wrapper that
  * records the call the way the thunk does (module, ordinal, name, raw argument bytes, return value)
  * around the real call. The runtime itself is unchanged and does not include this header
- * (make check-split); src/stars.h includes it behind #ifndef __EMSCRIPTEN__, so the wasm build
- * calls the runtime directly.
+ * (make check-split); src/stars.h includes it.
  *
  * To log another API, add one wrapper below: list its argument words in PUSH order (the order the
  * original pushes them: first argument first, a 32-bit value as high word then low word), and put
  * the module name and ordinal from runtime/win16_api.inc. Define the #define after the wrapper. */
 #ifndef STARS_HARNESS_BYNAME_H
 #define STARS_HARNESS_BYNAME_H
-
-#ifdef __EMSCRIPTEN__
-#error "harness/byname.h is for native builds only"
-#endif
 
 #include <stdbool.h>
 #include <stddef.h>

@@ -64,7 +64,7 @@ not yet decompiled: `CALL_ORIG(seg, 0xOFF, conv, nargs, ...)` (the lint rejects 
 decompiled). `CALL_ORIG` is far-only: it always makes a far call, and a NEAR convention aborts
 (`rt_call_orig` in `harness/difftest.c`). To Win16 APIs: by name (`runtime/*.h`,
 `runtime/include/win16.h`); native builds log each by-name call to the harness API log through
-`harness/byname.h` (included by `src/stars.h` behind `#ifndef __EMSCRIPTEN__`), exactly as the
+`harness/byname.h` (included by `src/stars.h`), exactly as the
 import thunk does, so the diff sees it. A new API needs one wrapper there; never call an import
 thunk from `src/`. Through a far pointer or callback: `rt_call_far`. The Win16 API call
 order is part of the diff.

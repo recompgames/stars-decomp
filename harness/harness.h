@@ -1,5 +1,4 @@
-/* Unicorn hybrid harness (docs/PLAN.md sections 3 and 4). Native builds only:
- * never compile this directory into the wasm build.
+/* Unicorn hybrid harness (docs/PLAN.md sections 3 and 4).
  *
  * The harness maps the runtime arena (runtime/mem.c) into a 16-bit Unicorn
  * engine, loads the NE segments of the original exe into the arena at their

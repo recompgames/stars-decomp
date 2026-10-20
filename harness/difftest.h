@@ -106,6 +106,6 @@ double difftest_coverage(uint16_t seg, uint16_t off);
 enum { RT_MODE_ORIGINAL, RT_MODE_DECOMP };
 void rt_set_mode(int mode);
 /* uint32_t rt_call_far(uint32_t fn, int conv, const uint16_t *args, int nargs); is declared in
- * runtime/frame.h (it has a wasm counterpart there). */
+ * runtime/frame.h. */
 
 #endif /* STARS_HARNESS_DIFFTEST_H */

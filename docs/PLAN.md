@@ -151,10 +151,12 @@ Conventions shared by all tasks:
 | 2. Memory model and hybrid harness | Selector memory model, Unicorn harness, diff-test driver, FP decision | M2: first original function executed; first decompiled function green (done) |
 | 3. Data recovery | Named DGROUP globals, struct layouts with evidence, enums and bit flags, the `.xy`/`.hst`/`.x1` file formats, the typed-accessor convention (decision 3) | M3: every global and struct that a decompiled function touches has a name and a type |
 | 4. Faithful decompilation | All 34 code segments diff-tested (pass 1) | M4: native build with zero emulated functions; turn generation byte-identical to the original |
-| 5. Readable source | Pass 2 for every function: names for functions, parameters, locals; typed data access; game-level comments; files renamed by subsystem once understood | M5: the readability metrics below at their targets |
+| Review of pass 1 | Readability metrics per function, a human-readability sample, an audit of the test evidence, a subsystem map and folder layout for `src/`; findings in `docs/reviews/pass1/` | Decision recorded per segment: no further pass, mechanical pass 2, or structural pass 2; pass-2 tasks filed |
+| 5. Readable source | Pass 2 (and any later pass the review asks for) for every function: names for functions, parameters, locals; typed data access; game-level comments; files moved by subsystem | M5: the readability metrics below at their targets |
 
 Phase 3 runs ahead of the large segments in phase 4, because every segment reads the same globals and
-structs. Phases 4 and 5 then run in parallel per segment.
+structs. Phase 5 starts only after the review of pass 1 has decided what each segment needs; each pass
+of phase 5 ends with its own review, which decides whether another pass is needed.
 
 Readability metrics, reported by `tools/progress.py` and enforced by `tools/lint_src.py` for functions
 marked readable:

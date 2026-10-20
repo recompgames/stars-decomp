@@ -1,0 +1,13 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Stars!",
+  "system": "PC (Windows)",
+  "type": "decomp",
+  "original": { "revision": "2.6i" },
+  "project": "stars-decomp",
+  "status": "in-progress",
+  "toolchain": "Ghidra",
+  "approach": "Readable C for 16-bit Windows 3.x Stars! 2.6i, verified per function against the original x86 code in Unicorn",
+  "notes": "Differential tests run each original function and its C counterpart from identical memory and compare every byte. Bring your own copy of the original executable.",
+  "links": [{ "label": "Source", "url": "https://github.com/recompgames/stars-decomp" }]
+}

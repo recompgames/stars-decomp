@@ -172,7 +172,7 @@ test: check-split $(TEST_BINS) $(GEN_IMPORTS)
 
 doctor:
 	@fail=0; \
-	for tool in clang emcc node java; do \
+	for tool in clang python3 java; do \
 	  if command -v $$tool >/dev/null 2>&1; then \
 	    printf '%-18s %s\n' "$$tool" "$$($$tool --version 2>&1 | head -n 1)"; \
 	  else \

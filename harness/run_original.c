@@ -20,8 +20,7 @@
  *                    out of the scripts and the logs)
  *   dump <name>      write <dir>/<name>.bmp (24-bit, the 800x600 screen)
  * Exit status: 0 when the run ended normally (WM_QUIT or script end), 1 on an emulation fault or
- * bad usage, 2 on a timeout or API limit, 3 when strict mode aborted on an unimplemented API.
- * Native only; never part of the wasm build. */
+ * bad usage, 2 on a timeout or API limit, 3 when strict mode aborted on an unimplemented API. */
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>

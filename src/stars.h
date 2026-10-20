@@ -13,11 +13,8 @@
 #include "runtime/mem.h"
 #include "src/globals.h"
 
-/* Native builds log by-name Win16 API calls to the harness API log (harness/byname.h, stars-4a6);
- * the wasm build calls the runtime directly. */
-#ifndef __EMSCRIPTEN__
+/* By-name Win16 API calls are logged to the harness API log (harness/byname.h, stars-4a6). */
 #include "harness/byname.h"
-#endif
 
 /* NEARPTR: a 16-bit offset into DGROUP (FARPTR, selector:offset, is in win16.h). */
 typedef uint16_t NEARPTR;
