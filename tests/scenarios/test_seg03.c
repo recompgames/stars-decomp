@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 3 (src/seg03.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 3 (src/seg03.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 3 holds WinMain and the code around it: the command-line parser and the message loop
  * (3:0x0000), the "-b" batch-file reader (3:0x03e0), a duplicate-player search (3:0x04a2), the

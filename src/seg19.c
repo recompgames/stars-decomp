@@ -1,4 +1,4 @@
-/* Decompiled code segment 19 (NE segment 19, selector 0x0098). Local-only.
+/* Decompiled code segment 19 (NE segment 19, selector 0x0098).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg19.c; Ghidra's pseudo-C in re/decomp/seg19 is only a reading aid.
  *

@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 12 (src/seg12.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 12 (src/seg12.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 12 is the game's own heap manager on top of KERNEL.GlobalAlloc: twelve heaps, each a
  * linked list of global-memory segments (DGROUP 0x0D74 holds the list heads, 0x0DA4 the minimum

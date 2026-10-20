@@ -1,5 +1,5 @@
 /* Shared declarations for the decompiled game code (docs/CONVENTIONS.md rules a, c, d).
- * Local-only (docs/PLAN.md decision 10). Game structs (stars-bfj.2) are added below, each packed
+ * Public (docs/PLAN.md decision 8). Game structs (stars-bfj.2) are added below, each packed
  * with _Static_assert on sizeof and on offsetof of every field. */
 #ifndef STARS_SRC_STARS_H
 #define STARS_SRC_STARS_H

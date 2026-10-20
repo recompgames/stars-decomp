@@ -1,4 +1,4 @@
-/* Decompiled code segment 6 (NE segment 6, selector 0x0030). Local-only.
+/* Decompiled code segment 6 (NE segment 6, selector 0x0030).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg06.c; Ghidra's pseudo-C in re/decomp/seg06 is only a reading aid.
  *

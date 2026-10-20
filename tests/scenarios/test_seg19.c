@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 19 (src/seg19.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 19 (src/seg19.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 19 is the code of the computer players (the "AI" turn):
  *   19:0x0000  clear the order flags of the computer player's fleets and queue their new orders

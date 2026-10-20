@@ -1,4 +1,4 @@
-/* Decompiled code segment 12 (NE segment 12, selector 0x0060). Local-only.
+/* Decompiled code segment 12 (NE segment 12, selector 0x0060).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg12.c; Ghidra's pseudo-C in re/decomp/seg12 is only a reading aid.
  *

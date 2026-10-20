@@ -1,4 +1,4 @@
-/* Decompiled code segment 21 (NE segment 21, selector 0x00A8). Local-only.
+/* Decompiled code segment 21 (NE segment 21, selector 0x00A8).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg21.c; Ghidra's pseudo-C in re/decomp/seg21 is only a reading aid.
  *

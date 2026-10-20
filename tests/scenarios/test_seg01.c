@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 1 (src/seg01.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 1 (src/seg01.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 1 is the game's start-up and its configuration reader:
  *   1:0x0000  start-up: screen class, colours, pens, brushes, bitmaps, icons, cursors, procedure instances

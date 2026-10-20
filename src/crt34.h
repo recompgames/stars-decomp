@@ -1,5 +1,5 @@
 /* Stand-ins for the C runtime functions of segment 34 (not decompiled, and the x87 stack cannot
- * cross CALL_ORIG). Local-only. Each game segment that calls one of them includes this header, so
+ * cross CALL_ORIG). Each game segment that calls one of them includes this header, so
  * the stand-in is written once. They move into a src/seg34.c when segment 34 is decompiled.
  *
  * crt_sqrt_34_0d68 replaces the segment 34 CRT sqrt, 34:0x0D68 (mov dx,0x1AAE; jmp 34:0x1C34):

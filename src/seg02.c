@@ -1,4 +1,4 @@
-/* Decompiled code segment 2 (NE segment 2, selector 0x0010). Local-only.
+/* Decompiled code segment 2 (NE segment 2, selector 0x0010).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg02.c; Ghidra's pseudo-C in re/decomp/seg02 is only a reading aid. */
 #include <string.h>

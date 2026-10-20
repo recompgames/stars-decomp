@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 13 (src/seg13.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 13 (src/seg13.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 13 is the toolbar of the main window and its tooltip:
  *   13:0x0000 TBWNDPROC     the toolbar window procedure (create, paint, mouse tracking, clicks)

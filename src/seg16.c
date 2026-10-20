@@ -1,4 +1,4 @@
-/* Decompiled code segment 16 (NE segment 16, selector 0x0080). Local-only.
+/* Decompiled code segment 16 (NE segment 16, selector 0x0080).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg16.c; Ghidra's pseudo-C in re/decomp/seg16 is only a reading aid.
  *

@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 17 (src/seg17.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 17 (src/seg17.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 17 is the second half of the computer players' code (the "AI" turn of the older
  * players; the callers pick one of 17:0x0462, 17:0x234e, 19:0x0400, 19:0x1594, ... by the type

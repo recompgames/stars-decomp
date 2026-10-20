@@ -4,7 +4,7 @@
 usage: lint_src.py [--src DIR] [--csv FILE] [--scenarios DIR]
        defaults: src  docs/functions.csv  tests/scenarios
 Prints "file:line: message" per problem and exits 1 if there is any, else 0. With no src files
-and no csv there is nothing to check and it exits 0 (src/ and tests/scenarios/ are local-only).
+and no csv there is nothing to check and it exits 0 (docs/functions.csv is local-only).
 
 Checks:
  1. banned constructs in src/*.c and src/*.h (comments and string literals are ignored; #define

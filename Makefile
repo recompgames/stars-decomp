@@ -126,8 +126,8 @@ check-split:
 	  echo "check-split: runtime/ must not include harness/ headers"; exit 1; \
 	fi
 
-# Lint the local decompiled sources (tools/lint_src.py). src/, tests/scenarios/ and
-# docs/functions.csv are local-only, so it is a no-op where they are absent.
+# Lint the decompiled sources (tools/lint_src.py). docs/functions.csv is local-only, so it is a
+# no-op where it is absent.
 lint:
 	python3 tools/lint_src.py
 

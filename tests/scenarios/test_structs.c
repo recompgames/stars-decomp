@@ -1,5 +1,5 @@
-/* Layout tests for the shared game structs in src/stars.h (stars-bfj.2). Local-only (docs/PLAN.md
- * decision 10).
+/* Layout tests for the shared game structs in src/stars.h (stars-bfj.2). Public (docs/PLAN.md
+ * decision 8).
  *
  * 1. Compile time: src/stars.h holds a _Static_assert on sizeof and on offsetof of every field. The
  *    asserts below add the sizes the original code itself uses: allocation sizes and strides found

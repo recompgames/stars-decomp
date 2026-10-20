@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 5 (src/seg05.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 5 (src/seg05.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 5 is the information window of the selected thing (planet, fleet or map object) with its
  * panel, header text and order button:

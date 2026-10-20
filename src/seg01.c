@@ -1,4 +1,4 @@
-/* Decompiled code segment 1 (NE segment 1, selector 0x0008). Local-only.
+/* Decompiled code segment 1 (NE segment 1, selector 0x0008).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg01.c; Ghidra's pseudo-C in re/decomp/seg01 is only a reading aid (it gets
  * several widths, flag masks and loop bounds of 1:0x0d90 wrong; the disassembly was followed).

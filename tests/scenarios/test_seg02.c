@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 2 (src/seg02.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 2 (src/seg02.c). Public (docs/PLAN.md decision 8).
  * Worked example of docs/CONVENTIONS.md: seg 2 off 0x0000 (FUN_1008_0000, 15 bytes). It is one of
  * four same-shape functions in segment 2 (2:0x0000, 0x50a2, 0x50b0, 0x50ca), chosen because it
  * exercises an argument and a DX:AX return; the literal smallest leaf is a bare RETF at 4:0x4db8,

@@ -1,4 +1,4 @@
-/* Decompiled code segment 3 (NE segment 3, selector 0x0018). Local-only.
+/* Decompiled code segment 3 (NE segment 3, selector 0x0018).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg03.c; Ghidra's pseudo-C in re/decomp/seg03 is only a reading aid.
  *

@@ -1,4 +1,4 @@
-/* Decompiled code segment 5 (NE segment 5, selector 0x0028). Local-only.
+/* Decompiled code segment 5 (NE segment 5, selector 0x0028).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg05.c; Ghidra's pseudo-C in re/decomp/seg05 is only a reading aid.
  *

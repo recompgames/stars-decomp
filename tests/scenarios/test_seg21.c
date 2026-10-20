@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 21 (src/seg21.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 21 (src/seg21.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 21 is the older computer-player turn: 21:0x0000 is the turn itself, 21:0x123e, 0x1e8a and
  * 0x23d0 its big helpers, and the rest are filter callbacks and small helpers (see src/seg21.c).

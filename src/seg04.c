@@ -1,4 +1,4 @@
-/* Decompiled code segment 4 (NE segment 4, selector 0x0020). Local-only.
+/* Decompiled code segment 4 (NE segment 4, selector 0x0020).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg04.c; Ghidra's pseudo-C in re/decomp/seg04 is only a reading aid.
  *

@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 6 (src/seg06.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 6 (src/seg06.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 6 is the message window of the game (MESSAGEWNDPROC), the message store behind it and the message
  * dialog MSGDLG (see the comment at the top of src/seg06.c for the record layouts).

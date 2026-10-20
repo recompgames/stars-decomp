@@ -1,4 +1,4 @@
-/* Decompiled code segment 33 (NE segment 33, selector 0x0108). Local-only.
+/* Decompiled code segment 33 (NE segment 33, selector 0x0108).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg33.c; Ghidra's pseudo-C in re/decomp/seg33 is only a reading aid.
  *

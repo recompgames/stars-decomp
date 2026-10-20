@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 33 (src/seg33.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 33 (src/seg33.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 33 is the map-object (minefield) code: 18-byte records sorted by their first word in a
  * far array (DS:0x188E/0x1890 base, DS:0x1892 count, DS:0x1894 capacity), a planet table

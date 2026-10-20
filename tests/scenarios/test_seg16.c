@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 16 (src/seg16.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 16 (src/seg16.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 16 holds three dialog procedures and the fleet-waypoint / ship-loss code:
  *   16:0x0000 ZIPORDERDLG    the ZIP order dialog procedure (four radio buttons 0x431 to 0x434)

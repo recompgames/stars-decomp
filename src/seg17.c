@@ -1,4 +1,4 @@
-/* Decompiled code segment 17 (NE segment 17, selector 0x0088). Local-only.
+/* Decompiled code segment 17 (NE segment 17, selector 0x0088).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg17.c; Ghidra's pseudo-C in re/decomp/seg17 is only a reading aid.
  *

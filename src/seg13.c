@@ -1,4 +1,4 @@
-/* Decompiled code segment 13 (NE segment 13, selector 0x0068). Local-only.
+/* Decompiled code segment 13 (NE segment 13, selector 0x0068).
  * Original: stars26i.exe. Oracle: the original machine code, diffed by
  * tests/scenarios/test_seg13.c; Ghidra's pseudo-C in re/decomp/seg13 is only a reading aid.
  *

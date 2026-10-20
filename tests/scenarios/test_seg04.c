@@ -1,4 +1,4 @@
-/* Diff tests for decompiled segment 4 (src/seg04.c). Local-only (docs/PLAN.md decision 10).
+/* Diff tests for decompiled segment 4 (src/seg04.c). Public (docs/PLAN.md decision 8).
  *
  * Segment 4 is the main window of the game and its helpers:
  *   4:0x0000 class registration, 4:0x02ca caption, 4:0x0528 FRAMEWNDPROC, 4:0x143a, 4:0x18b0 marker
