@@ -550,7 +550,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_1772 (*(uint16_t *)LINN(0x1772))
 #define g_DAT_1110_1774 (*(uint16_t *)LINN(0x1774))
 #define g_DAT_1110_1776 (*(uint16_t *)LINN(0x1776))
-#define g_DAT_1110_177a (*(uint32_ua *)LINN(0x177a))
+/* stars.h DS_SCORES: far pointer to ScoreRecord[player_count] (0x18 each); 14:0x0508 allocates it, 14:0x35b0 writes BLK_45 from it, 23:0x3b78 fills it, 32:0x158e reads it */
+#define g_score_table (*(uint32_ua *)LINN(0x177a))
 /* seg03.c filter_key_message: ESC destroys the window DS:0x177E */
 #define g_hwnd_dismissible_window_maybe (*(uint16_t *)LINN(0x177e))
 #define g_DAT_1110_1780 (*(uint8_t *)LINN(0x1780))

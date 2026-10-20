@@ -363,3 +363,4 @@ offset,name,type,evidence
 0x5a5c,brush_blue,,seg01.c brushes1: colour 0xff0000 (blue) stored in DS:0x5a5c; seg04.c paint_host_player_list
 0x5a62,entry_list_ptr_maybe,,"seg21.c 21:0x1e8a: near pointer, count DS:0x6686, walked from the last entry"
 0x6686,entry_list_count_maybe,,seg21.c 21:0x1e8a: count DS:0x6686 of the list DS:0x5a62
+0x177a,score_table,,"stars.h DS_SCORES: far pointer to ScoreRecord[player_count] (0x18 each); 14:0x0508 allocates it, 14:0x35b0 writes BLK_45 from it, 23:0x3b78 fills it, 32:0x158e reads it"

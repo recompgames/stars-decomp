@@ -695,6 +695,249 @@ static inline uint8_t map_object_kind(uint8_t owner_kind_bits) {
   return (uint8_t)(owner_kind_bits & MAPOBJ_KIND_MASK);
 }
 
+/* ---- Shared vocabulary for pass 2 (stars-decomp-1tp.5) ----------------------------------------------
+ * Named constants for masks, kinds, sentinels, table sizes and Win16 resource / command ids. Each value
+ * is exactly the number pass 1 spells in src/seg*.c; pass 2 replaces the raw number with the name.
+ * Every group is pinned by _Static_assert: a changed value fails the build (this is the regression
+ * check), and a switch with one case per id fails on a duplicate. Win16 message numbers (WM_COMMAND
+ * 0x0111 and the rest) are NOT redefined here: they come from runtime/ctl.h and runtime/user.h. */
+
+/* Sentinels: 0xFFFF means "none" in these 16-bit words. */
+enum {
+  /* g_current_player (DS:0x14C) is 0xFFFF when no player is loaded (host / no game): src/seg02.c:137
+   * (NOPLAYER), src/seg04.c:1128, 1736, 2552; src/seg06.c:1300. */
+  NO_PLAYER = 0xFFFF,
+  /* g_selected_planet / g_selected_fleet / g_selected_map_object (DS:0x4B84 / 0x4B86 / 0x4B8A) are 0xFFFF
+   * when nothing of that kind is selected: src/seg05.c:295, 447, 452, 459 (local NO_SELECTION). */
+  SELECTION_NONE = 0xFFFF,
+  /* Planet.owner uses 0xFFFF for "unowned": struct Planet.owner comment (14:0x1f0c, 14:0x0508);
+   * src/seg16.c:1040 treats an unowned planet apart. Only Planet.owner is evidenced; Fleet.owner is not. */
+  OWNER_NONE = 0xFFFF,
+  /* Fleet.planet_id is 0xFFFF for a fleet in deep space: struct Fleet.planet_id comment (14:0x235e). */
+  FLEET_IN_DEEP_SPACE = 0xFFFF,
+  /* 14:0x35b0 picks the host-file name (DSSTR_HST) when the player index is 0xFFFF: DSSTR_HST comment. */
+  PLAYER_INDEX_HOST = 0xFFFF,
+  /* A message record whose id field is all ones (0x1FF) is deleted: delete_messages 6:0x80fa
+   * (src/seg06.c:526-537, ORs 0x1FF into word +1); src/seg06.c:648 and 672 skip such records when gathering. */
+  MSG_ID_DELETED = 0x01FF
+};
+
+/* Table sizes (counts), each checked against a byte extent recovered for the table. */
+enum {
+  MAX_PLAYERS = 16,               /* DS_SHIP_DESIGNS, DS_SB_DESIGNS, DS_BATTLE_PLAN_PTRS are FARPTR[16 players]: 14:0x0508 */
+  SHIP_DESIGNS_PER_PLAYER = 16,   /* ShipDesign[16] = 0x8D0 bytes: 14:0x0508 (DS_DEFAULT_SHIP_DESIGNS comment) */
+  STARBASE_DESIGNS_PER_PLAYER = 10, /* ShipDesign[10] = 0x582 bytes: 14:0x0508 (struct ShipDesign comment) */
+  BATTLE_PLANS_PER_PLAYER = 16,   /* BattlePlan[16] = 0x240 bytes: 14:0x0508, 30:0x049a (struct BattlePlan comment) */
+  FLEET_DESIGN_SLOTS = 16,        /* Fleet.ship_count[16] and Fleet.damage[16], one per design slot (struct Fleet) */
+  GAME_HEAP_COUNT = 12,           /* DS_HEAP_HEADS is FARPTR[12], DS_HEAP_MIN uint16_t[12]: 12:0x0000, 0x0098 */
+  HEAPSEG_FIRST_ALLOC_OFFSET = 0x10, /* allocations in a HeapSeg start at offset 0x10 (sizeof(struct HeapSeg)): 12:0x0000 */
+  UNIVERSE_SIZE_UNIT = 400        /* universe width = (GameHeader.universe_size + 1) * 400: 14:0x0508 (struct GameHeader) */
+};
+_Static_assert(SHIP_DESIGNS_PER_PLAYER * sizeof(struct ShipDesign) == 0x8D0, "ShipDesign[16] extent");
+_Static_assert(STARBASE_DESIGNS_PER_PLAYER * sizeof(struct ShipDesign) == 0x582, "ShipDesign[10] extent");
+_Static_assert(BATTLE_PLANS_PER_PLAYER * sizeof(struct BattlePlan) == 0x240, "BattlePlan[16] extent");
+_Static_assert(HEAPSEG_FIRST_ALLOC_OFFSET == sizeof(struct HeapSeg), "HeapSeg header size");
+_Static_assert(sizeof(((struct Fleet *)0)->ship_count) / sizeof(uint16_t) == FLEET_DESIGN_SLOTS, "Fleet.ship_count slots");
+_Static_assert(sizeof(((struct Fleet *)0)->damage) / sizeof(uint16_t) == FLEET_DESIGN_SLOTS, "Fleet.damage slots");
+
+/* BlockHeader word fields (see BLOCK_SIZE / BLOCK_TYPE above): size = low 10 bits, type = high 6.
+ * 14:0x305a reads, 14:0x579a builds it. */
+enum {
+  BLOCK_SIZE_MASK = 0x03FF,
+  BLOCK_TYPE_SHIFT = 10
+};
+_Static_assert(BLOCK_SIZE(0xFFFF) == BLOCK_SIZE_MASK && BLOCK_TYPE(0xFC00) == 0x3F, "BlockHeader field split");
+
+/* Bit fields of records. Each comment names the record field and the function that proves it; a name
+ * is given only where a function was read that tests or builds exactly that mask. */
+enum {
+  /* Planet.id: low 11 bits of the block word (14:0x1f0c, struct Planet.id comment). */
+  PLANET_ID_MASK = 0x07FF,
+  /* Planet.flags: bit 1 = has a starbase, bit 3 = updated this turn (14:0x1f0c, 14:0x0508). */
+  PLANET_FLAG_HAS_STARBASE = 0x02,
+  PLANET_FLAG_UPDATED = 0x08,
+  /* Planet.starbase: low nibble of the low byte = starbase design index (14:0x0508). */
+  PLANET_STARBASE_DESIGN_MASK = 0x0F,
+  /* Planet.route_target: (word & 0x3FF) = id + 1 of the planet it routes to, 0 = none: 16:0x13f8,
+   * src/seg16.c:1267 and 1313 (pass 1 reads word +0x30 & 0x3ff). */
+  PLANET_ROUTE_TARGET_MASK = 0x03FF,
+  /* Player.fleet_and_sb_counts: low 12 bits = fleet count, high 4 bits = starbase design count (14:0x0508). */
+  PLAYER_FLEET_COUNT_MASK = 0x0FFF,
+  PLAYER_SB_COUNT_SHIFT = 12,
+  /* Player.record_flags: (flags & 7) == 7 selects the long (0x70-byte) record (14:0x0370). */
+  PLAYER_RECORD_LONG_MASK = 0x07,
+  /* FileHeader.player_salt: low 5 bits = player index (14:0x2caa). */
+  FILEHDR_PLAYER_MASK = 0x1F,
+  /* Fleet.flags: bit 2 = empty, bit 3 = byte-sized counts (14:0x235e). */
+  FLEET_FLAG_EMPTY = 0x04,
+  FLEET_FLAG_BYTE_COUNTS = 0x08,
+  /* ShipDesign.flags: bit 1 = slot is free (14:0x0508 sets it on every slot at load, 14:0x0000 tests it). */
+  DESIGN_FLAG_FREE = 0x02,
+  /* BattlePlan.flags: bit 6 = default name, name not written (14:0x50d6). */
+  BATTLE_PLAN_FLAG_DEFAULT_NAME = 0x40,
+  /* ScoreRecord.ships[i]: low 13 bits mantissa, bits 13-15 times 2 = left shift (32:0x158e). Weak
+   * evidence: src/seg33.c:161 and 1024 also use & 0x1fff, but on other words (an id_kind xor, a local), so
+   * they do not prove this field; the proof is the 32:0x158e decoding in the struct ScoreRecord comment. */
+  SCORE_SHIPS_MANTISSA_MASK = 0x1FFF,
+  SCORE_SHIPS_EXP_SHIFT = 13,
+  /* MapObject kind (owner_kind_bits & MAPOBJ_KIND_MASK) 0x20 = mineral-packet-like object (14:0x0508 end;
+   * MAPOBJ_PACKET_WARP above is read from it in 5:0x04e8). */
+  MAPOBJ_KIND_PACKET = 0x20
+};
+_Static_assert((MAPOBJ_KIND_PACKET & MAPOBJ_KIND_MASK) == MAPOBJ_KIND_PACKET, "packet kind inside the kind mask");
+_Static_assert(((0xFFFF >> PLAYER_SB_COUNT_SHIFT) & PLAYER_FLEET_COUNT_MASK) == 0x000F &&
+               (PLAYER_FLEET_COUNT_MASK | (0xF << PLAYER_SB_COUNT_SHIFT)) == 0xFFFF,
+               "Player.fleet_and_sb_counts split covers the word");
+_Static_assert((SCORE_SHIPS_MANTISSA_MASK | (7 << SCORE_SHIPS_EXP_SHIFT)) == 0xFFFF, "ScoreRecord.ships split covers the word");
+
+/* Pin every constant above to the number pass 1 spells (the regression check: change a value and the build fails). */
+_Static_assert(NO_PLAYER == 0xFFFF && SELECTION_NONE == 0xFFFF && OWNER_NONE == 0xFFFF && FLEET_IN_DEEP_SPACE == 0xFFFF &&
+               PLAYER_INDEX_HOST == 0xFFFF && MSG_ID_DELETED == 0x1FF && MSG_ID_DELETED == MSG_ID_MASK, "sentinels");
+_Static_assert(MAX_PLAYERS == 16 && SHIP_DESIGNS_PER_PLAYER == 16 && STARBASE_DESIGNS_PER_PLAYER == 10 &&
+               BATTLE_PLANS_PER_PLAYER == 16 && FLEET_DESIGN_SLOTS == 16 && GAME_HEAP_COUNT == 12 &&
+               HEAPSEG_FIRST_ALLOC_OFFSET == 0x10 && UNIVERSE_SIZE_UNIT == 400, "table sizes");
+_Static_assert(BLOCK_SIZE_MASK == 0x3FF && BLOCK_TYPE_SHIFT == 10, "BlockHeader fields");
+_Static_assert(PLANET_ID_MASK == 0x7FF && PLANET_FLAG_HAS_STARBASE == 2 && PLANET_FLAG_UPDATED == 8 &&
+               PLANET_STARBASE_DESIGN_MASK == 0xF && PLANET_ROUTE_TARGET_MASK == 0x3FF && PLAYER_FLEET_COUNT_MASK == 0xFFF &&
+               PLAYER_SB_COUNT_SHIFT == 12 && PLAYER_RECORD_LONG_MASK == 7 && FILEHDR_PLAYER_MASK == 0x1F &&
+               FLEET_FLAG_EMPTY == 4 && FLEET_FLAG_BYTE_COUNTS == 8 && DESIGN_FLAG_FREE == 2 &&
+               BATTLE_PLAN_FLAG_DEFAULT_NAME == 0x40 && SCORE_SHIPS_MANTISSA_MASK == 0x1FFF && SCORE_SHIPS_EXP_SHIFT == 13 &&
+               MAPOBJ_KIND_PACKET == 0x20, "bit fields");
+
+/* Window command ids (WM_COMMAND wParam) of the main window. The menu ids come from the STARSMENU
+ * resource (build/nedump --dump-resources, docs/TOOLING.md section 5; the decimal ids are the ones the
+ * dump prints). 4:0x1f40 frame_on_command (src/seg04.c:2415-2535, the comment above it lists them) dispatches on them. */
+enum {
+  IDM_FILE_NEW = 0x0ED8,          /* "&New..." */
+  IDM_FILE_RACE_WIZARD = 0x0081,  /* "Custom &Race Wizard..." */
+  IDM_FILE_OPEN = 0x0ED9,         /* "&Open..." (src/seg04.c:2427 opens a game file, 4:0x3b66) */
+  IDM_FILE_CLOSE = 0x0071,        /* "&Close" */
+  IDM_FILE_SAVE = 0x0EDA,         /* "&Save" */
+  IDM_FILE_SAVE_SUBMIT = 0x0EDB,  /* "Save &And Submit" */
+  IDM_FILE_PRINT_MAP = 0x00D5,    /* "&Print Map" (src/seg04.c:2432 the print dialog) */
+  IDM_FILE_EXIT = 0x0EE2,         /* "E&xit" */
+  IDM_VIEW_TOOLBAR = 0x00B3,      /* "&Toolbar" (src/seg04.c:2428 the toolbar toggle) */
+  IDM_VIEW_FIND = 0x1068,         /* "&Find..." */
+  IDM_VIEW_ZOOM_25 = 0x0F3D,      /* "25%" ... "400%": nine consecutive ids 0xF3D..0xF45 (src/seg04.c:2431 lists 0xf3d to 0xf45) */
+  IDM_VIEW_ZOOM_38 = 0x0F3E,
+  IDM_VIEW_ZOOM_50 = 0x0F3F,
+  IDM_VIEW_ZOOM_75 = 0x0F40,
+  IDM_VIEW_ZOOM_100 = 0x0F41,
+  IDM_VIEW_ZOOM_125 = 0x0F42,
+  IDM_VIEW_ZOOM_150 = 0x0F43,
+  IDM_VIEW_ZOOM_200 = 0x0F44,
+  IDM_VIEW_ZOOM_400 = 0x0F45,
+  IDM_VIEW_LAYOUT_LARGE = 0x0082, /* "&Large Screen" (the layout commands 0x82 to 0x84, src/seg04.c:2428) */
+  IDM_VIEW_LAYOUT_MEDIUM = 0x0083,
+  IDM_VIEW_LAYOUT_SMALL = 0x0084,
+  IDM_VIEW_PLAYER_COLORS = 0x098D, /* "Player &Colors" */
+  IDM_VIEW_RACE = 0x009C,         /* "&Race..." */
+  IDM_VIEW_GAME_PARAMS = 0x009E,  /* "&Game Parameters..." */
+  IDM_TURN_WAIT = 0x006A,         /* "&Wait for New" (src/seg04.c:2426: the host mode, 4:0x33df) */
+  IDM_TURN_GENERATE = 0x0069,     /* "&Generate" (src/seg04.c:2425: starts the game / turn files) */
+  IDM_CMD_SHIP_DESIGN = 0x007D,   /* "&Ship Design..." */
+  IDM_CMD_RESEARCH = 0x007E,      /* "&Research..." */
+  IDM_CMD_BATTLE_PLANS = 0x07DC,  /* "&Battle Plans..." */
+  IDM_CMD_RELATIONS = 0x07DE,     /* "&Player Relations..." */
+  IDM_CMD_CHANGE_PASSWORD = 0x010E, /* "&Change Password..." (src/seg04.c:2430, branch L2d6c) */
+  IDM_REPORT_PLANETS = 0x08FD,    /* "&Planets..." */
+  IDM_REPORT_FLEETS = 0x08FF,     /* "&Fleets..." */
+  IDM_REPORT_ENEMY_FLEETS = 0x0900, /* "&Enemy Fleets..." */
+  IDM_REPORT_BATTLES = 0x0901,    /* "&Battles..." */
+  IDM_REPORT_SCORE = 0x005F,      /* "&Score..." (src/seg04.c:2423 lists ids 0x5f, 0x60 together with dialog 0x66, IDD_SCORE) */
+  IDM_DUMP_UNIVERSE = 0x0055,     /* "&Universe Definition" (src/seg04.c:2422: ids 0x53 to 0x55) */
+  IDM_DUMP_PLANET = 0x0054,       /* "&Planet Information" */
+  IDM_DUMP_FLEET = 0x0053,        /* "&Fleet Information" */
+  IDM_HELP_INTRO = 0x09C2,        /* "&Introduction" */
+  IDM_HELP_PLAYERS_GUIDE = 0x0101, /* "&Player's Guide" (src/seg04.c:2428 WinHelp) */
+  IDM_HELP_TECH_BROWSER = 0x0100, /* "Technology &Browser" (src/seg04.c:2428) */
+  IDM_HELP_TUTORIAL = 0x09C5,     /* "&Tutorial" */
+  IDM_HELP_ABOUT = 0x0063,        /* "&About Stars!..." (src/seg04.c:2423: dialog IDD_ABOUT, 3:0x0ca0) */
+  /* Commands with no menu item (accelerators, buttons, internal posts), named from src/seg04.c:2415-2434. */
+  CMD_GAME_LOADED = 0x0FA1,       /* posted/sent to the main window DS:0x2806 after a game is loaded: 4:0x3b66 (src/seg04.c:1215,
+                                   * 1334, 1927, 2131), 15:0x38E7; the handler L3030 (src/seg04.c:3010) sets bit 0 of DS:0x794,
+                                   * runs 4:0x197a and 4:0x5d98, then invalidates and updates window DS:0x150 */
+  IDM_TURNS_10 = 0x5208,          /* count down 10 / 100 / 1000 turns in DS:0x378 (src/seg04.c:2425) */
+  IDM_TURNS_100 = 0x5209,
+  IDM_TURNS_1000 = 0x520A,
+  IDM_RECENT_FILE_FIRST = 0x3A98, /* 0x3A98..0x3AFB: DS:0x4C84 = id - 0x3A98, a recent-file slot (src/seg04.c:2421, 2441) */
+  IDM_RECENT_FILE_LAST = 0x3AFB
+};
+/* One case per id: a duplicate value is a compile error ("duplicate case value"), the unique_values
+ * check. The ids are also pinned to the decimal numbers that nedump prints for STARSMENU. */
+static inline uint16_t stars_menu_ids_distinct(uint16_t id) {
+  switch (id) {
+    case IDM_FILE_NEW: case IDM_FILE_RACE_WIZARD: case IDM_FILE_OPEN: case IDM_FILE_CLOSE:
+    case IDM_FILE_SAVE: case IDM_FILE_SAVE_SUBMIT: case IDM_FILE_PRINT_MAP: case IDM_FILE_EXIT:
+    case IDM_VIEW_TOOLBAR: case IDM_VIEW_FIND:
+    case IDM_VIEW_ZOOM_25: case IDM_VIEW_ZOOM_38: case IDM_VIEW_ZOOM_50: case IDM_VIEW_ZOOM_75:
+    case IDM_VIEW_ZOOM_100: case IDM_VIEW_ZOOM_125: case IDM_VIEW_ZOOM_150: case IDM_VIEW_ZOOM_200:
+    case IDM_VIEW_ZOOM_400:
+    case IDM_VIEW_LAYOUT_LARGE: case IDM_VIEW_LAYOUT_MEDIUM: case IDM_VIEW_LAYOUT_SMALL:
+    case IDM_VIEW_PLAYER_COLORS: case IDM_VIEW_RACE: case IDM_VIEW_GAME_PARAMS:
+    case IDM_TURN_WAIT: case IDM_TURN_GENERATE:
+    case IDM_CMD_SHIP_DESIGN: case IDM_CMD_RESEARCH: case IDM_CMD_BATTLE_PLANS: case IDM_CMD_RELATIONS:
+    case IDM_CMD_CHANGE_PASSWORD:
+    case IDM_REPORT_PLANETS: case IDM_REPORT_FLEETS: case IDM_REPORT_ENEMY_FLEETS: case IDM_REPORT_BATTLES:
+    case IDM_REPORT_SCORE: case IDM_DUMP_UNIVERSE: case IDM_DUMP_PLANET: case IDM_DUMP_FLEET:
+    case IDM_HELP_INTRO: case IDM_HELP_PLAYERS_GUIDE: case IDM_HELP_TECH_BROWSER: case IDM_HELP_TUTORIAL:
+    case IDM_HELP_ABOUT: case CMD_GAME_LOADED: case IDM_TURNS_10: case IDM_TURNS_100: case IDM_TURNS_1000:
+    case IDM_RECENT_FILE_FIRST:
+      return 1;
+    default:
+      return 0;
+  }
+}
+_Static_assert(IDM_FILE_NEW == 3800 && IDM_FILE_RACE_WIZARD == 129 && IDM_FILE_OPEN == 3801 && IDM_FILE_CLOSE == 113 &&
+               IDM_FILE_SAVE == 3802 && IDM_FILE_SAVE_SUBMIT == 3803 && IDM_FILE_PRINT_MAP == 213 && IDM_FILE_EXIT == 3810,
+               "STARSMENU File ids");
+_Static_assert(IDM_VIEW_TOOLBAR == 179 && IDM_VIEW_FIND == 4200 && IDM_VIEW_ZOOM_25 == 3901 && IDM_VIEW_ZOOM_38 == 3902 &&
+               IDM_VIEW_ZOOM_50 == 3903 && IDM_VIEW_ZOOM_75 == 3904 && IDM_VIEW_ZOOM_100 == 3905 && IDM_VIEW_ZOOM_125 == 3906 &&
+               IDM_VIEW_ZOOM_150 == 3907 && IDM_VIEW_ZOOM_200 == 3908 && IDM_VIEW_ZOOM_400 == 3909 &&
+               IDM_VIEW_LAYOUT_LARGE == 130 && IDM_VIEW_LAYOUT_MEDIUM == 131 && IDM_VIEW_LAYOUT_SMALL == 132 &&
+               IDM_VIEW_PLAYER_COLORS == 2445 && IDM_VIEW_RACE == 156 && IDM_VIEW_GAME_PARAMS == 158,
+               "STARSMENU View ids");
+_Static_assert(IDM_TURN_WAIT == 106 && IDM_TURN_GENERATE == 105 && IDM_CMD_SHIP_DESIGN == 125 && IDM_CMD_RESEARCH == 126 &&
+               IDM_CMD_BATTLE_PLANS == 2012 && IDM_CMD_RELATIONS == 2014 && IDM_CMD_CHANGE_PASSWORD == 270,
+               "STARSMENU Turn and Commands ids");
+_Static_assert(IDM_REPORT_PLANETS == 2301 && IDM_REPORT_FLEETS == 2303 && IDM_REPORT_ENEMY_FLEETS == 2304 &&
+               IDM_REPORT_BATTLES == 2305 && IDM_REPORT_SCORE == 95 && IDM_DUMP_UNIVERSE == 85 && IDM_DUMP_PLANET == 84 &&
+               IDM_DUMP_FLEET == 83, "STARSMENU Report ids");
+_Static_assert(IDM_HELP_INTRO == 2498 && IDM_HELP_PLAYERS_GUIDE == 257 && IDM_HELP_TECH_BROWSER == 256 &&
+               IDM_HELP_TUTORIAL == 2501 && IDM_HELP_ABOUT == 99, "STARSMENU Help ids");
+_Static_assert(CMD_GAME_LOADED == 4001 && IDM_TURNS_10 == 21000 && IDM_TURNS_1000 == 21002 &&
+               IDM_TURNS_100 == 21001 && IDM_RECENT_FILE_FIRST == 15000 && IDM_RECENT_FILE_LAST == 15099, "non-menu command ids");
+
+/* Dialog template ids (the resource id passed to DialogBox / CreateDialog); the caption is what the
+ * dump (build/nedump --dump-resources) prints for that template. */
+enum {
+  IDD_ABOUT = 0x005A,             /* dialog 90 (About, 3:0x0ca0): src/seg04.c:2423 */
+  IDD_SERIAL = 0x0056,            /* dialog 86 "Register Serial Number": src/seg04.c:2157, src/seg06.c:2340 */
+  IDD_ORDERING = 0x0061,          /* dialog 97 "Ordering Information": src/seg03.c:623 */
+  IDD_SCORE = 0x0066,             /* dialog 102, caption "Victory Conditions" (32:0x0a66); src/seg04.c:2423 only pairs it with commands 0x5f/0x60,
+                                   * so the name SCORE is a guess from the Score menu item, not proven */
+  IDD_HOST_MODE = 0x0073,         /* dialog 115 "Stars! Host Mode": src/seg04.c:1058 */
+  IDD_RESEARCH = 0x007F,          /* dialog 127 "Research": src/seg04.c:2753 */
+  IDD_TECH_BROWSER = 0x0080,      /* dialog 128 "Technology Browser" (modeless, CreateDialog): src/seg04.c:2778 */
+  IDD_CHANGE_PASSWORD = 0x008D,   /* dialog 141 "Change Password": src/seg04.c:3793 */
+  IDD_PRINT_MAP = 0x00D6,         /* dialog 214 "Print Map": src/seg04.c:3082 */
+  IDD_AUTO_GENERATE = 0x0402,     /* dialog 1026 "Auto Generate Options": src/seg04.c:3804 */
+  IDD_RENAME_BATTLE_PLAN = 0x07E3 /* dialog 2019 "Rename Battle Plan": src/seg16.c:228 */
+};
+static inline uint16_t stars_dialog_ids_distinct(uint16_t id) {
+  switch (id) {
+    case IDD_ABOUT: case IDD_SERIAL: case IDD_ORDERING: case IDD_SCORE: case IDD_HOST_MODE: case IDD_RESEARCH:
+    case IDD_TECH_BROWSER: case IDD_CHANGE_PASSWORD: case IDD_PRINT_MAP: case IDD_AUTO_GENERATE:
+    case IDD_RENAME_BATTLE_PLAN:
+      return 1;
+    default:
+      return 0;
+  }
+}
+_Static_assert(IDD_ABOUT == 90 && IDD_SERIAL == 86 && IDD_ORDERING == 97 && IDD_SCORE == 102 && IDD_HOST_MODE == 115 &&
+               IDD_RESEARCH == 127 && IDD_TECH_BROWSER == 128 && IDD_CHANGE_PASSWORD == 141 && IDD_PRINT_MAP == 214 &&
+               IDD_AUTO_GENERATE == 1026 && IDD_RENAME_BATTLE_PLAN == 2019, "dialog resource ids");
+
 /* Leaf functions that other segments call by their C name (docs/CONVENTIONS.md rule e: a callee that
  * mirrors no frame is a plain C call). */
 uint16_t toolbar_item_is_on(uint16_t item); /* 13:0x0902 (fn_13_0902): is toolbar item `item` on (src/seg13.c) */
