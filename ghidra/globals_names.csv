@@ -1,0 +1,365 @@
+offset,name,type,evidence
+0x0010,brush_btnface,,seg03.c 3:0x054c update_system_colors: first of the eight system-colour brush slots (COLOR_BTNFACE); seg13.c face brush
+0x0012,brush_btntext,,seg03.c 3:0x054c: colour 18 (COLOR_BTNTEXT) brush stored in DS:0x12
+0x0014,brush_btnhighlight,,seg13.c paint button: light bevel brush DS:0x14; seg03.c 3:0x054c
+0x0016,brush_btnshadow,,seg13.c paint button: dark bevel brush DS:0x16; seg03.c 3:0x054c
+0x0018,brush_window,,seg03.c 3:0x054c: colour 5 (COLOR_WINDOW) brush stored in DS:0x18
+0x001a,brush_windowtext,,seg03.c 3:0x054c: colour 8 (COLOR_WINDOWTEXT) brush stored in DS:0x1a
+0x001c,brush_windowframe,,seg03.c 3:0x054c: colour 6 (COLOR_WINDOWFRAME) brush in DS:0x1c; seg13.c TOOLTIPWNDPROC FrameRect
+0x001e,brush_background,,seg03.c 3:0x054c: colour 1 (COLOR_BACKGROUND) brush in DS:0x1e; seg04.c FRAMEWNDPROC FillRect
+0x002a,proc_instance_extra_maybe,,seg03.c release_all_resources: FreeProcInstance(DS:0x2a) when non-zero
+0x006e,catch_buffer,,seg03.c/seg04.c/seg06.c: the setjmp catch buffer of the running file function is registered in DS:0x6E
+0x0070,game_id,,"seg04.c:448 and :1314 compare the dword DS:0x70 with ini_game_id (DS:0x2522); it is the first dword of the resident GameHeader block (stars.h BLK_GAME_HEADER, game_id at +0x00)"
+0x0074,universe_size_index,,seg21.c:596: (DS:0x74 + 1) * 0x190 is the universe extent; seg33.c:223 uses DS:0x74 * 400 + 0x578 as the limit; stars.h: raw GameHeader.universe_size at +0x04 of DS:0x70
+0x0078,player_count,,seg04.c 4:0x4580: player rows i < DS:0x78 (the player count); seg03.c 3:find_player_key_conflict loops over DS:0x78 slots
+0x007a,planet_count_in_game,,seg17.c info array DS:0x1600 holds DS:0x7a planets (16 bytes each)
+0x007c,game_header_fld_0c,,"stars.h GameHeader.fld_0c (+0x0C of DS:0x70, role not proven there); seg17.c ai0_turn:2258 tests it for zero. Game meaning unknown"
+0x007e,game_header_fld_0e,,"stars.h GameHeader.fld_0e (+0x0E of DS:0x70, cleared by 14:0x0508); seg04.c clears it; seg06.c update_message_controls picks the character 0x20 or 0x2a from it. Game meaning unknown"
+0x0080,game_flags,,"stars.h GameHeader.flags_80 at +0x10 of DS:0x70 (bit tests 0x04, 0x08); seg06.c bit 2, seg21.c bit 4"
+0x0082,current_turn,,seg04.c 4:0x4580: a record whose turn equals the current turn DS:0x82; seg06.c 6:0x7778: turn number DS:0x82 + 2400
+0x00b0,universe_size,,stars.h GameHeader.universe_size: 14:0x0508 stores (value + 1) * 400 in DS:0xB0; 15:0x4efe and 15:0x73a8 read it
+0x00b2,universe_max_coord_maybe,,seg04.c frame_on_command: DS:0xb2 - DS:0x27ea and DS:0xb2 - planet y - 0x3e8 passed to map_scale
+0x00b6,planet_table,,seg04.c/seg19.c/seg33.c: planet table DS:0xb6 (stride 0x38, count DS:0x4d96); far pointer offset word
+0x00b8,planet_table_segment_maybe,,seg04.c: far pointer DS:0xb6 is read as offset word then segment word 0xb8
+0x00ba,fleet_table,,seg16.c/seg19.c: fleet pointer table (far pointer DS:0xBA. Also covers the used offsets DS:0x00bc (no label of their own; pass 2 reaches them through this macro), count DS:0x553A)
+0x010a,help_file_name,,seg04.c/seg06.c: WinHelp(hwnd, DS:[0x10a], HELP_CONTEXT, ...)
+0x014c,current_player,,seg02.c DS:0x14c is 0xffff when there is no current player; indexes the 0xc0-byte player rows
+0x014e,hwnd_modeless_dialog,,seg03.c ESC down: destroys the dialog DS:0x14E when it is the active window
+0x0150,hwnd_map,,seg04.c 4:layout: marker/side panels DS:0x150 (map), 0x154, 0x156, 0x158 and 0x15a; seg03.c forwards '+' '-' to DS:0x150
+0x0152,hwnd_zoomable_window_maybe,,seg04.c get_main_submenu: used when DS:0x152 is set and IsZoomed
+0x0154,hwnd_info_panel,,seg05.c 5:0x0324 invalidate_info_areas: invalidates rectangles of the window DS:0x0154
+0x0156,hwnd_top_left_panel_maybe,,"seg04.c update_caption_and_panels creates it, layout_panels moves it to (0,0) of the divider box; FRAMEWNDPROC forwards f and F"
+0x0158,hwnd_message_window,,seg06.c WM_CREATE: DS:0x158 = hwnd
+0x015a,hwnd_toolbar_maybe,,seg13.c window DS:0x015a invalidated when a toolbar view bit changes
+0x015e,file_text_ptr,,seg03.c 3:file load: far pointer to the loaded text in DS:0x15E/0x160
+0x0160,file_text_ptr_segment_maybe,uint16_t,seg03.c read_batch_file_name: far pointer DS:0x15E (offset) / DS:0x160 (segment)
+0x0162,timer_id,,seg04.c WM_DESTROY kills the timer DS:0x162; starts the 10000 ms timer into DS:0x162
+0x0164,timer_state,,seg04.c timer id 0xd stored in DS:0x164
+0x016a,fmt_ptr_a_maybe,,"seg04.c: _wsprintf(DS:0x5866, DS:[0x16a], ...) in frame_on_command, paint_host_player_list and HOSTMODEDIALOG"
+0x0170,fmt_ptr_dword_maybe,,seg06.c format_message codes U V v: a dword with _wsprintf(DS:0x170)
+0x0178,fmt_percent,,seg13.c 13:zoom text: rewritten with the format at DS:[0x178] (%d%%)
+0x0180,fmt_ptr_word_maybe,,seg05.c info_on_click: _wsprintf with the format DS:[0x180] and a word
+0x018a,fmt_ptr_decimal_pair_maybe,,seg06.c format_message: w / 100 and w % 100 with _wsprintf(DS:0x18a)
+0x0190,fmt_player_number,,seg04.c/seg17.c: _wsprintf(buf, DS:[0x190], player + 1)
+0x0192,tick_stamp,,seg04.c 4:0x4580: the stamp DS:0x192/0x194 becomes GetTickCount(). Also covers the used offsets DS:0x0194 (no label of their own; pass 2 reaches them through this macro)
+0x0212,initial_directory,,seg04.c GetOpenFileName initial dir DS:0x212
+0x0312,start_window,,seg04.c destroys the start window DS:0x312 once; FRAMEWNDPROC forwards messages to it
+0x0314,start_window_busy_maybe,,"seg04.c open_game_file: set to 1 around the start-window work when DS:0x312 is set, cleared by run_host_mode and FRAMEWNDPROC"
+0x0316,icon_idle,,seg04.c FRAMEWNDPROC WM_PAINT/WM_QUERYDRAGICON (iconic): shown when a player is current and the host timer DS:0x162 is 0
+0x0318,icon_no_player,,seg04.c FRAMEWNDPROC WM_PAINT/WM_QUERYDRAGICON (iconic): shown when there is no current player (DS:0x14c == 0xffff)
+0x031a,icon_host_timer_running,,seg04.c FRAMEWNDPROC WM_PAINT/WM_QUERYDRAGICON (iconic): shown while the host timer DS:0x162 is set
+0x031c,player_block_fld_0c_maybe,,stars.h Player.fld_0c (BLK_36): 14:0x0508 DS:0x31C = this (of the current player); seg04.c tests it signed
+0x0320,cmdline_value_maybe,,seg03.c WinMain: 8:0xb28a result stored in DS:0x320/0x322. Also covers the used offsets DS:0x0322 (no label of their own; pass 2 reaches them through this macro)
+0x0366,quit_exit_code,,seg04.c: PostQuitMessage(DS:0x366) and ExitWindows(DS:0x366) at the common exit
+0x0378,turns_to_generate,,seg04.c frame_on_command: 100 or 1000 turns (Shift/Control test); run_host_mode decrements it
+0x03c0,host_timer_busy,,"seg04.c host_timer_proc: not re-entrant, DS:0x3c0 set to 1 while it runs; HOSTMODEDIALOG clears it"
+0x03da,title_palette_maybe,,seg04.c TITLEWNDPROC: palette DS:0x3da
+0x03dc,title_banner_res_maybe,,seg04.c TITLEWNDPROC: banner resource of 8:0xad28 in DS:0x3dc
+0x03de,hwnd_title_child_a_maybe,,seg04.c TITLEWNDPROC: handles in DS:0x3de..0x3e4; GetWindowRect(DS:0x3de)
+0x03e2,hwnd_title_child_c_maybe,,"seg04.c TITLEWNDPROC: EnableWindow(DS:0x3e2, 0)"
+0x0468,label_text_a_maybe,,seg05.c info_on_click/seg16.c: GetTextExtent of the string DS:[0x468] for layout
+0x0490,info_label_text,,seg05.c invalidate_info_areas/info_on_click: the text DS:[0x490] measured with GetTextExtent
+0x04c8,info_zoom_choice,,seg05.c info_on_click: zoom value chosen with the pop-up stored in DS:0x04C8; seg01.c ini key 0xa2
+0x055c,game_open_state_maybe,,seg04.c open_game_file: DS:0x55c cleared
+0x055e,view_flags,,seg13.c low nibble of the view flags DS:0x055e selects the view mode. Also covers the used offsets DS:0x055f (no label of their own; pass 2 reaches them through this macro)
+0x0560,zoom_percent,,seg13.c percentage compared with DS:0x0560
+0x0576,zoom_preset,,seg01.c ini value 1..9 minus 5; seg04.c CheckMenuItem(DS:0x576 + 4) and set from the menu id; seg13.c zoom presets
+0x05f6,recent_file_names,,seg01.c ini keys File1..File9: nine 256-byte entries at the far block DS:0x05f6. Also covers the used offsets DS:0x05f8 (no label of their own; pass 2 reaches them through this macro)
+0x076e,computer_turns_running,,seg04.c 4:0x4580: DS:0x76e is 1 while the computer players run
+0x0770,file_error_code_maybe,,"seg04.c frame_on_command: set to 0xffff, then passed to 14:0x30d8 and 8:0x8d94"
+0x0772,file_version,,seg04.c 4:0x4580: the version of the header block is stored in DS:0x772
+0x0790,ui_flags_a_maybe,,seg04.c 4:0x4580 forces bit 3 set and bit 1 clear of DS:0x790 while it runs; seg01.c clears bits with 0xfb7f
+0x0791,ui_flags_b_maybe,,seg01.c display class in the top bits of DS:0x0791; seg04.c bit 2 set when the turn has run; seg06.c bit 0 = comment mode
+0x0792,ui_flags_c_maybe,,seg01.c bit 15 of DS:0x0792 = Toolbar ini key; seg04.c bit 6 = ExitWindows; bit 7 = every player is a computer
+0x0793,ui_flags_d_maybe,,seg04.c WM_CLOSE path runs when bit 2 of DS:0x793 is set
+0x0794,ui_flags_e_maybe,,seg13.c zoom box sets the dirty bit 0x40 of DS:0x0794
+0x0795,command_line_flags_maybe,,seg03.c WinMain command line: H sets bit 1 of DS:0x795
+0x0796,report_flags_maybe,,seg01.c ini key ReportDefGraph = low nibble of DS:0x0796; seg04.c bit 6 shows the name
+0x07c0,button_class_name_ptr,,seg05.c MINEWNDPROC: CreateWindow class name DS:[0x7c0] for the order button
+0x083a,hwnd_text_control_a_maybe,,seg03.c filter_key_message: window compared with the focus; seg04.c frame_on_command GetFocus()
+0x0872,global_settings_value_maybe,,"seg01.c ini GlobalSettings: a 28-character value goes into DS:0x0872, else 0; seg04.c tests it for zero"
+0x08a8,dialog_offset_x,,seg16.c RENAMEZIPDLG/RENAMEDLG: SetWindowPos x = DS:0x08a8 + 0x46
+0x08aa,dialog_offset_y,,seg16.c RENAMEZIPDLG/RENAMEDLG: SetWindowPos y = DS:0x08aa + 0x46
+0x096c,far_work_block,,"seg01.c alloc_far(0x7d00, 4, 0x096c); seg03.c release_all_resources frees it (heap 4)"
+0x0980,player_key_table,,seg03.c 3:find_player_key_conflict: the table at the far pointer DS:0x980 has 16-byte entries
+0x09aa,ini_value_b0_maybe,,seg01.c Misc ini key 0xb0 clamped to 1..999
+0x09e2,batch_file_handle_maybe,,seg03.c read_batch_file_name: 34:0x03b6(DS:0x09e2) gives the size
+0x0aac,message_buffer,,seg06.c file header: message buffer far block DS:0xaac/0xaae. Also covers the used offsets DS:0x0aae (no label of their own; pass 2 reaches them through this macro)
+0x0ab0,message_buffer_used,,seg06.c file header: DS:0xab0 bytes used of the message buffer
+0x0ab4,message_count,,seg06.c returns 0 when idx >= DS:0xab4 (the messages in the buffer)
+0x0ab6,message_current_index,,seg06.c file header: the shown message index DS:0xab6 (0xffff none)
+0x0ab8,comment_current_index,,seg06.c 6:comment move: DS:0xab8 the current comment of the list DS:0xac0
+0x0aba,messages_starred_only,,seg06.c 6:0x6ef4: DS:0xaba set = only the starred messages
+0x0abc,comment_chain,,seg06.c file header: DS:0xabc far pointer chain of comments. Also covers the used offsets DS:0x0abe (no label of their own; pass 2 reaches them through this macro)
+0x0ac0,own_comment_list,,seg06.c file header: DS:0xac0 the list of the player's own comments. Also covers the used offsets DS:0x0ac2 (no label of their own; pass 2 reaches them through this macro)
+0x0ac4,comment_chain_count,,seg06.c file header: DS:0xac4 the number of comments in the list
+0x0ac6,own_comment_count,,seg06.c file header: DS:0xac6 the count of the player's own comments
+0x0ac8,message_subject,,seg06.c 6:comment mode: the selection DS:0xac8 (subject) when no comment is shown
+0x0ae2,comment_text_maybe,,seg06.c update_message_controls: comment mode text DS:0xae2
+0x0ba4,str_the_maybe,,"seg06.c format_message code S: the 5-byte text ""the"" at DS:0xba4"
+0x0ba8,str_the_end_maybe,,seg06.c format_message code S: byte after DS:0xba4 copied
+0x0bb4,message_format_cached_id,,seg06.c unpack_message_format: returns 0x5276 when the signed byte DS:0xbb4 equals the id
+0x0bbe,hwnd_popup_capture_maybe,,seg03.c filter_key_message: ESC sends WM_LBUTTONUP to DS:0xBBE; seg05.c MINEWNDPROC waits for it to be 0
+0x0bc0,info_descriptor,,"seg05.c 5:0x2ab4 info_on_click fills the descriptor at DS:0x0BC0 (kind, ids, numbers), which 24:0x091e shows. Also covers the used offsets DS:0x0bc2 (no label of their own; pass 2 reaches them through this macro)"
+0x0bc4,info_descriptor_plus04,,"seg05.c info_on_click: descriptor DS:0x0BC0 field at +4. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet"
+0x0bc6,info_descriptor_plus06,,"seg05.c info_on_click: descriptor DS:0x0BC0 field at +6. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet. Also covers the used offsets DS:0x0bc8 (no label of their own; pass 2 reaches them through this macro)"
+0x0bca,info_descriptor_plus0a,,"seg05.c info_on_click: descriptor DS:0x0BC0 field at +0xa. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet"
+0x0bcc,info_descriptor_plus0c,,"seg05.c info_on_click: descriptor DS:0x0BC0 field at +0xc. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet"
+0x0bce,info_descriptor_plus0e,,"seg05.c info_on_click: descriptor DS:0x0BC0 field at +0xe. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet"
+0x0bd0,info_descriptor_plus10,,"seg05.c info_on_click: descriptor DS:0x0BC0 field at +0x10. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet"
+0x0bd2,info_descriptor_plus12,,"seg05.c info_on_click: descriptor DS:0x0BC0 field at +0x12. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet"
+0x0c4a,rename_edit_reentry_guard,,seg16.c RENAMEDLG: DS:0xc4a guards the control against re-entry from its own SetWindowText
+0x0c7c,res_handle_437,,seg01.c load_res(0x437); seg03.c 3:0x054c patches its colour at offset 0x40c to the button-face colour and release_all_resources frees it. Game meaning unknown: no other code in src/ reads the handle
+0x0cd2,production_list,,seg19.c header comments: production entries are added to the list at DS:0xcd2 through 18:0x2732 and the list is committed or discarded with 26:0x0810. Also covers the used offsets DS:0x0cd4 (no label of their own; pass 2 reaches them through this macro)
+0x0d3e,tech_pending_flag_maybe,,seg06.c MESSAGEWNDPROC: set to 1 before posting command 0x100 to the main window
+0x1434,host_name_text_maybe,,seg04.c check_game_file: player name copied to DS:0x1434 (cleared when the dword is 0)
+0x15c2,ini_value_c0_maybe,,seg01.c ini key 0xc0 (default 1); seg04.c save_settings writes it
+0x15fe,busy_flag_maybe,,"seg17.c ai_player_turn sets 1 around the turn, seg06.c update_message_controls does nothing while it is set"
+0x1600,planet_info_array,,seg17.c info array DS:0x1600 (16 bytes a planet)
+0x1602,planet_info_array_segment,,"seg17.c: rd8(drd16(0x1602), off) reads the planet info array through the far pointer DS:0x1600/0x1602"
+0x1604,planet_flag_table,,seg21.c: far pointer DS:0x1604/0x1606 the per-planet flag table
+0x1606,planet_flag_table_segment_maybe,,seg21.c: far pointer DS:0x1604/0x1606
+0x1608,object_ptr_list,,seg21.c 21:0x123e: far pointer list DS:0x1608 (DS:0x4b62 of them) of fleet/planet records. Also covers the used offsets DS:0x160a (no label of their own; pass 2 reaches them through this macro)
+0x1766,report_fields_ptr_maybe,,seg01.c load_fields tables 0x164e/0x1684/0x16ba/0x16f0; seg04.c compares DS:0x1766 with them
+0x177e,hwnd_dismissible_window_maybe,,seg03.c filter_key_message: ESC destroys the window DS:0x177E
+0x188a,dialog_result_a_maybe,,seg04.c frame_on_command: read after DialogBox(0xd6)
+0x188c,dialog_result_b_maybe,,seg04.c frame_on_command: read after DialogBox(0xd6)
+0x188e,map_objects,,stars.h DS_MAP_OBJECTS: far pointer to MapObject[count]; offset word at DS:0x188E
+0x1890,map_objects_segment_maybe,,stars.h/seg33.c: far array base DS:0x188E/0x1890 (offset then segment)
+0x1892,map_object_count,,stars.h/seg33.c: count DS:0x1892 of the MapObject array
+0x1894,map_object_capacity,,seg33.c 33:grow: capacity DS:0x1894; grows by 10 records when not above the count
+0x18ae,hwnd_zip_order_dialog_maybe,,"seg16.c zip_enable_preset_buttons stores hwnd, ZIPORDERDLG clears it; RENAMEZIPDLG picks title/help from it"
+0x18be,hwnd_zoom_combo,,"seg13.c toolbar_zoom_update/TBWNDPROC: the zoom combo box DS:0x18be (GetWindowText, CB messages, SetWindowLong subclass)"
+0x18c0,toolbar_last_pos_maybe,,seg13.c TBWNDPROC: compared with the dword at BP-0x12 and updated on change
+0x18ce,hwnd_tooltip,,seg13.c TOOLTIPWNDPROC: WM_CREATE keeps the window in DS:0x18ce
+0x18d0,tooltip_timer,,seg13.c TOOLTIPWNDPROC: the timer DS:0x18d0 (0x39e when created, -1 none)
+0x18d2,tooltip_hide_tick,,seg13.c tooltip_update/TOOLTIPWNDPROC: GetTickCount() kept when the tooltip is hidden
+0x18fc,fp_result,,docs/CONVENTIONS.md 34:0x0d68/34:0x0d84: the result stored as a double at DS:0x18FC; src/crt34.h
+0x1c6a,fp_operand_a,,docs/CONVENTIONS.md 34:0x0d68: sqrt operand (pow base) stored as a double at DS:0x1C6A; src/crt34.h
+0x1c72,fp_operand_b,,docs/CONVENTIONS.md 34:0x0d84: pow exponent stored as a double at DS:0x1C72; src/crt34.h
+0x1e1e,fp_skip_operand_store_maybe,,docs/CONVENTIONS.md 34:0x0d68/34:0x0d84 and src/crt34.h: the operands are stored as doubles at DS:0x1C6A/0x1C72 only when DS:0x1E1E is 0
+0x207c,double_just_below_one,,seg33.c 33:0x01a0: the double 0.99999... at DS:0x207C so the square root rounds up. Also covers the used offsets DS:0x2080 (no label of their own; pass 2 reaches them through this macro)
+0x2510,window_pos,,"seg01.c fn_01_0af8: x, y read from DS:0x2510/0x2512 for CreateWindow. Also covers the used offsets DS:0x2512 (no label of their own; pass 2 reaches them through this macro)"
+0x2514,window_size,,"seg01.c fn_01_0af8: cx, cy read from DS:0x2514/0x2516 for CreateWindow. Also covers the used offsets DS:0x2516 (no label of their own; pass 2 reaches them through this macro)"
+0x2518,window_placement_flags,,seg01.c fn_01_0af8: DS:0x2518 & 3 turns nCmdShow 1 into 3
+0x251a,startup_options,,seg01.c ini keys: Wait is bit 2 of DS:0x251a; seg03.c DS:0x251A = 0 at start
+0x251b,startup_options_high,uint8_t,seg03.c WinMain sets bit 2; seg04.c FRAMEWNDPROC tests bits 2 and 1 (high byte of the word at DS:0x251a)
+0x251c,ini_selection_turn,,"seg01.c ini key 0x9c, default the current turn DS:0x82; seg04.c sync_selected_object compares it with the turn"
+0x251e,ini_selection_id,,seg01.c ini Selection number via 34:0x037a(DS:0x5868); seg04.c sync_selected_object looks it up with 7:0x14a8 and 10:0x26b2
+0x2520,ini_player_letter_maybe,,seg01.c ini key Selection: a letter B..Q in DS:0x2520; seg04.c compared with DS:0x14c
+0x2522,ini_game_id,,seg01.c ini key GameID: up to 10 hex digits into the dword DS:0x2522
+0x2526,cmdline_turn_count,,seg03.c WinMain: DS:0x2526 = n - 1 (n capped at 1000); seg04.c FRAMEWNDPROC counts it down
+0x2528,ini_message_number,,seg01.c ini key 0xc8; seg04.c sync_selected_object: when above 0 it rebuilds the message index DS:0xab6
+0x252a,tech_arg_mask_maybe,,"seg06.c MESSAGEWNDPROC: DS:0x252a = 1 << (DS:0x4161 & 0xf), the argument of 2:0x50f8"
+0x252c,tech_arg_item_low_maybe,,seg06.c MESSAGEWNDPROC: word DS:0x252c = (DS:0x252d << 8) or low byte of DS:0x4160
+0x252d,tech_arg_item_high_maybe,uint8_t,seg06.c MESSAGEWNDPROC: high byte of the word DS:0x252c
+0x2532,msg_text_rect,,seg06.c WM_SIZE: the rectangle DS:0x2532 (the text)
+0x2536,msg_text_rect_end,,"seg06.c: rectangle DS:0x2532 (left, top) and DS:0x2536 (right, bottom). Also covers the used offsets DS:0x2538 (no label of their own; pass 2 reaches them through this macro)"
+0x253a,color_btnface,,"seg03.c 3:0x054c: the COLORREF of system colour 15 (COLOR_BTNFACE) cached in DS:0x253A; WM_CTLCOLOR background. Also covers the used offsets DS:0x253b, DS:0x253c (no label of their own; pass 2 reaches them through this macro)"
+0x253e,region_tiny,,"seg01.c CreateRectRgn(0,0,10,10) stored in DS:0x253e"
+0x255c,ai_fleet_index_maybe,,seg19.c ai3_turn/ai7_turn: DS:0x255c = 0 before walking the fleets once more; seg17.c ai1_turn stores a counter
+0x255e,panel_layout_mode,,seg04.c layout_panels: mode word DS:0x255e (1 or 2: panels along the right side)
+0x2583,zip_preset0_in_use,,stars.h ZipPreset.in_use at DS:0x2583 + n*0x28; seg01.c sets entry 0
+0x2646,panel_header_height_maybe,,seg04.c FRAMEWNDPROC WM_CREATE: DS:0x2646 = (DS:0x267a + 12) * 2
+0x264a,client_width,,seg04.c WM_SIZE: DS:0x264a / 0x264c = the client size
+0x264c,client_height,,seg04.c WM_SIZE: DS:0x264a / 0x264c = the client size
+0x264e,divider_x,,seg04.c 4:hit test: vertical bar at x = DS:0x264e
+0x2650,divider_y1,,seg04.c 4:hit test: horizontal bar at y = DS:0x2650
+0x2652,divider_y2,,seg04.c 4:hit test: horizontal bar at y = DS:0x2652
+0x2654,style1_width,,"seg01.c ini Style1Width (key 0xa5, default 0x18c) clamped by clamp_size; seg04.c layout_panels"
+0x2656,style1_height,,"seg01.c ini Style1Height (key 0xa6, default 0x6e); seg04.c layout_panels"
+0x2658,style1_height2,,"seg01.c ini Style1Height2 (key 0xa7, default 0xc0); seg04.c layout_panels"
+0x265a,style2_width,,"seg01.c ini Style2Width (key 0xa8, default 0x18c); seg04.c layout_panels"
+0x265c,style2_height,,"seg01.c ini Style2Height (key 0xa9, default 0x6e); seg04.c layout_panels"
+0x265e,style2_height2,,"seg01.c ini Style2Height2 (key 0xaa, default 0xc0); seg04.c layout_panels"
+0x2666,accel_table_main,,seg01.c LoadAccelerators(0x74) -> DS:0x2666; seg03.c message loop
+0x2668,combo_old_wndproc,,seg13.c 13:subclass: CallWindowProc with DS:0x2668 for the combo box
+0x266c,frame_width,,seg03.c 3:0x054c: GetSystemMetrics(0x20) (SM_CXFRAME) stored in DS:0x266c
+0x266e,frame_height,,seg03.c 3:0x054c: GetSystemMetrics(0x21) (SM_CYFRAME) stored in DS:0x266e
+0x2670,cursor_divider_vertical,,seg01.c cursors table: resource 0x102; seg04.c hit_test_dividers returns it on the vertical bar only
+0x2676,cell_height_7pt,,seg01.c fn_01_08a4: cell_height of the font DS:0x2938
+0x2678,cell_height_6pt,,seg01.c fn_01_08a4: cell_height of the font DS:0x293a
+0x267a,text_line_height,,seg03.c WM_PAINT credits: line height DS:0x267A; seg01.c 1:0x08a4 stores the text metrics
+0x267e,color_btnshadow,,seg03.c 3:0x054c: system colour 16 (COLOR_BTNSHADOW) cached in DS:0x267E. Also covers the used offsets DS:0x2680 (no label of their own; pass 2 reaches them through this macro)
+0x2682,fake_list_proc_instance,,seg01.c procs table: MakeProcInstance of 25:0x4632 FAKELISTPROC (docs/functions.csv); freed by seg03.c release_all_resources
+0x2686,edit_font_height_maybe,,seg06.c: the edit control is placed below the font height DS:0x2686 + 3
+0x26ae,map_object_pictures,,seg01.c load_res(0x57); seg05.c paint_info_panel mode 8 (5:0x04e8) blits one 64 x 64 picture per map-object kind (index from the kind bits) with 8:0xaa4e
+0x275c,bitmap_res_77,,seg01.c LoadBitmap(0x77); checked non-zero and deleted (seg03.c). Game meaning unknown: no code in src/ selects it
+0x27b2,fake_edit_proc_instance,,seg01.c procs table: MakeProcInstance of 10:0x674e FAKEEDITPROC (docs/functions.csv); freed by seg03.c release_all_resources
+0x27be,fake_combo_proc_instance,,seg01.c procs table: MakeProcInstance of 13:0x14bc FAKECOMBOPROC; seg13.c TBWNDPROC subclasses the zoom combo box (DS:0x18be) with it
+0x27ea,map_origin_x_maybe,,"seg04.c update_caption_and_panels sets DS:0x27ea/0x27ec to 0x3e8 (1000, the coordinate origin); frame_on_command subtracts it"
+0x27ec,map_origin_y_maybe,,seg04.c update_caption_and_panels sets DS:0x27ea/0x27ec to 0x3e8; frame_on_command uses it
+0x27ee,color_window,,seg03.c 3:0x054c: system colour 5 (COLOR_WINDOW) cached in DS:0x27EE. Also covers the used offsets DS:0x27f0 (no label of their own; pass 2 reaches them through this macro)
+0x27f2,merge_fleet_count,,seg16.c MERGEFLEETSDLG: DS:0x27f2 fleets to choose from
+0x27f4,history_day,,seg01.c HistoryInfo: day number 31 * (12 * year + month) + day stored in DS:0x27f4; seg04.c save_settings writes it
+0x2806,main_window,,seg03.c PostMessage(DS:0x2806, 0x464) starts the game; seg04.c main window handle
+0x2870,color_btntext,,seg03.c 3:0x054c: system colour 18 (COLOR_BTNTEXT) cached in DS:0x2870
+0x2872,color_btntext_high_maybe,,seg03.c 3:0x054c: high word of the COLORREF of colour 18 (BTNTEXT) written at DS:0x2870/0x2872
+0x287e,res_handle_4f,,seg01.c load_res(0x4f); only checked non-zero (seg01.c) and freed (seg03.c). Game meaning unknown: no code in src/ reads it
+0x2880,res_handle_50,,seg01.c load_res(0x50); only checked non-zero (seg01.c) and freed (seg03.c). Game meaning unknown: no code in src/ reads it
+0x2884,bitmap_msg_icons_mask,,seg06.c 6:paint: bitmap DS:0x5a54 and its mask DS:0x2884
+0x288a,text_width_8_chars,,seg01.c fn_01_08a4: GetTextExtent of 8 characters at DS:0x74a with font DS:0x292e
+0x2910,block_header_word,,stars.h BlockHeader.word read at DS:0x2910 by 14:0x305a; seg06.c load_player_messages masks type and length. Also covers the used offsets DS:0x2911 (no label of their own; pass 2 reaches them through this macro)
+0x291e,panel_param_maybe,,seg04.c FRAMEWNDPROC: passed as the third argument of 10:0x1aec with the window DS:0x156
+0x292e,font_arial_8pt,,seg01.c 1:0x08a4: DS:0x292e .. 0x2934 the four names at 8 pt; inventory.md face names Arial, Arial Bold
+0x2930,font_arial_bold_8pt,,seg01.c 1:0x08a4: second of the four 8 pt faces; face name 1 = Arial Bold
+0x2936,font_arial_bold_8pt_rotated,,"seg01.c fn_01_08a4: face name 1 (Arial Bold), 8 pt, lfEscapement 0xc4e"
+0x2938,font_arial_7pt,,"seg01.c fn_01_08a4: 7 pt font of name 0, cell height in DS:0x2676"
+0x293a,font_arial_6pt,,"seg01.c fn_01_08a4: 6 pt font of name 0, cell height in DS:0x2678"
+0x2940,cursor_divider_horizontal,,seg01.c cursors table: resource 0x104; seg04.c hit_test_dividers returns it on a horizontal bar only
+0x29c2,fake_ce_proc_instance,,seg01.c procs table: MakeProcInstance of 13:0x1508 FAKECEPROC; seg13.c TBWNDPROC subclasses the combo box child with it
+0x29c8,tooltip_item_rect,,seg13.c 13:tooltip_update: the item rectangle DS:0x29c8
+0x29cc,tooltip_item_rect_end,,seg13.c tooltip_update: the item rectangle's right and bottom (rect + 4) kept in DS:0x29cc
+0x29d4,brush_tooltip_bg,,seg13.c TOOLTIPWNDPROC WM_ERASEBKGND fills the client rectangle with DS:0x29d4
+0x31b6,edit_old_wndproc,,seg13.c 13:subclass: CallWindowProc with DS:0x31b6 for the edit control
+0x31ba,planet_xy_table,,seg21.c: DS:0x31ba is the planet coordinate table (4 bytes per planet); seg16.c/seg19.c index
+0x4156,message_goto_arg_a_maybe,,seg06.c update_message_controls: set for the goto kinds 6 and 10; DS:0x4156 is passed to 7:0x01a0
+0x4158,message_goto_arg_b_maybe,,seg06.c update_message_controls: set for goto kind 6 with DS:0x4156
+0x415c,message_goto_kind,,seg06.c goto kind of the shown message into DS:0x415c (0 none, 1 planet, 2 fleet ...)
+0x4160,message_goto_subject,,seg06.c update_message_controls: subject (w & 0x7fff) of the shown message; MESSAGEWNDPROC passes it to 9:0x2ed8 and 10:0x26b2. Also covers the used offsets DS:0x4161 (no label of their own; pass 2 reaches them through this macro)
+0x4166,color_btnhighlight,,seg03.c 3:0x054c: system colour 20 (COLOR_BTNHIGHLIGHT) cached in DS:0x4166. Also covers the used offsets DS:0x4168 (no label of their own; pass 2 reaches them through this macro)
+0x416a,host_pending_a_maybe,,seg03.c WinMain clears 10 bytes at DS:0x416A; seg04.c HOSTMODEDIALOG tests DS:0x416c / 0x416a
+0x416c,host_pending_b_maybe,,seg03.c WinMain sets DS:0x416C = 1; seg04.c HOSTMODEDIALOG tests it with DS:0x416a
+0x4174,bitmap_info_panel_maybe,,seg01.c LoadBitmap(string 0x661); seg05.c paint_info_panel selects it into a memory DC
+0x417a,design_slots,,seg17.c design slot records of 0x8d bytes at DS:0x417a (slot k at 0x417a + 0x8d * k)
+0x41b6,design_slot0_field_3c_maybe,,"seg19.c: the byte at +0x3c of slot 0 compared with small numbers of the 0x8d-byte record of design slot 0 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x41f6,design_slot0_flags,,"seg17.c, seg19.c, seg21.c: bit 1 of byte +0x7c (slot 0) tested in the computer-player turns of the 0x8d-byte record of design slot 0 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x41f9,design_slot0_field_7f_maybe,uint32_t,"seg17.c: the dword at +0x7f of slot 0 read as a value in seg17.c ai1_turn of the 0x8d-byte record of design slot 0 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x41fd,design_slot0_field_83_maybe,,"seg17.c, seg19.c, seg21.c: the dword at +0x83 of slot 0 tested for zero of the 0x8d-byte record of design slot 0 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field. Also covers the used offsets DS:0x41ff (no label of their own; pass 2 reaches them through this macro)"
+0x4207,design_slot1_kind_maybe,,"seg17.c, seg19.c: the first word of slot 1 compared with 1 and 0xb of the 0x8d-byte record of design slot 1 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4243,design_slot1_field_3c_maybe,,"seg17.c, seg19.c: the byte at +0x3c of slot 1 compared with small numbers of the 0x8d-byte record of design slot 1 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4283,design_slot1_flags,,"seg17.c, seg19.c: bit 1 of byte +0x7c (slot 1) tested in the computer-player turns of the 0x8d-byte record of design slot 1 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x428a,design_slot1_field_83_maybe,,"seg17.c, seg19.c, seg21.c: the dword at +0x83 of slot 1 tested for zero of the 0x8d-byte record of design slot 1 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field. Also covers the used offsets DS:0x428c (no label of their own; pass 2 reaches them through this macro)"
+0x4310,design_slot2_flags,,"seg17.c, seg19.c, seg21.c: bit 1 of byte +0x7c (slot 2) tested in the computer-player turns of the 0x8d-byte record of design slot 2 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4311,design_slot2_turn_maybe,,"seg21.c: the word at +0x7d of slot 2 compared with the current turn plus 0x14 or 0x1e of the 0x8d-byte record of design slot 2 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4317,design_slot2_field_83_maybe,,"seg17.c: the dword at +0x83 of slot 2 tested for zero of the 0x8d-byte record of design slot 2 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x439d,design_slot3_flags,,"seg19.c, seg21.c: bit 1 of byte +0x7c (slot 3) tested in the computer-player turns of the 0x8d-byte record of design slot 3 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x442a,design_slot4_flags,,"seg17.c, seg19.c, seg21.c: bit 1 of byte +0x7c (slot 4) tested in the computer-player turns of the 0x8d-byte record of design slot 4 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x442b,design_slot4_turn_maybe,,"seg21.c: the word at +0x7d of slot 4 compared with the current turn plus 0x14 or 0x1e of the 0x8d-byte record of design slot 4 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x44b7,design_slot5_flags,,"seg19.c, seg21.c: bit 1 of byte +0x7c (slot 5) tested in the computer-player turns of the 0x8d-byte record of design slot 5 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4544,design_slot6_flags,,"seg19.c, seg21.c: bit 1 of byte +0x7c (slot 6) tested in the computer-player turns of the 0x8d-byte record of design slot 6 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4545,design_slot6_turn_maybe,,"seg21.c: the word at +0x7d of slot 6 compared with the current turn plus 0x14 or 0x1e of the 0x8d-byte record of design slot 6 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x465e,design_slot8_flags,,"seg17.c: bit 1 of byte +0x7c (slot 8) tested in the computer-player turns of the 0x8d-byte record of design slot 8 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x46eb,design_slot9_flags,,"seg17.c, seg19.c: bit 1 of byte +0x7c (slot 9) tested in the computer-player turns of the 0x8d-byte record of design slot 9 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4778,design_slot10_flags,,"seg17.c: bit 1 of byte +0x7c (slot 10) tested in the computer-player turns of the 0x8d-byte record of design slot 10 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4892,design_slot12_flags,,"seg17.c: bit 1 of byte +0x7c (slot 12) tested in the computer-player turns of the 0x8d-byte record of design slot 12 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4899,design_slot12_field_83_maybe,,"seg17.c: the dword at +0x83 of slot 12 tested for zero of the 0x8d-byte record of design slot 12 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x491f,design_slot13_flags,,"seg17.c: bit 1 of byte +0x7c (slot 13) tested in the computer-player turns of the 0x8d-byte record of design slot 13 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x49ac,design_slot14_flags,,"seg17.c, seg19.c, seg21.c: bit 1 of byte +0x7c (slot 14) tested in the computer-player turns of the 0x8d-byte record of design slot 14 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x49ad,design_slot14_turn_maybe,,"seg21.c: the word at +0x7d of slot 14 compared with the current turn plus 0x14 or 0x1e of the 0x8d-byte record of design slot 14 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4a39,design_slot15_flags,,"seg17.c: bit 1 of byte +0x7c (slot 15) tested in the computer-player turns of the 0x8d-byte record of design slot 15 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4a3a,design_slot15_turn_maybe,uint16_t,"seg21.c: the word at +0x7d of slot 15 subtracted from the current turn of the 0x8d-byte record of design slot 15 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field"
+0x4a5a,font_arial_10pt,,seg01.c 1:0x08a4: DS:0x4a5a, 0x4a5c names 0 and 1 at 10 pt
+0x4a5c,font_arial_bold_10pt,,seg01.c 1:0x08a4: DS:0x4a5a, 0x4a5c names 0 and 1 at 10 pt
+0x4a60,ai_threshold2_0_maybe,,seg21.c 21:0x0000: DS:0x4a60 to 0x4a63 computed from the turn like DS:0x5340 to 0x5343
+0x4a61,ai_threshold2_1_maybe,,seg21.c 21:0x0000: half of DS:0x4a60
+0x4a62,ai_threshold2_2_maybe,,"seg21.c 21:0x0000: 6 + (turn - 0x64) / 0x16, at most 0xc"
+0x4a63,ai_threshold2_3_maybe,,"seg21.c 21:0x0000: min(DS:0x4a62 / 2 - 1, 3)"
+0x4ac0,color_windowtext,,seg03.c 3:0x054c: system colour 8 cached in DS:0x4AC0; seg13.c tooltip text colour. Also covers the used offsets DS:0x4ac2 (no label of their own; pass 2 reaches them through this macro)
+0x4ac8,cursor_info_panel,,"seg01.c cursors table, resource 0x108; seg05.c MINEWNDPROC WM_SETCURSOR shows it outside the cycle-button strip (zone 9)"
+0x4b62,object_ptr_count,,seg21.c 21:0x123e: DS:0x4b62 far pointers in the list DS:0x1608
+0x4b64,msg_title_rect,,seg06.c hit test: PtInRect(DS:0x4b64) the title line rectangle
+0x4b66,msg_title_rect_top,,seg06.c hit_test_message_window: rectangle DS:0x4b64 (left) 4b66 (top) 4b68 (right) 4b6a (bottom)
+0x4b68,msg_title_rect_right,,seg06.c hit_test_message_window: rectangle DS:0x4b64.. right edge
+0x4b6a,msg_title_rect_bottom,,seg06.c hit_test_message_window: rectangle DS:0x4b64.. bottom edge
+0x4b6c,res_handle_70,,seg01.c load_res(0x70); only checked non-zero (seg01.c) and freed (seg03.c). Game meaning unknown: no code in src/ reads it
+0x4b70,goto_place_xy_maybe,,"seg04.c FRAMEWNDPROC: x, y at DS:0x4b70/0x4b72 above 0x3e8 go to 11:0x5142. Also covers the used offsets DS:0x4b72 (no label of their own; pass 2 reaches them through this macro)"
+0x4b74,selection_kind_maybe,,seg03.c WM_KEYDOWN: DELETE/BACKSPACE act when DS:0x4B74 is 2; seg04.c mode letter
+0x4b78,selected_object_id_maybe,,seg04.c open_game_file sets the dword DS:0x4b78 to -1; seg06.c MESSAGEWNDPROC compares DS:0x4160 with it
+0x4b7a,selected_waypoint_index_maybe,,seg03.c filter_key_message: record DS:0x4B7A of the table DS:0x4BF2:0x4BF0 (stride 0x12); seg16.c same table
+0x4b7c,selected_place_xy,,seg05.c 5:0x36a8 several_things_at_place: the selected place DS:0x4B7C is an x,y dword
+0x4b80,selection_mode,,seg05.c header: the kind of the selected thing is DS:0x4B80 (DS:0x4B82 when it is 4)
+0x4b82,selection_allowed_mask,uint16_t,seg05.c 5:0x2840: byte DS:0x4B82 bits allow planet (0) fleet (1) map object (3)
+0x4b84,selected_planet,,seg05.c header and 5:0x04e8: planet index DS:0x4B84, -1 when none
+0x4b86,selected_fleet,,seg05.c header and 5:0x04e8: fleet index DS:0x4B86, -1 when none
+0x4b88,selection_extra_maybe,uint16_t,seg05.c info_on_click: DS:0x4B88 read when nothing is selected (the saved region DS:0x4B7C..0x4B8B)
+0x4b8a,selected_map_object,,seg05.c header and 5:0x04e8: map object index DS:0x4B8A, -1 when none
+0x4b8c,current_fleet_id,,"seg16.c MERGEFLEETSDLG: the line of the current fleet, its id is DS:0x4b8c"
+0x4b92,cursor_target_maybe,,seg17.c/seg19.c: DS:0x4b92 compared with 0xffff (none) in the computer-player turns
+0x4bec,waypoint_mode_maybe,,seg17.c ai0_turn and seg21.c 21:0x0000 set the byte DS:0x4bec to 4 before waypoint orders (beside DS:0x4bee and the table DS:0x4bf0)
+0x4bee,waypoint_count_maybe,,seg03.c filter_key_message: DS:0x4bee > 1 beside the waypoint index DS:0x4b7a; seg17.c ai0_turn sets it to 1
+0x4bf0,waypoint_table,,seg03.c WM_KEYDOWN: table at DS:0x4BF2:0x4BF0 (stride 0x12); seg19.c waypoint list DS:0x4bf0
+0x4bf2,waypoint_table_segment_maybe,,seg03.c: far pointer DS:0x4BF2:0x4BF0
+0x4c08,cursor_planet_maybe,,"seg04.c FRAMEWNDPROC passes DS:0x4c08 to 9:0x3082; seg21.c calls 7:0x0358(-1, 0x4c08)"
+0x4c0a,cursor_owner_maybe,,seg19.c ai7_turn: DS:0x4c0a compared with the current player DS:0x14c (a field of the cursor struct near DS:0x4bf0)
+0x4c0c,cursor_flags_word_maybe,,"seg17.c/seg19.c: the high byte DS:0x4c0d has bit 1 tested in the computer-player turns, beside DS:0x4c0a and DS:0x4b92. Also covers the used offsets DS:0x4c0d (no label of their own; pass 2 reaches them through this macro)"
+0x4c20,cursor_flags_dword_maybe,,seg17.c ai1_turn: DS:0x4c20/0x4c22 xor-ed with bit masks. Also covers the used offsets DS:0x4c22 (no label of their own; pass 2 reaches them through this macro)
+0x4c30,cursor_value,,seg17.c 17:0x1b70: cursor value DS:0x4c30 compared with 0xbb8 and 0x32 as a signed dword
+0x4c36,cursor_what_word,,seg21.c 21:0x1e2a: the bit field word DS:0x4c36 (the cursor's what word). Also covers the used offsets DS:0x4c37 (no label of their own; pass 2 reaches them through this macro)
+0x4c3c,list_data_ptr_maybe,,"seg04.c frame_on_command: when non-zero, DS:0x4c3c/0x4c3e is passed to 9:0x431c with DS:0x5440. Also covers the used offsets DS:0x4c3e (no label of their own; pass 2 reaches them through this macro)"
+0x4c72,accel_table_alt,,seg01.c LoadAccelerators(0x438) -> DS:0x4c72; seg03.c message loop picks it when DS:0x312 is set
+0x4c74,bitmap_cycle_button,,seg01.c LoadBitmap(string 0x656); seg05.c 5:0x344a draw_cycle_button selects it into a memory DC
+0x4c76,map_set_mask,,"seg13.c 13:0x09ae: bit mask of 4 values, 0xf = all; seg01.c ini value & 0xf"
+0x4c84,recent_file_slot,,seg04.c WM_COMMAND 0x3a98..0x3afb: DS:0x4c84 = id - 0x3a98 (a recent-file slot)
+0x4d86,tooltip_width,,seg13.c 13:tooltip_update: DS:0x4d86 = width
+0x4d8e,palette_source_maybe,,seg01.c fn_01_0000: 8:0xa910(DS:0x4d8e) builds the palette DS:0x54f8
+0x4d92,brush_divider_drag,,seg01.c pattern_brush(string 0x60a); seg04.c FRAMEWNDPROC WM_LBUTTONDOWN selects it while a panel divider is dragged
+0x4d96,planet_count,,seg19.c planets (table DS:0xb6, DS:0x4d96 records of 0x38 bytes); seg33.c
+0x4d98,bitmap_res_58,,seg01.c LoadBitmap(0x58); checked non-zero and deleted (seg03.c). Game meaning unknown: no code in src/ selects it
+0x4d9e,hwnd_msg_prev_button,,seg06.c WM_CREATE: four BUTTON children DS:0x4d9e..0x4da4: previous, goto, next, delete
+0x4da0,hwnd_msg_goto_button,,seg06.c WM_CREATE: buttons DS:0x4d9e..0x4da4: previous, goto, next, delete
+0x4da2,hwnd_msg_next_button,,seg06.c WM_CREATE: buttons DS:0x4d9e..0x4da4: previous, goto, next, delete
+0x4da4,hwnd_msg_delete_button,,seg06.c WM_CREATE: buttons DS:0x4d9e..0x4da4: previous, goto, next, delete
+0x4da6,tooltip_item_id,,seg13.c TOOLTIPWNDPROC: the shown id DS:0x4da6 (-1 none)
+0x4dba,file_header_version,uint8_t,stars.h FileHeader.version at DS:0x4db2 + 8; seg04.c check_game_file masks it with 0xfe0
+0x4dbb,file_header_version_high_maybe,,seg04.c check_game_file: (DS:0x4dbb & 0xf0) must be 0x20
+0x4dc0,file_header_flags,,stars.h FileHeader.flags at DS:0x4db2 + 0xe; seg04.c check_game_file requires byte 5
+0x51b2,zip_selected_preset,,seg16.c zip_enable_preset_buttons/ZIPORDERDLG: DS:0x51b2 is the selected ZIP preset (radio id - 0x431)
+0x5274,caption_height,,seg03.c 3:0x054c: GetSystemMetrics(4) (SM_CYCAPTION) stored in DS:0x5274
+0x5340,ai_threshold_0,,seg19.c ai2_turn:1010 and seg17.c ai0_turn:1423 / ai1_turn:2729 write the thresholds DS:0x5340..0x5343 from the turn DS:0x82; the cursor tests of the computer-player turns read them
+0x5341,ai_threshold_1,,"seg19.c:1011, seg17.c:1425 and :2731: half of DS:0x5340"
+0x5342,ai_threshold_2,,"seg19.c:1016, seg17.c:1441 and :2747: 6 + (turn - 0x64) / 0x16, at most 0xc", at most 0xc
+0x5343,ai_threshold_3,,"seg19.c:1021, seg17.c:1450 and :2756: min(DS:0x5342 / 2 - 1, 3)", 3)
+0x538e,map_option_bits,,seg13.c item 0xf edits the bits DS:0x538e (8)
+0x5390,credits_pixel_offset,,seg03.c credits WM_INITDIALOG/WM_TIMER: DS:0x5390 pixel offset
+0x5394,file_text_end,,seg03.c 3:file load: the end of the loaded text in DS:0x5394/0x5396
+0x5396,file_text_end_segment_maybe,,seg03.c read_batch_file_name: the end of the loaded text is DS:0x5394 (offset) / DS:0x5396 (segment)
+0x539e,hwnd_text_control_b_maybe,,seg03.c filter_key_message: one of the edit/combo windows compared with the focus
+0x53a0,merge_fleet_indices,,seg16.c MERGEFLEETSDLG: array of fleet table indices pointed to by DS:0x53a0
+0x53b2,cursor_divider_both,,seg01.c cursors table: resource 0x107; seg04.c hit_test_dividers returns it where the bars cross
+0x53b4,browser_dlg_proc_instance,,"seg01.c procs table: MakeProcInstance of 27:0x1604 BROWSERDLG; seg04.c frame_on_command CreateDialog(.., DS:0x53b4)"
+0x53e0,hwnd_msg_subject_combo,,seg06.c file header: combo box MsgDD DS:0x53e0
+0x53e2,timer_proc,,seg04.c 10000 ms timer with procedure DS:0x53e2
+0x53ea,comment_text_buffer,,seg06.c 6:comment store: text buffer DS:0x53ea. Also covers the used offsets DS:0x53ec (no label of their own; pass 2 reaches them through this macro)
+0x53ee,brush_pattern_0616,,seg01.c pattern_brush(string 0x616); deleted by seg03.c. Game meaning unknown: no code in src/ selects it
+0x53f0,frame_flags_a_maybe,,"seg04.c FRAMEWNDPROC/frame_on_command: bit 2 tested, bits 3 toggled (the byte pair DS:0x53f0/0x53f1 is also read as a word)"
+0x53f1,frame_flags_b_maybe,,seg04.c FRAMEWNDPROC: high byte xor-ed into the word DS:0x53f0 (bit 9)
+0x53f2,frame_aux_maybe,,seg04.c FRAMEWNDPROC: cleared with the frame flags after a command
+0x543e,region_huge,,"seg01.c CreateRectRgn(-10,-10,2000,2000) stored in DS:0x543e"
+0x5440,hwnd_text_control_c_maybe,,seg03.c filter_key_message: compared with the focus; seg04.c passes it to 9:0x431c
+0x5442,cursor_hot_spot,,"seg01.c cursors table, resource 0x109; SetCursor over the cycle-button strip (seg05.c zone 9), over a hit message-window item (seg06.c) and in HOSTMODEDIALOG (seg04.c)"
+0x5446,brush_pattern_061f,,seg01.c pattern_brush(string 0x61f); deleted by seg03.c. Game meaning unknown: no code in src/ selects it
+0x54ec,map_layers,,seg13.c item 0xd edits the layers DS:0x54ec (16 bits)
+0x54ee,cell_height_10pt,,seg01.c fn_01_08a4: cell_height of the font DS:0x4a5a
+0x54f2,hwnd_text_control_d_maybe,,seg03.c filter_key_message: compared with the focus
+0x54f4,app_instance,,seg03.c WinMain: DS:0x54F4 = hInstance; used as hInstance by CreateWindow in seg01/seg04
+0x54f6,screen_bits_per_pixel,,seg03.c 3:0x054c: last step DS:0x54F6 = planes * bits per pixel of the screen
+0x54f8,palette,,seg13.c TBWNDPROC realizes the palette DS:0x54f8
+0x54fa,hwnd_key_target_maybe,,seg03.c filter_key_message: di == DS:0x54fa chooses a key action
+0x54fe,hwnd_msg_long_edit,,seg06.c WM_CREATE: edit control DS:0x54fe for long messages
+0x553a,fleet_count,,seg16.c /seg19.c: count DS:0x553A of the fleet pointer table DS:0xBA
+0x553e,message_text_buffer,,seg06.c 6:0x7778 format_message expands a message into DS:0x553e
+0x5658,hwnd_modeless_list_maybe,,seg06.c MESSAGEWNDPROC: InvalidateRect(DS:0x5658) when the dialog DS:0x14e exists
+0x565a,player_icon_sprites,,seg01.c load_res(0x85); seg05.c paint_info_panel: 32 x 32 sprites chosen by the owner icon number (player row byte >> 3) as (icon & 7) columns by (icon >> 3) rows
+0x573c,hwnd_order_button,,seg05.c header: the order button DS:0x573c
+0x5740,pen_none_maybe,,seg01.c fn_01_0000: DS:0x5740 cleared between the two pen groups
+0x5750,brush_none_maybe,,seg01.c fn_01_0000: DS:0x5750 cleared between the two brush groups
+0x5764,game_file_name,,seg03.c DS:0x5764 is the game file name; seg01.c ini key File1 copied to it
+0x5866,text_buffer,,seg03.c/seg04.c/seg13.c: _wsprintf(DS:0x5866. Also covers the used offsets DS:0x5867 (no label of their own; pass 2 reaches them through this macro), ...) shared formatted text buffer
+0x5868,ini_selection_number_text,,seg01.c cleared before the HistoryInfo date parse; seg04.c update_main_menu writes 0x20; seg01.c reads the Selection number from it
+0x586b,date_text_nul_maybe,,seg01.c HistoryInfo: DS:0x586b = 0 inside the date text buffer DS:0x5866
+0x588e,msgdlg_text_index,,seg06.c MSGDLG WM_PAINT: string 0x4b9 + (signed byte DS:0x588e); seg06.c MESSAGEWNDPROC sets 2
+0x592e,toolbar_sel_a_maybe,,seg13.c toolbar_set_item: DS:0x592e = 0xff
+0x592f,toolbar_sel_a_aux_maybe,,seg13.c toolbar_set_item: DS:0x592f = 0
+0x5960,toolbar_sel_b_maybe,,seg13.c toolbar_set_item: DS:0x5960 = 0xff
+0x5961,toolbar_sel_b_aux_maybe,,seg13.c toolbar_set_item: DS:0x5961 = 0
+0x59dc,text_metrics_height,,seg04.c FRAMEWNDPROC WM_CREATE: GetTextMetrics height stored in DS:0x59dc
+0x59e6,hwnd_msg_comment_edit,,seg06.c 6:comment store: GetWindowText(DS:0x59e6, DS:0x53ea, 0x3e8)
+0x5a3c,bitmap_res_f9,,seg01.c LoadBitmap(0xf9); deleted by seg03.c. Game meaning unknown: no code in src/ selects it
+0x5a44,tooltip_last_move_tick,,seg13.c TOOLTIPWNDPROC: DS:0x5a44 + 10000 compared with the tick to destroy the tooltip
+0x5a4e,toolbar_glyph_dib,,seg01.c load_res(0xb2); seg03.c 3:0x054c patches its colour at offset 0x41c; seg13.c 13:0x05a4 toolbar_paint_button blits the glyph strip (item * 0x18 wide cells) from it
+0x5a54,bitmap_msg_icons,,seg06.c 6:paint: bitmap DS:0x5a54 (and its mask DS:0x2884) through a memory DC
+0x5a56,credits_first_line,,seg03.c credits WM_INITDIALOG: DS:0x5A56 = -11 (first credits line)
+0x5a5c,brush_blue,,seg01.c brushes1: colour 0xff0000 (blue) stored in DS:0x5a5c; seg04.c paint_host_player_list
+0x5a62,entry_list_ptr_maybe,,"seg21.c 21:0x1e8a: near pointer, count DS:0x6686, walked from the last entry"
+0x6686,entry_list_count_maybe,,seg21.c 21:0x1e8a: count DS:0x6686 of the list DS:0x5a62

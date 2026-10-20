@@ -34,15 +34,15 @@ static __attribute__((unused)) Fp80 crt_sqrt_34_0d68(Fp80 v)
     fprintf(stderr, "34:0x0d68: sqrt of a negative operand (domain error) is not modelled\n");
     abort();
   }
-  if (g_DAT_1110_1e1e == 0) {
+  if (g_fp_skip_operand_store_maybe == 0) {
     double d = fp80_to_f64(v);
-    memcpy(g_DAT_1110_1c6a, &d, 8);
+    memcpy(g_fp_operand_a, &d, 8);
   }
   uint16_t old_cw = fp80_get_cw();                       /* FNSTCW */
   fp80_set_cw((uint16_t)(((old_cw & 0xff) | 0x38) | 0x1300)); /* FLDCW */
   Fp80 r = fp80_sqrt(v);
   double d = fp80_to_f64(r);
-  memcpy(g_DAT_1110_18fc, &d, 8);
+  memcpy(g_fp_result, &d, 8);
   *(uint8_t *)LINN(0x1c9a) = 1;                          /* a byte store */
   fp80_set_cw(old_cw);                                   /* 34:0x1CC3 */
   return r;
@@ -89,10 +89,10 @@ static __attribute__((unused)) Fp80 crt_pow_34_0d84(Fp80 base, Fp80 expo)
     fprintf(stderr, "34:0x0d84: pow of a non-positive or non-finite operand is not modelled\n");
     abort();
   }
-  if (g_DAT_1110_1e1e == 0) {
+  if (g_fp_skip_operand_store_maybe == 0) {
     double d1 = fp80_to_f64(base), d2 = fp80_to_f64(expo);
-    memcpy(g_DAT_1110_1c6a, &d1, 8);
-    memcpy(g_DAT_1110_1c72, &d2, 8);
+    memcpy(g_fp_operand_a, &d1, 8);
+    memcpy(g_fp_operand_b, &d2, 8);
   }
   old_cw = fp80_get_cw();
   fp80_set_cw((uint16_t)(((old_cw & 0xff) | 0x38) | 0x1300));
@@ -140,7 +140,7 @@ static __attribute__((unused)) Fp80 crt_pow_34_0d84(Fp80 base, Fp80 expo)
   }
   *(uint8_t *)LINN(0x1c9a) = 1;
   double d = fp80_to_f64(result);
-  memcpy(g_DAT_1110_18fc, &d, 8);
+  memcpy(g_fp_result, &d, 8);
   fp80_set_cw(old_cw);
   return result;
 }

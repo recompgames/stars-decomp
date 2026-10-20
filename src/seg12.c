@@ -80,7 +80,7 @@ uint32_t heap_new_segment(uint16_t size, int16_t heap)
   uint16_t h = GlobalAlloc(0x22, di);
   if (h == 0) {
     CALL_ORIG(8, 0x8d94, FAR_CDECL, 2, 0x1a, 0x10);
-    CALL_ORIG(34, 0x0825, FAR_CDECL, 2, g_DAT_1110_006e, 0xffff);
+    CALL_ORIG(34, 0x0825, FAR_CDECL, 2, g_catch_buffer, 0xffff);
   }
   uint32_t fp = GlobalLock(h);
   uint16_t seg = FP_SEG(fp), off = FP_OFF(fp);
@@ -129,7 +129,7 @@ uint32_t heap_grow_segment(uint32_t p)
   }
   if (failed) {
     CALL_ORIG(8, 0x8d94, FAR_CDECL, 2, 0x1a, 0x10);
-    CALL_ORIG(34, 0x0825, FAR_CDECL, 2, g_DAT_1110_006e, 0xffff);
+    CALL_ORIG(34, 0x0825, FAR_CDECL, 2, g_catch_buffer, 0xffff);
   }
   uint32_t np = GlobalLock(si);
   uint16_t nseg = FP_SEG(np), nof = FP_OFF(np);

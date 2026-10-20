@@ -69,6 +69,8 @@ analyzeHeadless re/ghidra stars -process stars26i.exe -noanalysis -scriptPath gh
 | `ghidra/ExportInventory.java` | `docs/functions.csv` | One row per function: seg, off, name, size, callers, callees, apis, fp, origin, status, notes. |
 | `ghidra/ExportDecomp.java` | `re/decomp/segNN/<off>_<name>.c` | Ghidra pseudo-C, reference only: the diff tests are the arbiter. |
 | `ghidra/InventoryFacts.java` | `re/facts.txt` | Static facts (DOS3Call sites, SendMessage ids, window classes, ...). |
+| `ghidra/LabelCodeData.java` | labels `CODE_DATA_<seg>_<off>` in the Ghidra project | Labels the data tables stored in code segments listed in `docs/code-segment-data.md` part A. Idempotent. |
+| `ghidra/DefineStructs.java` | data types `/Stars/<Struct>` in the Ghidra project | Creates every struct of `src/stars.h` (size from STATIC_SIZE, field offsets from the `+0xOFF` comments). Idempotent. It does not apply a type to any global; applying one changes `re/globals.csv`, so do that per global with RenameGlobals/ExportGlobals. |
 | `ghidra/ExportGlobals.java` | `re/globals.csv` | Labelled DGROUP data items (segment 35). |
 
 Then validate and regenerate:
@@ -78,6 +80,7 @@ make build/nedump
 python3 tools/check_inventory.py docs/functions.csv     # inventory against the real NE image
 python3 tools/gen_inventory.py                          # rewrites the GEN blocks in docs/inventory.md
 python3 tools/gen_inventory.py --check                  # exit 1 if a GEN block is stale
+python3 tools/segment_gaps.py --check docs/code-segment-data.md  # exit 1 if a 16+ byte uncovered range is unlisted
 ```
 
 `docs/inventory.md` mixes hand-written prose with generated blocks between `<!-- GEN:name -->` and

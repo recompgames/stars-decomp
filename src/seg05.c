@@ -83,79 +83,62 @@ static int16_t idiv16(int16_t num, int16_t den, uint16_t where)
 #define DS_MO_SEG 0x1890
 #define DS_MO_COUNT 0x1892
 static inline uint16_t mo_end(void) {
-  return (uint16_t)(drd16(DS_MO_OFF) + (uint16_t)((uint32_t)drd16(DS_MO_COUNT) * 0x12u));
+  return (uint16_t)(g_map_objects + (uint16_t)((uint32_t)g_map_object_count * sizeof(struct MapObject)));
 }
 
-/* own_object_index_and_count: 5:0x0474 (Ghidra FUN_1020_0474, alias fn_05_0474).
- * 116 bytes. ENTER 0xC,0; PUSH DI. Leaf, FAR CDECL: key [BP+6],
- * near pointers out_pos [BP+8] and out_cnt [BP+0xA] (offsets in DGROUP). Walks the map objects
- * (DS:0x188E far array, DS:0x1892 count, 0x12 bytes each, the end offset wraps in 16 bits and a
- * walk happens only when it is above the base) and counts those with no kind bits (byte +1 & 0xE0
- * is 0) whose player ((byte +1 & 0x1E) >> 1) equals DS:0x014C. *out_cnt is that count and *out_pos
- * the 1-based position among them of the last one whose word +0 equals key (0 when none). */
+/* "Nothing selected" in the selected planet, fleet and map-object indexes DS:0x4B84, 0x4B86, 0x4B8A. */
+#define NO_SELECTION 0xffff
+
+/* How many map objects (minefields) the current player owns, and the 1-based place of the last one
+ * whose id word equals key among them (0 when none). Both results are written to the caller's
+ * DGROUP words out_pos and out_cnt.
+ * 5:0x0474 FUN_1020_0474, FAR CDECL */
 DECOMP(5, 0x0474, own_object_index_and_count, FAR_CDECL)
 void own_object_index_and_count(uint16_t key, uint16_t out_pos, uint16_t out_cnt)
 {
   uint16_t pos = 0, cnt = 0;
-  uint16_t bx = drd16(DS_MO_OFF);
-  uint16_t seg = drd16(DS_MO_SEG);
+  uint16_t first = g_map_objects;
+  uint16_t seg = g_map_objects_segment_maybe;
   uint16_t end = mo_end();
-  if (end > bx) {
-    do {
-      uint8_t b1 = rd8(seg, (uint16_t)(bx + 1));
-      if ((b1 & 0xe0) == 0 && (uint16_t)((b1 & 0x1e) >> 1) == drd16(0x014c)) {
-        cnt = (uint16_t)(cnt + 1);
-        if (rd16(seg, bx) == key) pos = cnt;
-      }
-      bx = (uint16_t)(bx + 0x12);
-    } while (bx < end);
+  for (uint16_t at = first; at < end; at = (uint16_t)(at + sizeof(struct MapObject))) {
+    const struct MapObject *obj = FAR_REC(struct MapObject, seg, at);
+    uint8_t bits = obj->owner_kind_bits;
+    if (map_object_kind(bits) != MAPOBJ_KIND_MINEFIELD || map_object_owner(bits) != g_current_player) continue;
+    cnt = (uint16_t)(cnt + 1);
+    if (obj->id_kind == key) pos = cnt;
   }
-  dwr16(out_pos, pos);
-  dwr16(out_cnt, cnt);
+  NEAR_AT(uint16_ua, out_pos) = pos;
+  NEAR_AT(uint16_ua, out_cnt) = cnt;
 }
 
-/* several_things_at_place: 5:0x36a8 (Ghidra FUN_1020_36a8, alias fn_05_36a8).
- * 204 bytes. ENTER 0xA,0; PUSH DI. Leaf, FAR CDECL, no arguments,
- * returns AX = 1 when more than one object matches the selection, else 0. DS:0x4B84, 0x4B86 and
- * 0x4B8A are the selected planet, fleet and map-object indexes (-1 = none) and
- * DS:0x4B7C is the 32-bit key. A first index (0x4B84) together with either other one is already
- * "more than one". With 0x4B86 alone, the fleets (DS:0x00BA far array of far pointers, count
- * DS:0x553A, a null pointer ends the walk) whose dword at +8 equals the key are counted: the second
- * match answers 1. With 0x4B8A the map objects (0x12 bytes, dword at +2) are counted the same way. */
+/* Is more than one thing at the selected place (DS:0x4B7C, an x,y dword)? A selected planet together
+ * with a selected fleet or map object is already more than one. A selected fleet alone is counted
+ * against the other fleets at that place, a selected map object against the other map objects; the
+ * second match answers yes. Returns 1 for yes, 0 for no.
+ * 5:0x36a8 FUN_1020_36a8, FAR CDECL */
 DECOMP(5, 0x36a8, several_things_at_place, FAR_CDECL)
 uint16_t several_things_at_place(void)
 {
-  uint16_t s84 = drd16(0x4b84), s86 = drd16(0x4b86), s8a = drd16(0x4b8a);
-  if (s84 != 0xffff && (s86 != 0xffff || s8a != 0xffff)) return 1;
-  if (s86 != 0xffff) {
-    if (s8a != 0xffff) return 1;
-    uint16_t left = 1;
-    uint16_t bx = drd16(0x00ba), seg = drd16(0x00bc);
-    for (int16_t i = 0; (int16_t)drd16(0x553a) > i;) {
-      uint32_t fp = rd32(seg, bx);
+  uint16_t planet = g_selected_planet, fleet = g_selected_fleet, object = g_selected_map_object;
+  if (planet != NO_SELECTION && (fleet != NO_SELECTION || object != NO_SELECTION)) return 1;
+  if (fleet != NO_SELECTION) {
+    if (object != NO_SELECTION) return 1;
+    uint16_t found = 0;
+    uint16_t slots_off = NEAR_AT(struct FarPtrWords, DS_FLEET_PTRS).off;
+    uint16_t slots_seg = NEAR_AT(struct FarPtrWords, DS_FLEET_PTRS).seg;
+    for (int16_t i = 0; (int16_t)g_fleet_count > i; i++) {
+      FARPTR fp = *FAR_REC(uint32_ua, slots_seg, slots_off + (uint16_t)i * sizeof(FARPTR));
       if (fp == 0) break;
-      if (rd32((uint16_t)(fp >> 16), (uint16_t)((uint16_t)fp + 8)) == drd32(0x4b7c)) {
-        uint16_t was = left;
-        left = (uint16_t)(left - 1);
-        if (was == 0) return 1;
-      }
-      bx = (uint16_t)(bx + 4);
-      i = (int16_t)(i + 1);
+      if (*FAR_REC(uint32_ua, FP_SEG(fp), FP_OFF(fp) + offsetof(struct Fleet, xy)) == g_selected_place_xy && ++found > 1) return 1;
     }
   }
-  if (s8a != 0xffff) {
-    uint16_t left = 1;
-    uint16_t bx = drd16(DS_MO_OFF), seg = drd16(DS_MO_SEG);
+  if (object != NO_SELECTION) {
+    uint16_t found = 0;
+    uint16_t first = g_map_objects;
+    uint16_t seg = g_map_objects_segment_maybe;
     uint16_t end = mo_end();
-    if (end > bx) {
-      do {
-        if (rd32(seg, (uint16_t)(bx + 2)) == drd32(0x4b7c)) {
-          uint16_t was = left;
-          left = (uint16_t)(left - 1);
-          if (was == 0) return 1;
-        }
-        bx = (uint16_t)(bx + 0x12);
-      } while (bx < end);
+    for (uint16_t at = first; at < end; at = (uint16_t)(at + sizeof(struct MapObject))) {
+      if (*FAR_REC(uint32_ua, seg, at + offsetof(struct MapObject, xy)) == g_selected_place_xy && ++found > 1) return 1;
     }
   }
   return 0;

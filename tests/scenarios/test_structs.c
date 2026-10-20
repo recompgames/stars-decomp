@@ -131,7 +131,7 @@ static void test_design_reader_oracle(void) {
 
   struct ShipDesign *d = (struct ShipDesign *)LINN(DS_DEFAULT_SHIP_DESIGNS + 5 * sizeof(struct ShipDesign));
   CHECK_EQ(d->hull, 3);
-  CHECK_EQ(d->fld_38, 0x1234);
+  CHECK_EQ(d->strength, 0x1234);
   CHECK_EQ(d->slot_count, 2);
   CHECK_EQ(d->version, 7);
   CHECK_EQ(d->flags, 0x14);
@@ -180,10 +180,10 @@ static void test_planet_reader_oracle(void) {
   CHECK_EQ(pl->fld_06[2], 0);
   CHECK_EQ(pl->fld_09[0], 0x33);
   CHECK_EQ(pl->fld_09[2], 0x55);
-  CHECK_EQ(pl->fld_0c[0], 0x10);
-  CHECK_EQ(pl->fld_0c[2], 0x30);
-  CHECK_EQ(pl->fld_0f[0], 0x10);
-  CHECK_EQ(pl->fld_0f[2], 0x30);
+  CHECK_EQ(pl->env_current[0], 0x10);
+  CHECK_EQ(pl->env_current[2], 0x30);
+  CHECK_EQ(pl->env_original[0], 0x10);
+  CHECK_EQ(pl->env_original[2], 0x30);
   CHECK_EQ(pl->fld_12, 0xBEEF);
   CHECK_EQ(pl->fld_1c[0], 7);
   CHECK_EQ(pl->fld_1c[1], 0x0102);
@@ -241,7 +241,7 @@ static void test_fleet_reader_oracle(void) {
   CHECK_EQ(fl->cargo[2], 0xA1B2C3D4u);
   CHECK_EQ(fl->cargo[3], 0);
   CHECK_EQ(fl->fld_74, 0x01020304u);
-  CHECK_EQ((uint32_t)fl->fld_2c[0] | ((uint32_t)fl->fld_2c[1] << 16), 0x0A0B0C0Du);
+  CHECK_EQ((uint32_t)fl->damage[0] | ((uint32_t)fl->damage[1] << 16), 0x0A0B0C0Du);
   CHECK_EQ(fl->waypoints, 0u);
   memcpy(LINN(0x968), &save968, 4);
 }
@@ -315,7 +315,7 @@ int main(void) {
     fl.x = 0x1111;
     fl.y = 0x2222;
     fl.ship_count[15] = 0x4242;
-    fl.cargo[4] = 0x0A0B0C0Du;
+    fl.fuel = 0x0A0B0C0Du;
     memcpy(raw, &fl, sizeof raw);
     CHECK_EQ(raw[0x64] | (raw[0x65] << 8), 0x0123); /* 14:0x235e: word 0x19 of dwords = +0x64 */
     CHECK_EQ(raw[0x66] | (raw[0x67] << 8), 0xABCD);
@@ -336,11 +336,118 @@ int main(void) {
     CHECK_EQ(raw[0x7A], 16);
   }
   {
+    /* ScoreRecord (type-45 block): 14:0x0508 allocates player_count * 0x18 at DS:0x177A; 14:0x35b0 writes 0x18 */
+    struct ScoreRecord sc;
+    uint8_t raw[sizeof sc];
+    CHECK_EQ(sizeof(struct ScoreRecord), 0x18);
+    memset(&sc, 0, sizeof sc);
+    sc.id_flags = 0x0023;
+    sc.rank = 0x0504;
+    sc.score = 0x44332211u;
+    sc.resources = 0x88776655u;
+    sc.planets = 0xAABB;
+    sc.starbases = 0xCCDD;
+    sc.ships[2] = 0x1234;
+    sc.tech = 0xBEEF;
+    memcpy(raw, &sc, sizeof raw);
+    CHECK_EQ(raw[0x00] & SCORE_ID_MASK, 3);       /* 14:0x0508: record index = word & 0x1f */
+    CHECK_EQ(raw[0x00] & SCORE_VALID, SCORE_VALID); /* 32:0x158e: bit 0x20 of byte 0 */
+    CHECK_EQ(raw[0x02], 0x04);                    /* 32:0x158e column 8 reads word +2 */
+    CHECK_EQ(raw[0x04], 0x11);                    /* column 7: dword +4 */
+    CHECK_EQ(raw[0x08], 0x55);                    /* column 6: dword +8 */
+    CHECK_EQ(raw[0x0C], 0xBB);                    /* column 0: word +0xC */
+    CHECK_EQ(raw[0x0E], 0xDD);                    /* column 1: word +0xE */
+    CHECK_EQ(raw[0x14], 0x34);                    /* columns 2-4: words +0x10, +0x12, +0x14 */
+    CHECK_EQ(raw[0x16], 0xEF);                    /* column 5: word +0x16 */
+  }
+  {
+    /* Fields named from 16:0x0962 / 16:0x13f8 / 16:0x1e02 / 26:0x29da / 23:0x3b78 */
+    CHECK_EQ(offsetof(struct Fleet, damage), 0x2C);   /* 16:0x0962 */
+    CHECK_EQ(offsetof(struct Fleet, cargo) + sizeof(((struct Fleet *)0)->cargo), 0x5C); /* four cargo dwords at +0x4c, 16:0x1e02 */
+    CHECK_EQ(offsetof(struct Fleet, fuel), 0x5C);     /* 16:0x13f8 */
+    CHECK_EQ(offsetof(struct ShipDesign, mass), 0x28);     /* 16:0x1e02 */
+    CHECK_EQ(offsetof(struct ShipDesign, strength), 0x38); /* 16:0x0962 */
+    CHECK_EQ(offsetof(struct Planet, route_target), 0x30); /* 16:0x13f8 */
+    CHECK_EQ(offsetof(struct Planet, env_current), 0x0C);
+    CHECK_EQ(offsetof(struct Planet, env_original), 0x0F);
+    CHECK_EQ(offsetof(struct Player, cost_adjust_pct), 0x38); /* 26:0x29da DS:0x5A9C */
+    CHECK_EQ(offsetof(struct Player, fld_0a), 0x0A);          /* 23:0x3b78 DS:0x5A6E */
+    struct Fleet fl;
+    memset(&fl, 0, sizeof fl);
+    fl.damage[0] = (uint16_t)((9u << FLEET_DAMAGE_SHIFT) | 40);
+    CHECK_EQ(fl.damage[0] & FLEET_DAMAGE_PCT_MASK, 40);
+    CHECK_EQ(fl.damage[0] >> FLEET_DAMAGE_SHIFT, 9);
+    CHECK_EQ((0x0403 & PRODITEM_QTY_MASK), 3);
+    CHECK_EQ((0x0002 & PRODITEM_W1_KIND_MASK), PRODITEM_W1_KIND_SPECIAL);
+  }
+  {
+    /* 5-byte turn-time message record (6:0x7410 build_message_record): byte 0 = player (low nibble) | value
+     * length (high nibble); word +1 = id (bits 0-8) | one word-flag per value (bits 9-15); word +3 = subject */
+    struct MessageRecord5 r;
+    uint8_t raw[sizeof r];
+    CHECK_EQ(sizeof(struct MessageRecord5), 5);
+    memset(&r, 0, sizeof r);
+    r.player_len = (uint8_t)((6u << MSG_LEN_SHIFT) | 9u);
+    r.id_arg_sizes = (uint16_t)(0x0123 | (5u << MSG_WORD_FLAG_SHIFT));
+    r.subject = 0xBEEF;
+    memcpy(raw, &r, sizeof raw);
+    CHECK_EQ(raw[0] & MSG_PLAYER_MASK, 9);
+    CHECK_EQ(raw[0] >> MSG_LEN_SHIFT, 6);
+    CHECK_EQ(raw[1] | (raw[2] << 8), 0x0123 | (5 << 9)); /* word at +1 */
+    CHECK_EQ(raw[3] | (raw[4] << 8), 0xBEEF);            /* subject word at +3 */
+    CHECK_EQ(offsetof(struct MessageHeader, subject), 2); /* 6:0x752e word +2 is the subject */
+    CHECK_EQ(MSG_ID_MASK, 0x1FF);
+  }
+  {
+    /* BattleToken 0x1d bytes: 14:0x27d4 steps tokens by byte(+3 of the record) * 0x1d; 30:0x5234 */
+    CHECK_EQ(sizeof(struct BattleToken), 0x1D);
+    CHECK_EQ(offsetof(struct BattleToken, owner), 0x02);
+    CHECK_EQ(offsetof(struct BattleToken, kind), 0x03);
+    CHECK_EQ(offsetof(struct BattleToken, design_slot), 0x04);
+    CHECK_EQ(offsetof(struct BattleToken, ship_count), 0x13);
+    CHECK_EQ(offsetof(struct BattleToken, damage), 0x15);
+    CHECK_EQ(offsetof(struct BattleToken, flags), 0x1B);
+  }
+  {
+    /* MapObject.seen_by_mask: 14:0x35b0 tests (word at +0xE) & (1 << player) for minefields */
+    CHECK_EQ(offsetof(struct MapObject, seen_by_mask), 0x0E);
+    /* mineral packet speed: 5:0x04e8 shows ((byte at +7) & 0x3c) >> 2) + 4 */
+    CHECK_EQ(MAPOBJ_PACKET_WARP((uint8_t)0x14), 9);
+    CHECK_EQ(PLAYER_ATTR_RACE, 14);
+    CHECK_EQ(sizeof(((struct Player *)0)->attrs), PLAYER_ATTR_COUNT);
+    /* ProdItem fields (26:0x29da) */
+    struct ProdItem pi = {.w0 = (uint16_t)((3u << 10) | 25u), .w1 = 0x0002};
+    CHECK_EQ(prod_item_qty(&pi), 25);
+    CHECK_EQ(prod_item_class(&pi), 1);
+    CHECK_EQ(prod_item_index(&pi), 3);
+    pi.w1 = 0x0001;
+    CHECK_EQ(prod_item_index(&pi), 3 | 64); /* w1 bit 0 is the high bit of the 7-bit item index */
+  }
+  {
     struct MessageHeader m;
     memset(&m, 0, sizeof m);
     m.id_arg_sizes = (uint16_t)(0x1FF | (3u << 9));
     CHECK_EQ(m.id_arg_sizes & 0x1FF, 0x1FF);
     CHECK_EQ(m.id_arg_sizes >> 9, 3);
+  }
+
+  {
+    struct MapObject mo;
+    uint8_t raw[sizeof mo];
+    CHECK_EQ(sizeof(struct MapObject), 0x12); /* 14:0x0508 allocates count * 0x12; 5:0x0474 steps by 0x12 */
+    memset(&mo, 0, sizeof mo);
+    mo.id_kind = 0x2A71;
+    mo.xy = 0x44332211u;
+    memcpy(raw, &mo, sizeof raw);
+    CHECK_EQ(raw[0x00], 0x71); /* id_lo is the low byte of word 0 */
+    CHECK_EQ(raw[0x01], 0x2A); /* owner_kind_bits is the high byte: 5:0x0474 reads the byte at +1 */
+    CHECK_EQ(raw[0x02], 0x11); /* xy dword at +2: 5:0x36a8 */
+    CHECK_EQ(raw[0x05], 0x44);
+    CHECK_EQ(map_object_owner(mo.owner_kind_bits), 5);    /* (0x2A & 0x1E) >> 1 */
+    CHECK_EQ(map_object_kind(mo.owner_kind_bits), 0x20);  /* 0x2A & 0xE0 */
+    mo.owner_kind_bits = 0x1E;
+    CHECK_EQ(map_object_owner(mo.owner_kind_bits), 15);
+    CHECK_EQ(map_object_kind(mo.owner_kind_bits), MAPOBJ_KIND_MINEFIELD);
   }
 
   /* ---- 3. oracle ---- */

@@ -1,0 +1,3 @@
+seg,off,name,size,ret,callers,callees,apis,fp,origin,status,notes
+1,0x0000,a,32,far,,,,0,game,todo,
+1,0x0010,b,8,near,,,,0,game,todo,

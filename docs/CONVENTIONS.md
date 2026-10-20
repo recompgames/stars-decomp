@@ -1,6 +1,6 @@
 # Decompilation and runtime conventions
 
-Rules (a) to (j2) apply to every file in `src/` (stars-bfj.1). Existing rules change only with the
+Rules (a) to (k) apply to every file in `src/` (stars-bfj.1). Existing rules change only with the
 owner's approval; new rules may be added. The "Floating point" section after them was written by
 stars-dwf.4 and is rule (g). `src/` and `tests/scenarios/` are public; `docs/functions.csv` is
 local-only (docs/PLAN.md decision 8). Readable code (pass 2) follows docs/PLAN.md §3 decisions 3
@@ -136,6 +136,48 @@ content or such a write matters, register a watch that records a hash of that me
 and state in the `notes` which memory is watched and which is not. Before trusting a double, move
 the stubbed call across an API call and across the write it should follow (or precede) in the C
 version and see the DIFF fail, then restore the file and check it with `cmp`.
+
+**(k) Readable data access.** Readable (pass 2) code names its data and never spells a raw offset
+(PLAN.md §3 decision 3). The one accessor form is a packed struct from `src/stars.h` read through a
+transient host pointer, plus a small `static inline` getter in `src/stars.h` for each bit field. Packed
+structs were chosen over per-field getters/setters and macros because the layout is already checked
+at build time by `STATIC_SIZE`/`STATIC_OFFSET` (rule c), so the field name is the only thing that
+changes between pass 1 and pass 2, and the compiler emits the same load or store of the field's width.
+Everything below stays under rule (b): no cast or promotion that changes a width.
+- **Far array of records.** Walk it with a `uint16_t` offset that starts at the array base and steps
+  by `sizeof(struct T)`, and take the record with `FAR_REC(struct T, seg, off)` (it wraps the offset in
+  16 bits like the original). The end offset is computed in 16 bits (`count * sizeof` wraps), and the
+  loop is `at < end`, which is the original's "walk only when end is above the base" test. A far array
+  of far pointers is `*FAR_REC(uint32_ua, seg, base + (uint16_t)i * sizeof(FARPTR))`; the record it
+  points to is `FAR_REC(struct T, FP_SEG(fp), FP_OFF(fp))`. The pointer lives for one loop iteration.
+- **Bit fields.** A byte or word that packs several fields is a struct member with a named mask and
+  shift (`MAPOBJ_OWNER_MASK`, `MAPOBJ_OWNER_SHIFT`, `MAPOBJ_KIND_MASK`) and a getter such as
+  `map_object_owner(bits)` (it takes the byte). A raw `& 0x1e` or `>> 1` is not written in a readable function. To read a
+  word or byte of a record at a different width than the struct's usual field, put both views in an
+  anonymous `union` in the struct (`MapObject.id_kind` and `owner_kind_bits`, `Fleet.x`/`y` and `xy`).
+- **DGROUP globals.** Read and write them by their `g_` name from `src/globals.h` (`g_current_player`;
+  a global still named `g_DAT_1110_xxxx` is not yet named), never `drd16(0x014c)`. A DGROUP variable named by a caller's near
+  offset (an out parameter) is `NEAR_AT(uint16_ua, off) = v;` (use the `_ua` types: the offset can be odd).
+- **Same memory behaviour.** Every access reads or writes the same width, at the same address and in
+  the same order as pass 1, so the diff test (memory, return value, API log) stays green. A far
+  pointer global is read as its two words, offset first (`struct FarPtrWords` through `NEAR_AT`), not
+  as one dword; a packed byte is read once into a local and the getters are applied to that local.
+
+```c
+/* 5:0x0474: count the current player's map objects of kind 0, find one by its id word. */
+for (uint16_t at = g_map_objects; at < end; at = (uint16_t)(at + sizeof(struct MapObject))) {
+  const struct MapObject *obj = FAR_REC(struct MapObject, seg, at);
+  uint8_t bits = obj->owner_kind_bits;
+  if (map_object_kind(bits) != MAPOBJ_KIND_MINEFIELD || map_object_owner(bits) != g_current_player) continue;
+  cnt = (uint16_t)(cnt + 1);
+  if (obj->id_kind == key) pos = cnt;
+}
+NEAR_AT(uint16_ua, out_pos) = pos;
+```
+
+A readable function has one game-level comment and the tag line `seg:0xOFF GhidraName, CONV`
+(PLAN.md §3 decision 4). Proof that a diff test sees an accessor: change `MAPOBJ_OWNER_SHIFT` from 1 to 2
+and the `5:0x0474` scenarios fail; restore the file and check it with `cmp` (rule j).
 
 ### Worked example: `2:0x0000` (`fn_02_0000`)
 

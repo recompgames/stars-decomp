@@ -120,16 +120,16 @@ DECOMP(33, 0x015a, fn_33_015a, FAR_CDECL)
 void fn_33_015a(uint16_t off, uint16_t seg)
 {
   FRAME_ENTER(2);
-  uint16_t count = g_DAT_1110_1892;
-  uint16_t last = (uint16_t)((uint16_t)(count * 0x12u) + g_DAT_1110_188e - 0x12);
+  uint16_t count = g_map_object_count;
+  uint16_t last = (uint16_t)((uint16_t)(count * 0x12u) + g_map_objects - 0x12);
   if (last > off) {
-    int16_t diff = (int16_t)(uint16_t)(g_DAT_1110_188e - off);
+    int16_t diff = (int16_t)(uint16_t)(g_map_objects - off);
     uint16_t q = (uint16_t)(diff / 0x12);
-    uint16_t len = (uint16_t)((uint32_t)(uint16_t)(q + g_DAT_1110_1892) * 0x12u);
+    uint16_t len = (uint16_t)((uint32_t)(uint16_t)(q + g_map_object_count) * 0x12u);
     len = (uint16_t)(len - 0x12);
     CALL_ORIG(34, 0x0c98, FAR_CDECL, 5, off, seg, (uint16_t)(off + 0x12), seg, len);
   }
-  g_DAT_1110_1892 = (uint16_t)(g_DAT_1110_1892 - 1);
+  g_map_object_count = (uint16_t)(g_map_object_count - 1);
   FRAME_LEAVE();
 }
 
@@ -146,7 +146,7 @@ DECOMP(33, 0x0000, fn_33_0000, FAR_CDECL)
 uint32_t fn_33_0000(int16_t player, int16_t kind)
 {
   FRAME_ENTER(0x18 + 4);
-  if ((int16_t)g_DAT_1110_1892 >= 0xfd2) {
+  if ((int16_t)g_map_object_count >= 0xfd2) {
     FRAME_LEAVE();
     return 0;
   }
@@ -162,20 +162,20 @@ uint32_t fn_33_0000(int16_t player, int16_t kind)
   cx = (uint16_t)(cx ^ bx);
   rec.id_kind = cx;
 
-  uint16_t seg = g_DAT_1110_1890;
-  uint16_t off = g_DAT_1110_188e;
+  uint16_t seg = g_map_objects_segment_maybe;
+  uint16_t off = g_map_objects;
   uint16_t idx = 0;
-  if ((int16_t)g_DAT_1110_1892 > 0) {
+  if ((int16_t)g_map_object_count > 0) {
     for (;;) {
       if (rd16(seg, off) >= rec.id_kind) break;
       off = (uint16_t)(off + 0x12);
       idx = (uint16_t)(idx + 1);
-      if (!((int16_t)idx < (int16_t)g_DAT_1110_1892)) break;
+      if (!((int16_t)idx < (int16_t)g_map_object_count)) break;
     }
   }
-  if ((int16_t)g_DAT_1110_1892 > (int16_t)idx && rd16(seg, off) == rec.id_kind) {
+  if ((int16_t)g_map_object_count > (int16_t)idx && rd16(seg, off) == rec.id_kind) {
     uint16_t serial = (uint16_t)(rd16(seg, off) & 0x1ff);
-    while ((int16_t)g_DAT_1110_1892 > (int16_t)idx) {
+    while ((int16_t)g_map_object_count > (int16_t)idx) {
       if ((int16_t)serial >= 0x1ff) {
         FRAME_LEAVE();
         return 0;
@@ -187,31 +187,31 @@ uint32_t fn_33_0000(int16_t player, int16_t kind)
       off = (uint16_t)(off + 0x12);
       serial = (uint16_t)(serial + 1);
       idx = (uint16_t)(idx + 1);
-      if (!((int16_t)idx < (int16_t)g_DAT_1110_1892)) break;
+      if (!((int16_t)idx < (int16_t)g_map_object_count)) break;
     }
   }
 
-  if (!((int16_t)g_DAT_1110_1894 > (int16_t)g_DAT_1110_1892)) {
-    g_DAT_1110_1894 = (uint16_t)(g_DAT_1110_1894 + 10);
+  if (!((int16_t)g_map_object_capacity > (int16_t)g_map_object_count)) {
+    g_map_object_capacity = (uint16_t)(g_map_object_capacity + 10);
     uint32_t r;
-    uint16_t size = (uint16_t)((uint32_t)g_DAT_1110_1894 * 0x12u);
-    if ((g_DAT_1110_1890 | g_DAT_1110_188e) == 0) {
+    uint16_t size = (uint16_t)((uint32_t)g_map_object_capacity * 0x12u);
+    if ((g_map_objects_segment_maybe | g_map_objects) == 0) {
       uint16_t args[2] = {size, 10};
       r = rt_call_far(MK_FP(SEG_SEL(12), 0x0232), FAR_CDECL, args, 2);
     } else {
-      uint16_t args[4] = {g_DAT_1110_188e, g_DAT_1110_1890, size, 10};
+      uint16_t args[4] = {g_map_objects, g_map_objects_segment_maybe, size, 10};
       r = rt_call_far(MK_FP(SEG_SEL(12), 0x03ec), FAR_CDECL, args, 4);
     }
-    g_DAT_1110_188e = FP_OFF(r);
-    g_DAT_1110_1890 = FP_SEG(r);
-    off = (uint16_t)((uint16_t)((uint32_t)idx * 0x12u) + g_DAT_1110_188e);
+    g_map_objects = FP_OFF(r);
+    g_map_objects_segment_maybe = FP_SEG(r);
+    off = (uint16_t)((uint16_t)((uint32_t)idx * 0x12u) + g_map_objects);
     seg = FP_SEG(r);
   }
-  if ((int16_t)g_DAT_1110_1892 > (int16_t)idx) {
-    uint16_t len = (uint16_t)((uint32_t)(uint16_t)(g_DAT_1110_1892 - idx) * 0x12u);
+  if ((int16_t)g_map_object_count > (int16_t)idx) {
+    uint16_t len = (uint16_t)((uint32_t)(uint16_t)(g_map_object_count - idx) * 0x12u);
     CALL_ORIG(34, 0x0c98, FAR_CDECL, 5, (uint16_t)(off + 0x12), seg, off, seg, len);
   }
-  g_DAT_1110_1892 = (uint16_t)(g_DAT_1110_1892 + 1);
+  g_map_object_count = (uint16_t)(g_map_object_count + 1);
   for (uint16_t i = 0; i < 0x12; i++) wr8(seg, (uint16_t)(off + i), ((const uint8_t *)&rec)[i]);
   FRAME_LEAVE();
   return MK_FP(seg, off);
@@ -234,7 +234,7 @@ uint16_t fn_33_0456(uint32_t obj)
 {
   FRAME_ENTER(0x20 + 4);
   uint16_t poff = FP_OFF(obj), pseg = FP_SEG(obj);
-  uint16_t limit = (uint16_t)((uint32_t)g_DAT_1110_0074 * 0x190u + 0x578);
+  uint16_t limit = (uint16_t)((uint32_t)g_universe_size_index * 0x190u + 0x578);
   uint16_t x = rd16(pseg, (uint16_t)(poff + 2));
   uint16_t y = rd16(pseg, (uint16_t)(poff + 4));
   uint32_t xy = (uint32_t)x | ((uint32_t)y << 16);
@@ -242,9 +242,9 @@ uint16_t fn_33_0456(uint32_t obj)
     FRAME_LEAVE();
     return 0xf;
   }
-  uint16_t first = g_DAT_1110_188e;
-  uint16_t aseg = g_DAT_1110_1890;
-  uint16_t end = (uint16_t)(first + (uint16_t)((uint32_t)g_DAT_1110_1892 * 0x12u));
+  uint16_t first = g_map_objects;
+  uint16_t aseg = g_map_objects_segment_maybe;
+  uint16_t end = (uint16_t)(first + (uint16_t)((uint32_t)g_map_object_count * 0x12u));
   if (end > first) {
     uint16_t di = first;
     do {
@@ -255,7 +255,7 @@ uint16_t fn_33_0456(uint32_t obj)
       di = (uint16_t)(di + 0x12);
     } while (di < end);
   }
-  if ((int16_t)g_DAT_1110_007a > 0) {
+  if ((int16_t)g_planet_count_in_game > 0) {
     uint16_t bx = 0x31ba;
     uint16_t cx = 0;
     do {
@@ -265,9 +265,9 @@ uint16_t fn_33_0456(uint32_t obj)
       }
       bx = (uint16_t)(bx + 4);
       cx = (uint16_t)(cx + 1);
-    } while ((int16_t)cx < (int16_t)g_DAT_1110_007a);
+    } while ((int16_t)cx < (int16_t)g_planet_count_in_game);
   }
-  if ((int16_t)g_DAT_1110_553a > 0) {
+  if ((int16_t)g_fleet_count > 0) {
     uint16_t bx = drd16(DS_FLEET_PTRS);
     uint16_t fseg = drd16((uint16_t)(DS_FLEET_PTRS + 2));
     uint16_t cx = 0;
@@ -281,15 +281,15 @@ uint16_t fn_33_0456(uint32_t obj)
       }
       bx = (uint16_t)(bx + 4);
       cx = (uint16_t)(cx + 1);
-    } while ((int16_t)cx < (int16_t)g_DAT_1110_553a);
+    } while ((int16_t)cx < (int16_t)g_fleet_count);
   }
   uint16_t acc = 0;
   if ((int16_t)x < 0x3f2 || (int16_t)y < 0x3f2 || (int16_t)(uint16_t)(limit - 0xa) < (int16_t)x ||
       (int16_t)(uint16_t)(limit - 0xa) < (int16_t)y)
     acc = 4;
 
-  uint16_t di = g_DAT_1110_188e;
-  uint16_t oseg = g_DAT_1110_1890;
+  uint16_t di = g_map_objects;
+  uint16_t oseg = g_map_objects_segment_maybe;
   uint16_t oend = end;
   if (!(oend <= di)) {
     do {
@@ -317,9 +317,9 @@ uint16_t fn_33_0456(uint32_t obj)
       di = (uint16_t)(di + 0x12);
     } while (di < oend);
   }
-  if ((int16_t)g_DAT_1110_007a > 0) {
+  if ((int16_t)g_planet_count_in_game > 0) {
     uint16_t pdi = 0x31bc;
-    uint16_t n = g_DAT_1110_007a;
+    uint16_t n = g_planet_count_in_game;
     do {
       int16_t ddx = (int16_t)(uint16_t)(x - drd16((uint16_t)(pdi - 2)));
       int16_t ddy = (int16_t)(uint16_t)(y - drd16(pdi));
@@ -366,7 +366,7 @@ int16_t fn_33_01a0(int16_t x, int16_t y, int32_t r2)
   uint16_t ymin = (uint16_t)((uint16_t)y - r);
   uint16_t ymax = (uint16_t)(r + (uint16_t)y);
   uint16_t di = 0;
-  uint16_t n = g_DAT_1110_007a;
+  uint16_t n = g_planet_count_in_game;
   uint16_t bx = (uint16_t)(n << 2);
   uint16_t end = (uint16_t)(bx + 0x31ba);
   uint16_t first_x = drd16(0x31ba);
@@ -431,7 +431,7 @@ void fn_33_02d6(uint16_t hdc, uint16_t prect, uint32_t obj, int16_t mode)
   uint16_t di = FP_OFF(obj), oseg = FP_SEG(obj);
   uint16_t si = (uint16_t)mode;
   uint16_t flag = 0;                                   /* [bp-0xe] */
-  (void)SelectObject(hdc, g_DAT_1110_2930);
+  (void)SelectObject(hdc, g_font_arial_bold_8pt);
   uint16_t kind = 1;                                   /* [bp-2] */
   uint32_t v = (uint32_t)(rd16(oseg, (uint16_t)(di + 0xe)) & 0x3fff) * 10u;   /* [bp-0xa] */
   uint16_t arr = (uint16_t)(rt_bp - 0x18);             /* word array, DS offset */
@@ -518,11 +518,11 @@ void fn_33_0784(int16_t enable)
   uint16_t ax, bx, cx, dx, si, di, es;
   uint32_t r;
   if (enable == 0) goto done;
-  ax = g_DAT_1110_188e;
-  dx = g_DAT_1110_1890;
+  ax = g_map_objects;
+  dx = g_map_objects_segment_maybe;
   si = ax;
   W(-0x24) = dx;
-  cx = (uint16_t)((uint32_t)g_DAT_1110_1892 * 0x12u);
+  cx = (uint16_t)((uint32_t)g_map_object_count * 0x12u);
   ax = (uint16_t)(ax + cx);
   W(-0x32) = dx;
   if (ax <= si) goto done;
@@ -534,7 +534,7 @@ obj_loop:                                                     /* 07b4 */
   if ((uint8_t)(rd8(es, (uint16_t)(bx + 1)) & 0xe0) != 0x60) goto next_obj;
   D(-0x20) = rd32(es, (uint16_t)(bx + 2));
   W(-0x22) = 0;
-  if ((int16_t)g_DAT_1110_553a <= 0) goto planets;
+  if ((int16_t)g_fleet_count <= 0) goto planets;
 fleet_loop:                                                   /* 07df */
   bx = (uint16_t)(W(-0x22) << 2);
   {
@@ -566,7 +566,7 @@ fleet_loop:                                                   /* 07df */
   ax = rd16(es, di);
   rt_call_far(MK_FP(SEG_SEL(6), 0x7328), FAR_CDECL, (const uint16_t[]){owner_of(es, di), 0x108, (uint16_t)(ax | 0x8000), ax, 0}, 5);
 fleet_next:                                                   /* 0871 */
-  ax = g_DAT_1110_553a;
+  ax = g_fleet_count;
   W(-0x22) = (uint16_t)(W(-0x22) + 1);
   if ((int16_t)W(-0x22) < (int16_t)ax) goto fleet_loop;
 after_fleets:                                                 /* 087e */
@@ -576,7 +576,7 @@ planets:                                                      /* 0881 */
   dx = drd16(0x00b8);
   di = ax;
   W(-0xe) = dx;
-  cx = (uint16_t)((uint32_t)g_DAT_1110_4d96 * 0x38u);
+  cx = (uint16_t)((uint32_t)g_planet_count * 0x38u);
   ax = (uint16_t)(ax + cx);
   bx = ax;
   W(-0x2e) = dx;
@@ -856,7 +856,7 @@ La8a:
   bx = (uint16_t)((uint32_t)W(-0x12) * 0xc0u);                /* 0afa */
   W(-0xc6) = bx;
   if (drd8((uint16_t)(bx + 0x5a6b)) & 2) goto Ldbd;
-  ax = (g_DAT_1110_0082 > 100) ? 1 : 0;
+  ax = (g_current_turn > 100) ? 1 : 0;
   ax = (uint16_t)(ax - 4);
   ax = (uint16_t)(0 - ax);
   ax = rand_n(ax);
@@ -902,8 +902,8 @@ La8a:
   }
   ax = rand_n(3);
   si = (ax == 0) ? 2 : 1;
-  if (g_DAT_1110_0082 > 100 && !(g_DAT_1110_0080 & 4)) {
-    ax = (uint16_t)(g_DAT_1110_0082 / 100);
+  if (g_current_turn > 100 && !(g_game_flags & 4)) {
+    ax = (uint16_t)(g_current_turn / 100);
     ax = (uint16_t)(ax + 1);
     ax = rand_n(ax);
     si = (uint16_t)(si + ax);
@@ -959,9 +959,9 @@ La8a:
     si = W(-0xc6);
     dwr8((uint16_t)(si + 0x5a65), (uint8_t)(drd8((uint16_t)(si + 0x5a65)) + 1));
     ax = owner_of(W(-0x1a), W(-0x1c));
-    g_DAT_1110_014c = ax;
+    g_current_player = ax;
     CALL_ORIG(7, 0x2dbe, FAR_CDECL, 2, W(-0xa), W(-8));
-    g_DAT_1110_014c = 0xffff;
+    g_current_player = 0xffff;
   }
   {                                                           /* 0d50 */
     uint32_t add = (uint32_t)(int32_t)(int16_t)W(-0xc);
@@ -1063,15 +1063,15 @@ Ldfa:                                                         /* 0dfa: no flag, 
       wr8(rt_ss, (uint16_t)(rt_bp - 0x2c + i), drd8((uint16_t)(bx + 0x5a7e + i)));
     si = W(-4);
     wr8(rt_ss, (uint16_t)(rt_bp + si - 0x2c), (uint8_t)(rd8(rt_ss, (uint16_t)(rt_bp + si - 0x2c)) + 1));
-    ax = g_DAT_1110_014c;
+    ax = g_current_player;
     W(-2) = ax;
     ax = W(-0x12);
-    g_DAT_1110_014c = ax;
+    g_current_player = ax;
     r = CALL_ORIG(27, 0x49ee, FAR_CDECL, 2, (uint16_t)(rt_bp - 0x2c), rt_ss);
     W(-0xc) = (uint16_t)r;
     W(-0xa) = (uint16_t)(r >> 16);
     ax = W(-2);
-    g_DAT_1110_014c = ax;
+    g_current_player = ax;
     ax = (uint16_t)((uint32_t)W(-0x12) * 0x30u);
     si = (uint16_t)(si + ax);
     si = (uint16_t)(si << 2);

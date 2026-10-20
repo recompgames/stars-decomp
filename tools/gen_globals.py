@@ -3,11 +3,13 @@
 
 usage: gen_globals.py [--csv FILE] [-o OUT]       defaults: re/globals.csv  src/globals.h
 
-Input is the CSV written by ghidra/ExportGlobals.java: name,offset,type
+Input is the CSV written by ghidra/ExportGlobals.java: name,offset,type[,comment]
   name    a Ghidra data label (characters outside [A-Za-z0-9_] become '_')
   offset  hex offset inside DGROUP (segment 35, selector 0x0118), 0x0000-0xFFFF
   type    int8_t uint8_t int16_t uint16_t int32_t uint32_t, optionally with an element
           count, e.g. uint16_t[8] (then the macro is a pointer to the first element)
+  comment optional one-line evidence for the name (the Ghidra end-of-line comment); written as a
+          /* ... */ line above the macro, with any "*/" inside it defanged
 Each row becomes
   #define g_<name> (*(<type> *)LINN(0x<offset>))        scalar
   #define g_<name> ((<type> *)LINN(0x<offset>))         array
@@ -61,7 +63,8 @@ def generate(text):
         if off + size > 0x10000:
             raise GenError(f"{where}: '{name}' extends past 0xFFFF (offset {off_s}, {size} bytes)")
         ident = "g_" + re.sub(r"[^A-Za-z0-9_]", "_", name)
-        rows.append((off, size, ident, base, count, where))
+        comment = " ".join(row[3].split()).replace("*/", "*\\/") if len(row) > 3 else ""
+        rows.append((off, size, ident, base, count, where, comment))
     seen = {}
     for r in rows:
         if r[2] in seen:
@@ -78,10 +81,12 @@ def generate(text):
     for base in ("int16_t", "uint16_t", "int32_t", "uint32_t"):
         out.append(f"typedef {base} {UA[base]} __attribute__((aligned(1)));")
     out.append("")
-    for off, _size, ident, base, count, _w in rows:
+    for off, _size, ident, base, count, _w, comment in rows:
         # a cast to a naturally aligned type is undefined behaviour at a misaligned offset (the
         # original code stores words at odd offsets), so those use the align-1 typedef
         t = UA[base] if SIZES[base] > 1 and off % SIZES[base] else base
+        if comment:
+            out.append(f"/* {comment} */")
         if count is None:
             out.append(f"#define {ident} (*({t} *)LINN(0x{off:04x}))")
         else:

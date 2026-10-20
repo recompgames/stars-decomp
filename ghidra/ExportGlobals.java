@@ -2,6 +2,7 @@
 // as CSV "name,offset,type" for tools/gen_globals.py, which turns it into src/globals.h.
 // Type: int8_t..uint32_t from the data type's size and signedness (undefined data counts as
 // unsigned); arrays become "type[N]"; strings, structs and other sizes become uint8_t[N].
+// A fourth column "comment" is the end-of-line comment of the item (the evidence for its name).
 // Script argument 1 (optional): output file, default <cwd>/re/globals.csv.
 //@category Stars
 import ghidra.app.script.GhidraScript;
@@ -31,7 +32,7 @@ public class ExportGlobals extends GhidraScript {
         if (p.getParent() != null) Files.createDirectories(p.getParent());
         int n = 0;
         try (PrintWriter w = new PrintWriter(Files.newBufferedWriter(p))) {
-            w.println("name,offset,type");
+            w.println("name,offset,type,comment");
             for (Data d : currentProgram.getListing().getDefinedData(true)) {
                 Address a = d.getMinAddress();
                 if (!(a instanceof SegmentedAddress) || ((SegmentedAddress) a).getSegment() != DGROUP) continue;
@@ -47,7 +48,9 @@ public class ExportGlobals extends GhidraScript {
                     String s = scalar(dt, d.getLength());
                     type = s != null ? s : "uint8_t[" + d.getLength() + "]";
                 }
-                w.println(label.replaceAll("[^A-Za-z0-9_]", "_") + "," + String.format("0x%04x", ((SegmentedAddress) a).getSegmentOffset()) + "," + type);
+                String cm = d.getComment(CodeUnit.EOL_COMMENT);
+                cm = cm == null ? "" : "\"" + cm.replace("\"", "\"\"").replace("\n", " ") + "\"";
+                w.println(label.replaceAll("[^A-Za-z0-9_]", "_") + "," + String.format("0x%04x", ((SegmentedAddress) a).getSegmentOffset()) + "," + type + "," + cm);
                 n++;
             }
         }

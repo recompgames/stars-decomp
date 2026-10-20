@@ -10,32 +10,50 @@ typedef uint16_t uint16_ua __attribute__((aligned(1)));
 typedef int32_t int32_ua __attribute__((aligned(1)));
 typedef uint32_t uint32_ua __attribute__((aligned(1)));
 
-#define g_DAT_1110_0010 (*(uint16_t *)LINN(0x0010))
-#define g_DAT_1110_0012 (*(uint16_t *)LINN(0x0012))
-#define g_DAT_1110_0014 (*(uint16_t *)LINN(0x0014))
-#define g_DAT_1110_0016 (*(uint16_t *)LINN(0x0016))
-#define g_DAT_1110_0018 (*(uint16_t *)LINN(0x0018))
-#define g_DAT_1110_001a (*(uint16_t *)LINN(0x001a))
-#define g_DAT_1110_001c (*(uint16_t *)LINN(0x001c))
-#define g_DAT_1110_001e (*(uint16_t *)LINN(0x001e))
+/* seg03.c 3:0x054c update_system_colors: first of the eight system-colour brush slots (COLOR_BTNFACE); seg13.c face brush */
+#define g_brush_btnface (*(uint16_t *)LINN(0x0010))
+/* seg03.c 3:0x054c: colour 18 (COLOR_BTNTEXT) brush stored in DS:0x12 */
+#define g_brush_btntext (*(uint16_t *)LINN(0x0012))
+/* seg13.c paint button: light bevel brush DS:0x14; seg03.c 3:0x054c */
+#define g_brush_btnhighlight (*(uint16_t *)LINN(0x0014))
+/* seg13.c paint button: dark bevel brush DS:0x16; seg03.c 3:0x054c */
+#define g_brush_btnshadow (*(uint16_t *)LINN(0x0016))
+/* seg03.c 3:0x054c: colour 5 (COLOR_WINDOW) brush stored in DS:0x18 */
+#define g_brush_window (*(uint16_t *)LINN(0x0018))
+/* seg03.c 3:0x054c: colour 8 (COLOR_WINDOWTEXT) brush stored in DS:0x1a */
+#define g_brush_windowtext (*(uint16_t *)LINN(0x001a))
+/* seg03.c 3:0x054c: colour 6 (COLOR_WINDOWFRAME) brush in DS:0x1c; seg13.c TOOLTIPWNDPROC FrameRect */
+#define g_brush_windowframe (*(uint16_t *)LINN(0x001c))
+/* seg03.c 3:0x054c: colour 1 (COLOR_BACKGROUND) brush in DS:0x1e; seg04.c FRAMEWNDPROC FillRect */
+#define g_brush_background (*(uint16_t *)LINN(0x001e))
 #define g_DAT_1110_0020 (*(uint16_t *)LINN(0x0020))
 #define g_DAT_1110_0022 (*(uint16_t *)LINN(0x0022))
 #define g_DAT_1110_0024 (*(uint16_t *)LINN(0x0024))
 #define g_DAT_1110_0026 (*(uint16_t *)LINN(0x0026))
 #define g_DAT_1110_0028 (*(uint16_t *)LINN(0x0028))
-#define g_DAT_1110_002a (*(uint32_ua *)LINN(0x002a))
+/* seg03.c release_all_resources: FreeProcInstance(DS:0x2a) when non-zero */
+#define g_proc_instance_extra_maybe (*(uint32_ua *)LINN(0x002a))
 #define g_DAT_1110_002e (*(uint16_t *)LINN(0x002e))
 #define g_DAT_1110_0030 (*(uint16_t *)LINN(0x0030))
-#define g_DAT_1110_006e (*(uint16_t *)LINN(0x006e))
-#define g_DAT_1110_0070 (*(uint32_t *)LINN(0x0070))
-#define g_DAT_1110_0074 (*(uint16_t *)LINN(0x0074))
-#define g_DAT_1110_0078 (*(uint16_t *)LINN(0x0078))
-#define g_DAT_1110_007a (*(uint16_t *)LINN(0x007a))
-#define g_DAT_1110_007c (*(uint16_t *)LINN(0x007c))
-#define g_DAT_1110_007e (*(uint16_t *)LINN(0x007e))
-#define g_DAT_1110_0080 (*(uint8_t *)LINN(0x0080))
+/* seg03.c/seg04.c/seg06.c: the setjmp catch buffer of the running file function is registered in DS:0x6E */
+#define g_catch_buffer (*(uint16_t *)LINN(0x006e))
+/* seg04.c:448 and :1314 compare the dword DS:0x70 with ini_game_id (DS:0x2522); it is the first dword of the resident GameHeader block (stars.h BLK_GAME_HEADER, game_id at +0x00) */
+#define g_game_id (*(uint32_t *)LINN(0x0070))
+/* seg21.c:596: (DS:0x74 + 1) * 0x190 is the universe extent; seg33.c:223 uses DS:0x74 * 400 + 0x578 as the limit; stars.h: raw GameHeader.universe_size at +0x04 of DS:0x70 */
+#define g_universe_size_index (*(uint16_t *)LINN(0x0074))
+/* seg04.c 4:0x4580: player rows i < DS:0x78 (the player count); seg03.c 3:find_player_key_conflict loops over DS:0x78 slots */
+#define g_player_count (*(uint16_t *)LINN(0x0078))
+/* seg17.c info array DS:0x1600 holds DS:0x7a planets (16 bytes each) */
+#define g_planet_count_in_game (*(uint16_t *)LINN(0x007a))
+/* stars.h GameHeader.fld_0c (+0x0C of DS:0x70, role not proven there); seg17.c ai0_turn:2258 tests it for zero. Game meaning unknown */
+#define g_game_header_fld_0c (*(uint16_t *)LINN(0x007c))
+/* stars.h GameHeader.fld_0e (+0x0E of DS:0x70, cleared by 14:0x0508); seg04.c clears it; seg06.c update_message_controls picks the character 0x20 or 0x2a from it. Game meaning unknown */
+#define g_game_header_fld_0e (*(uint16_t *)LINN(0x007e))
+/* stars.h GameHeader.flags_80 at +0x10 of DS:0x70 (bit tests 0x04, 0x08); seg06.c bit 2, seg21.c bit 4 */
+#define g_game_flags (*(uint8_t *)LINN(0x0080))
 #define g_DAT_1110_0081 (*(uint8_t *)LINN(0x0081))
-#define g_DAT_1110_0082 (*(uint16_t *)LINN(0x0082))
+/* seg04.c 4:0x4580: a record whose turn equals the current turn DS:0x82; seg06.c 6:0x7778: turn number DS:0x82 + 2400 */
+#define g_current_turn (*(uint16_t *)LINN(0x0082))
 #define g_DAT_1110_0084 (*(uint8_t *)LINN(0x0084))
 #define g_DAT_1110_0085 (*(uint8_t *)LINN(0x0085))
 #define g_DAT_1110_0086 (*(uint8_t *)LINN(0x0086))
@@ -47,57 +65,98 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_008c (*(uint8_t *)LINN(0x008c))
 #define g_DAT_1110_0090 (*(uint8_t *)LINN(0x0090))
 #define g_DAT_1110_0091 (*(uint8_t *)LINN(0x0091))
-#define g_DAT_1110_00b0 (*(uint16_t *)LINN(0x00b0))
-#define g_DAT_1110_00b2 (*(uint16_t *)LINN(0x00b2))
+/* stars.h GameHeader.universe_size: 14:0x0508 stores (value + 1) * 400 in DS:0xB0; 15:0x4efe and 15:0x73a8 read it */
+#define g_universe_size (*(uint16_t *)LINN(0x00b0))
+/* seg04.c frame_on_command: DS:0xb2 - DS:0x27ea and DS:0xb2 - planet y - 0x3e8 passed to map_scale */
+#define g_universe_max_coord_maybe (*(uint16_t *)LINN(0x00b2))
 #define g_DAT_1110_00b4 (*(uint16_t *)LINN(0x00b4))
-#define g_DAT_1110_00b6 (*(uint16_t *)LINN(0x00b6))
-#define g_DAT_1110_00b8 (*(uint16_t *)LINN(0x00b8))
-#define g_DAT_1110_00ba (*(uint32_ua *)LINN(0x00ba))
+/* seg04.c/seg19.c/seg33.c: planet table DS:0xb6 (stride 0x38 */
+#define g_planet_table (*(uint16_t *)LINN(0x00b6))
+/* seg04.c: far pointer DS:0xb6 is read as offset word then segment word 0xb8 */
+#define g_planet_table_segment_maybe (*(uint16_t *)LINN(0x00b8))
+/* seg16.c/seg19.c: fleet pointer table (far pointer DS:0xBA. Also covers the used offsets DS:0x00bc (no label of their own; pass 2 reaches them through this macro) */
+#define g_fleet_table (*(uint32_ua *)LINN(0x00ba))
 #define g_DAT_1110_00be (*(uint16_t *)LINN(0x00be))
 #define g_DAT_1110_00c0 (*(uint16_t *)LINN(0x00c0))
 #define g_DAT_1110_00c2 (*(uint16_t *)LINN(0x00c2))
 #define g_DAT_1110_00c4 (*(uint16_t *)LINN(0x00c4))
-#define g_DAT_1110_010a (*(uint16_t *)LINN(0x010a))
+/* seg04.c/seg06.c: WinHelp(hwnd */
+#define g_help_file_name (*(uint16_t *)LINN(0x010a))
 #define g_DAT_1110_010c (*(uint16_t *)LINN(0x010c))
 #define g_DAT_1110_010e (*(uint16_t *)LINN(0x010e))
 #define g_DAT_1110_0110 (*(uint16_t *)LINN(0x0110))
 #define g_DAT_1110_0112 (*(uint16_t *)LINN(0x0112))
-#define g_DAT_1110_014c (*(uint16_t *)LINN(0x014c))
-#define g_DAT_1110_014e (*(uint16_t *)LINN(0x014e))
-#define g_DAT_1110_0150 (*(uint16_t *)LINN(0x0150))
-#define g_DAT_1110_0152 (*(uint16_t *)LINN(0x0152))
-#define g_DAT_1110_0154 (*(uint16_t *)LINN(0x0154))
-#define g_DAT_1110_0156 (*(uint16_t *)LINN(0x0156))
-#define g_DAT_1110_0158 (*(uint16_t *)LINN(0x0158))
-#define g_DAT_1110_015a (*(uint16_t *)LINN(0x015a))
-#define g_DAT_1110_015e (*(uint16_t *)LINN(0x015e))
-#define g_DAT_1110_0162 (*(uint16_t *)LINN(0x0162))
-#define g_DAT_1110_0164 (*(uint16_t *)LINN(0x0164))
-#define g_DAT_1110_016a (*(uint16_t *)LINN(0x016a))
-#define g_DAT_1110_0170 (*(uint16_t *)LINN(0x0170))
-#define g_DAT_1110_0178 (*(uint16_t *)LINN(0x0178))
-#define g_DAT_1110_0180 (*(uint16_t *)LINN(0x0180))
-#define g_DAT_1110_018a (*(uint16_t *)LINN(0x018a))
-#define g_DAT_1110_0190 (*(uint16_t *)LINN(0x0190))
-#define g_DAT_1110_0192 (*(uint32_ua *)LINN(0x0192))
-#define g_DAT_1110_0212 (*(uint8_t *)LINN(0x0212))
-#define g_DAT_1110_0312 (*(uint16_t *)LINN(0x0312))
-#define g_DAT_1110_0314 (*(uint16_t *)LINN(0x0314))
-#define g_DAT_1110_0316 (*(uint16_t *)LINN(0x0316))
-#define g_DAT_1110_0318 (*(uint16_t *)LINN(0x0318))
-#define g_DAT_1110_031a (*(uint16_t *)LINN(0x031a))
-#define g_DAT_1110_031c (*(uint32_t *)LINN(0x031c))
-#define g_DAT_1110_0320 (*(uint32_t *)LINN(0x0320))
-#define g_DAT_1110_0366 (*(uint16_t *)LINN(0x0366))
-#define g_DAT_1110_0378 (*(uint16_t *)LINN(0x0378))
+/* seg02.c DS:0x14c is 0xffff when there is no current player; indexes the 0xc0-byte player rows */
+#define g_current_player (*(uint16_t *)LINN(0x014c))
+/* seg03.c ESC down: destroys the dialog DS:0x14E when it is the active window */
+#define g_hwnd_modeless_dialog (*(uint16_t *)LINN(0x014e))
+/* seg04.c 4:layout: marker/side panels DS:0x150 (map) */
+#define g_hwnd_map (*(uint16_t *)LINN(0x0150))
+/* seg04.c get_main_submenu: used when DS:0x152 is set and IsZoomed */
+#define g_hwnd_zoomable_window_maybe (*(uint16_t *)LINN(0x0152))
+/* seg05.c 5:0x0324 invalidate_info_areas: invalidates rectangles of the window DS:0x0154 */
+#define g_hwnd_info_panel (*(uint16_t *)LINN(0x0154))
+/* seg04.c update_caption_and_panels creates it, layout_panels moves it to (0,0) of the divider box; FRAMEWNDPROC forwards f and F */
+#define g_hwnd_top_left_panel_maybe (*(uint16_t *)LINN(0x0156))
+/* seg06.c WM_CREATE: DS:0x158 = hwnd */
+#define g_hwnd_message_window (*(uint16_t *)LINN(0x0158))
+/* seg13.c window DS:0x015a invalidated when a toolbar view bit changes */
+#define g_hwnd_toolbar_maybe (*(uint16_t *)LINN(0x015a))
+/* seg03.c 3:file load: far pointer to the loaded text in DS:0x15E/0x160 */
+#define g_file_text_ptr (*(uint16_t *)LINN(0x015e))
+/* seg03.c read_batch_file_name: far pointer DS:0x15E (offset) / DS:0x160 (segment) */
+#define g_file_text_ptr_segment_maybe (*(uint16_t *)LINN(0x0160))
+/* seg04.c WM_DESTROY kills the timer DS:0x162; starts the 10000 ms timer into DS:0x162 */
+#define g_timer_id (*(uint16_t *)LINN(0x0162))
+/* seg04.c timer id 0xd stored in DS:0x164 */
+#define g_timer_state (*(uint16_t *)LINN(0x0164))
+/* seg04.c: _wsprintf(DS:0x5866, DS:[0x16a], ...) in frame_on_command, paint_host_player_list and HOSTMODEDIALOG */
+#define g_fmt_ptr_a_maybe (*(uint16_t *)LINN(0x016a))
+/* seg06.c format_message codes U V v: a dword with _wsprintf(DS:0x170) */
+#define g_fmt_ptr_dword_maybe (*(uint16_t *)LINN(0x0170))
+/* seg13.c 13:zoom text: rewritten with the format at DS:[0x178] (%d%%) */
+#define g_fmt_percent (*(uint16_t *)LINN(0x0178))
+/* seg05.c info_on_click: _wsprintf with the format DS:[0x180] and a word */
+#define g_fmt_ptr_word_maybe (*(uint16_t *)LINN(0x0180))
+/* seg06.c format_message: w / 100 and w % 100 with _wsprintf(DS:0x18a) */
+#define g_fmt_ptr_decimal_pair_maybe (*(uint16_t *)LINN(0x018a))
+/* seg04.c/seg17.c: _wsprintf(buf */
+#define g_fmt_player_number (*(uint16_t *)LINN(0x0190))
+/* seg04.c 4:0x4580: the stamp DS:0x192/0x194 becomes GetTickCount(). Also covers the used offsets DS:0x0194 (no label of their own; pass 2 reaches them through this macro) */
+#define g_tick_stamp (*(uint32_ua *)LINN(0x0192))
+/* seg04.c GetOpenFileName initial dir DS:0x212 */
+#define g_initial_directory (*(uint8_t *)LINN(0x0212))
+/* seg04.c destroys the start window DS:0x312 once; FRAMEWNDPROC forwards messages to it */
+#define g_start_window (*(uint16_t *)LINN(0x0312))
+/* seg04.c open_game_file: set to 1 around the start-window work when DS:0x312 is set, cleared by run_host_mode and FRAMEWNDPROC */
+#define g_start_window_busy_maybe (*(uint16_t *)LINN(0x0314))
+/* seg04.c FRAMEWNDPROC WM_PAINT/WM_QUERYDRAGICON (iconic): shown when a player is current and the host timer DS:0x162 is 0 */
+#define g_icon_idle (*(uint16_t *)LINN(0x0316))
+/* seg04.c FRAMEWNDPROC WM_PAINT/WM_QUERYDRAGICON (iconic): shown when there is no current player (DS:0x14c == 0xffff) */
+#define g_icon_no_player (*(uint16_t *)LINN(0x0318))
+/* seg04.c FRAMEWNDPROC WM_PAINT/WM_QUERYDRAGICON (iconic): shown while the host timer DS:0x162 is set */
+#define g_icon_host_timer_running (*(uint16_t *)LINN(0x031a))
+/* stars.h Player.fld_0c (BLK_36): 14:0x0508 DS:0x31C = this (of the current player); seg04.c tests it signed */
+#define g_player_block_fld_0c_maybe (*(uint32_t *)LINN(0x031c))
+/* seg03.c WinMain: 8:0xb28a result stored in DS:0x320/0x322. Also covers the used offsets DS:0x0322 (no label of their own; pass 2 reaches them through this macro) */
+#define g_cmdline_value_maybe (*(uint32_t *)LINN(0x0320))
+/* seg04.c: PostQuitMessage(DS:0x366) and ExitWindows(DS:0x366) at the common exit */
+#define g_quit_exit_code (*(uint16_t *)LINN(0x0366))
+/* seg04.c frame_on_command: 100 or 1000 turns (Shift/Control test); run_host_mode decrements it */
+#define g_turns_to_generate (*(uint16_t *)LINN(0x0378))
 #define g_DAT_1110_038b (*(uint16_ua *)LINN(0x038b))
-#define g_DAT_1110_03c0 (*(uint16_t *)LINN(0x03c0))
+/* seg04.c host_timer_proc: not re-entrant, DS:0x3c0 set to 1 while it runs; HOSTMODEDIALOG clears it */
+#define g_host_timer_busy (*(uint16_t *)LINN(0x03c0))
 #define g_DAT_1110_03cd (*(uint16_ua *)LINN(0x03cd))
 #define g_DAT_1110_03cf (*(uint8_t *)LINN(0x03cf))
-#define g_DAT_1110_03da (*(uint16_t *)LINN(0x03da))
-#define g_DAT_1110_03dc (*(uint16_t *)LINN(0x03dc))
-#define g_DAT_1110_03de (*(uint16_t *)LINN(0x03de))
-#define g_DAT_1110_03e2 (*(uint16_t *)LINN(0x03e2))
+/* seg04.c TITLEWNDPROC: palette DS:0x3da */
+#define g_title_palette_maybe (*(uint16_t *)LINN(0x03da))
+/* seg04.c TITLEWNDPROC: banner resource of 8:0xad28 in DS:0x3dc */
+#define g_title_banner_res_maybe (*(uint16_t *)LINN(0x03dc))
+/* seg04.c TITLEWNDPROC: handles in DS:0x3de..0x3e4; GetWindowRect(DS:0x3de) */
+#define g_hwnd_title_child_a_maybe (*(uint16_t *)LINN(0x03de))
+/* seg04.c TITLEWNDPROC: EnableWindow(DS:0x3e2, 0) */
+#define g_hwnd_title_child_c_maybe (*(uint16_t *)LINN(0x03e2))
 #define g_DAT_1110_0418 (*(uint32_t *)LINN(0x0418))
 #define g_DAT_1110_041c (*(uint32_t *)LINN(0x041c))
 #define g_DAT_1110_042c (*(uint32_t *)LINN(0x042c))
@@ -108,13 +167,16 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_0456 (*(uint8_t *)LINN(0x0456))
 #define g_DAT_1110_0464 (*(uint16_t *)LINN(0x0464))
 #define g_DAT_1110_0466 (*(uint16_t *)LINN(0x0466))
-#define g_DAT_1110_0468 (*(uint16_t *)LINN(0x0468))
+/* seg05.c info_on_click/seg16.c: GetTextExtent of the string DS:[0x468] for layout */
+#define g_label_text_a_maybe (*(uint16_t *)LINN(0x0468))
 #define g_DAT_1110_046c (*(uint16_t *)LINN(0x046c))
 #define g_DAT_1110_046e (*(uint16_t *)LINN(0x046e))
 #define g_s_Temperature_1110_0478 ((uint8_t *)LINN(0x0478))
 #define g_DAT_1110_048e (*(uint16_t *)LINN(0x048e))
-#define g_DAT_1110_0490 (*(uint16_t *)LINN(0x0490))
-#define g_DAT_1110_04c8 (*(uint16_t *)LINN(0x04c8))
+/* seg05.c invalidate_info_areas/info_on_click: the text DS:[0x490] measured with GetTextExtent */
+#define g_info_label_text (*(uint16_t *)LINN(0x0490))
+/* seg05.c info_on_click: zoom value chosen with the pop-up stored in DS:0x04C8; seg01.c ini key 0xa2 */
+#define g_info_zoom_choice (*(uint16_t *)LINN(0x04c8))
 #define g_DAT_1110_04d2 (*(uint16_t *)LINN(0x04d2))
 #define g_DAT_1110_04d4 (*(uint8_t *)LINN(0x04d4))
 #define g_s_Deep_Space_1110_04e1 ((uint8_t *)LINN(0x04e1))
@@ -132,15 +194,19 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_0534 (*(uint8_t *)LINN(0x0534))
 #define g_DAT_1110_0559 (*(uint16_ua *)LINN(0x0559))
 #define g_DAT_1110_055b (*(uint8_t *)LINN(0x055b))
-#define g_DAT_1110_055c (*(uint16_t *)LINN(0x055c))
-#define g_DAT_1110_055e (*(uint16_t *)LINN(0x055e))
-#define g_DAT_1110_0560 (*(uint16_t *)LINN(0x0560))
+/* seg04.c open_game_file: DS:0x55c cleared */
+#define g_game_open_state_maybe (*(uint16_t *)LINN(0x055c))
+/* seg13.c low nibble of the view flags DS:0x055e selects the view mode. Also covers the used offsets DS:0x055f (no label of their own; pass 2 reaches them through this macro) */
+#define g_view_flags (*(uint16_t *)LINN(0x055e))
+/* seg13.c percentage compared with DS:0x0560 */
+#define g_zoom_percent (*(uint16_t *)LINN(0x0560))
 #define g_DAT_1110_056c (*(uint16_t *)LINN(0x056c))
 #define g_DAT_1110_056e (*(uint16_t *)LINN(0x056e))
 #define g_DAT_1110_0570 (*(uint16_t *)LINN(0x0570))
 #define g_DAT_1110_0572 (*(uint16_t *)LINN(0x0572))
 #define g_DAT_1110_0574 (*(uint16_t *)LINN(0x0574))
-#define g_DAT_1110_0576 (*(uint16_t *)LINN(0x0576))
+/* seg01.c ini value 1..9 minus 5; seg04.c CheckMenuItem(DS:0x576 + 4) and set from the menu id; seg13.c zoom presets */
+#define g_zoom_preset (*(uint16_t *)LINN(0x0576))
 #define g_s_Deep_Space_Waypoint_1110_05a2 ((uint8_t *)LINN(0x05a2))
 #define g_DAT_1110_05b6 (*(uint16_t *)LINN(0x05b6))
 #define g_DAT_1110_05b8 (*(uint8_t *)LINN(0x05b8))
@@ -148,26 +214,38 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_05c5 (*(uint8_t *)LINN(0x05c5))
 #define g_s_from_1110_05c6 ((uint8_t *)LINN(0x05c6))
 #define g_DAT_1110_05cc (*(uint16_t *)LINN(0x05cc))
-#define g_DAT_1110_05f6 (*(uint32_ua *)LINN(0x05f6))
+/* seg01.c ini keys File1..File9: nine 256-byte entries at the far block DS:0x05f6. Also covers the used offsets DS:0x05f8 (no label of their own; pass 2 reaches them through this macro) */
+#define g_recent_file_names (*(uint32_ua *)LINN(0x05f6))
 #define g_DAT_1110_06ca (*(uint16_t *)LINN(0x06ca))
 #define g_DAT_1110_06ea (*(uint16_t *)LINN(0x06ea))
 #define g_DAT_1110_072a (*(uint16_t *)LINN(0x072a))
-#define g_DAT_1110_076e (*(uint16_t *)LINN(0x076e))
-#define g_DAT_1110_0770 (*(uint16_t *)LINN(0x0770))
-#define g_DAT_1110_0772 (*(uint16_t *)LINN(0x0772))
+/* seg04.c 4:0x4580: DS:0x76e is 1 while the computer players run */
+#define g_computer_turns_running (*(uint16_t *)LINN(0x076e))
+/* seg04.c frame_on_command: set to 0xffff, then passed to 14:0x30d8 and 8:0x8d94 */
+#define g_file_error_code_maybe (*(uint16_t *)LINN(0x0770))
+/* seg04.c 4:0x4580: the version of the header block is stored in DS:0x772 */
+#define g_file_version (*(uint16_t *)LINN(0x0772))
 #define g_DAT_1110_078d (*(uint16_ua *)LINN(0x078d))
 #define g_DAT_1110_078f (*(uint8_t *)LINN(0x078f))
-#define g_DAT_1110_0790 (*(uint8_t *)LINN(0x0790))
-#define g_DAT_1110_0791 (*(uint8_t *)LINN(0x0791))
-#define g_DAT_1110_0792 (*(uint8_t *)LINN(0x0792))
-#define g_DAT_1110_0793 (*(uint8_t *)LINN(0x0793))
-#define g_DAT_1110_0794 (*(uint8_t *)LINN(0x0794))
-#define g_DAT_1110_0795 (*(uint8_t *)LINN(0x0795))
-#define g_DAT_1110_0796 (*(uint8_t *)LINN(0x0796))
+/* seg04.c 4:0x4580 forces bit 3 set and bit 1 clear of DS:0x790 while it runs; seg01.c clears bits with 0xfb7f */
+#define g_ui_flags_a_maybe (*(uint8_t *)LINN(0x0790))
+/* seg01.c display class in the top bits of DS:0x0791; seg04.c bit 2 set when the turn has run; seg06.c bit 0 = comment mode */
+#define g_ui_flags_b_maybe (*(uint8_t *)LINN(0x0791))
+/* seg01.c bit 15 of DS:0x0792 = Toolbar ini key; seg04.c bit 6 = ExitWindows; bit 7 = every player is a computer */
+#define g_ui_flags_c_maybe (*(uint8_t *)LINN(0x0792))
+/* seg04.c WM_CLOSE path runs when bit 2 of DS:0x793 is set */
+#define g_ui_flags_d_maybe (*(uint8_t *)LINN(0x0793))
+/* seg13.c zoom box sets the dirty bit 0x40 of DS:0x0794 */
+#define g_ui_flags_e_maybe (*(uint8_t *)LINN(0x0794))
+/* seg03.c WinMain command line: H sets bit 1 of DS:0x795 */
+#define g_command_line_flags_maybe (*(uint8_t *)LINN(0x0795))
+/* seg01.c ini key ReportDefGraph = low nibble of DS:0x0796; seg04.c bit 6 shows the name */
+#define g_report_flags_maybe (*(uint8_t *)LINN(0x0796))
 #define g_DAT_1110_07a2 (*(uint16_t *)LINN(0x07a2))
 #define g_DAT_1110_07ae (*(uint16_t *)LINN(0x07ae))
 #define g_DAT_1110_07b6 (*(uint16_t *)LINN(0x07b6))
-#define g_DAT_1110_07c0 (*(uint16_t *)LINN(0x07c0))
+/* seg05.c MINEWNDPROC: CreateWindow class name DS:[0x7c0] for the order button */
+#define g_button_class_name_ptr (*(uint16_t *)LINN(0x07c0))
 #define g_DAT_1110_07c2 (*(uint16_t *)LINN(0x07c2))
 #define g_DAT_1110_07c4 (*(uint16_t *)LINN(0x07c4))
 #define g_DAT_1110_07c6 (*(uint16_t *)LINN(0x07c6))
@@ -195,12 +273,16 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_0832 (*(uint16_t *)LINN(0x0832))
 #define g_DAT_1110_0834 (*(uint16_t *)LINN(0x0834))
 #define g_DAT_1110_0836 (*(uint16_t *)LINN(0x0836))
-#define g_DAT_1110_083a (*(uint16_t *)LINN(0x083a))
-#define g_DAT_1110_0872 (*(uint32_ua *)LINN(0x0872))
+/* seg03.c filter_key_message: window compared with the focus; seg04.c frame_on_command GetFocus() */
+#define g_hwnd_text_control_a_maybe (*(uint16_t *)LINN(0x083a))
+/* seg01.c ini GlobalSettings: a 28-character value goes into DS:0x0872, else 0; seg04.c tests it for zero */
+#define g_global_settings_value_maybe (*(uint32_ua *)LINN(0x0872))
 #define g_DAT_1110_0876 (*(uint16_t *)LINN(0x0876))
 #define g_s__d_cC_1110_0878 ((uint8_t *)LINN(0x0878))
-#define g_DAT_1110_08a8 (*(uint16_t *)LINN(0x08a8))
-#define g_DAT_1110_08aa (*(uint16_t *)LINN(0x08aa))
+/* seg16.c RENAMEZIPDLG/RENAMEDLG: SetWindowPos x = DS:0x08a8 + 0x46 */
+#define g_dialog_offset_x (*(uint16_t *)LINN(0x08a8))
+/* seg16.c RENAMEZIPDLG/RENAMEDLG: SetWindowPos y = DS:0x08aa + 0x46 */
+#define g_dialog_offset_y (*(uint16_t *)LINN(0x08aa))
 #define g_DAT_1110_08ce (*(uint32_ua *)LINN(0x08ce))
 #define g_DAT_1110_08d2 (*(uint32_ua *)LINN(0x08d2))
 #define g_DAT_1110_08d8 (*(uint16_t *)LINN(0x08d8))
@@ -227,24 +309,28 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_0964 (*(uint16_t *)LINN(0x0964))
 #define g_DAT_1110_0966 (*(uint16_t *)LINN(0x0966))
 #define g_DAT_1110_0968 (*(uint16_t *)LINN(0x0968))
-#define g_DAT_1110_096c (*(uint32_t *)LINN(0x096c))
+/* seg01.c alloc_far(0x7d00, 4, 0x096c); seg03.c release_all_resources frees it (heap 4) */
+#define g_far_work_block (*(uint32_t *)LINN(0x096c))
 #define g_DAT_1110_0970 (*(uint16_t *)LINN(0x0970))
 #define g_DAT_1110_0972 (*(uint16_t *)LINN(0x0972))
 #define g_DAT_1110_0974 (*(uint16_t *)LINN(0x0974))
 #define g_DAT_1110_0976 (*(uint16_t *)LINN(0x0976))
 #define g_DAT_1110_097b (*(uint8_t *)LINN(0x097b))
-#define g_DAT_1110_0980 (*(uint32_t *)LINN(0x0980))
+/* seg03.c 3:find_player_key_conflict: the table at the far pointer DS:0x980 has 16-byte entries */
+#define g_player_key_table (*(uint32_t *)LINN(0x0980))
 #define g_DAT_1110_0984 (*(uint32_t *)LINN(0x0984))
 #define g_DAT_1110_0988 (*(uint32_t *)LINN(0x0988))
 #define g_DAT_1110_098c (*(uint16_t *)LINN(0x098c))
 #define g_DAT_1110_098e (*(uint16_t *)LINN(0x098e))
-#define g_DAT_1110_09aa (*(uint16_t *)LINN(0x09aa))
+/* seg01.c Misc ini key 0xb0 clamped to 1..999 */
+#define g_ini_value_b0_maybe (*(uint16_t *)LINN(0x09aa))
 #define g_s_backup_1110_09ac ((uint8_t *)LINN(0x09ac))
 #define g_DAT_1110_09bc (*(uint16_t *)LINN(0x09bc))
 #define g_s__s_hst_1110_09be ((uint8_t *)LINN(0x09be))
 #define g_DAT_1110_09d0 (*(uint16_t *)LINN(0x09d0))
 #define g_DAT_1110_09d3 (*(uint8_t *)LINN(0x09d3))
-#define g_DAT_1110_09e2 (*(uint16_t *)LINN(0x09e2))
+/* seg03.c read_batch_file_name: 34:0x03b6(DS:0x09e2) gives the size */
+#define g_batch_file_handle_maybe (*(uint16_t *)LINN(0x09e2))
 #define g_DAT_1110_09ea (*(uint32_ua *)LINN(0x09ea))
 #define g_DAT_1110_0a72 (*(uint16_t *)LINN(0x0a72))
 #define g_DAT_1110_0a74 (*(uint16_t *)LINN(0x0a74))
@@ -252,19 +338,31 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_0a92 (*(uint16_t *)LINN(0x0a92))
 #define g_DAT_1110_0a94 (*(uint8_t *)LINN(0x0a94))
 #define g_s_Choose_New_Game_Name_1110_0a96 ((uint8_t *)LINN(0x0a96))
-#define g_DAT_1110_0aac (*(uint32_t *)LINN(0x0aac))
-#define g_DAT_1110_0ab0 (*(uint16_t *)LINN(0x0ab0))
+/* seg06.c file header: message buffer far block DS:0xaac/0xaae. Also covers the used offsets DS:0x0aae (no label of their own; pass 2 reaches them through this macro) */
+#define g_message_buffer (*(uint32_t *)LINN(0x0aac))
+/* seg06.c file header: DS:0xab0 bytes used of the message buffer */
+#define g_message_buffer_used (*(uint16_t *)LINN(0x0ab0))
 #define g_DAT_1110_0ab2 (*(uint16_t *)LINN(0x0ab2))
-#define g_DAT_1110_0ab4 (*(uint16_t *)LINN(0x0ab4))
-#define g_DAT_1110_0ab6 (*(uint16_t *)LINN(0x0ab6))
-#define g_DAT_1110_0ab8 (*(uint16_t *)LINN(0x0ab8))
-#define g_DAT_1110_0aba (*(uint16_t *)LINN(0x0aba))
-#define g_DAT_1110_0abc (*(uint32_t *)LINN(0x0abc))
-#define g_DAT_1110_0ac0 (*(uint32_t *)LINN(0x0ac0))
-#define g_DAT_1110_0ac4 (*(uint16_t *)LINN(0x0ac4))
-#define g_DAT_1110_0ac6 (*(uint16_t *)LINN(0x0ac6))
-#define g_DAT_1110_0ac8 (*(uint16_t *)LINN(0x0ac8))
-#define g_DAT_1110_0ae2 (*(uint16_t *)LINN(0x0ae2))
+/* seg06.c returns 0 when idx >= DS:0xab4 (the messages in the buffer) */
+#define g_message_count (*(uint16_t *)LINN(0x0ab4))
+/* seg06.c file header: the shown message index DS:0xab6 (0xffff none) */
+#define g_message_current_index (*(uint16_t *)LINN(0x0ab6))
+/* seg06.c 6:comment move: DS:0xab8 the current comment of the list DS:0xac0 */
+#define g_comment_current_index (*(uint16_t *)LINN(0x0ab8))
+/* seg06.c 6:0x6ef4: DS:0xaba set = only the starred messages */
+#define g_messages_starred_only (*(uint16_t *)LINN(0x0aba))
+/* seg06.c file header: DS:0xabc far pointer chain of comments. Also covers the used offsets DS:0x0abe (no label of their own; pass 2 reaches them through this macro) */
+#define g_comment_chain (*(uint32_t *)LINN(0x0abc))
+/* seg06.c file header: DS:0xac0 the list of the player's own comments. Also covers the used offsets DS:0x0ac2 (no label of their own; pass 2 reaches them through this macro) */
+#define g_own_comment_list (*(uint32_t *)LINN(0x0ac0))
+/* seg06.c file header: DS:0xac4 the number of comments in the list */
+#define g_comment_chain_count (*(uint16_t *)LINN(0x0ac4))
+/* seg06.c file header: DS:0xac6 the count of the player's own comments */
+#define g_own_comment_count (*(uint16_t *)LINN(0x0ac6))
+/* seg06.c 6:comment mode: the selection DS:0xac8 (subject) when no comment is shown */
+#define g_message_subject (*(uint16_t *)LINN(0x0ac8))
+/* seg06.c update_message_controls: comment mode text DS:0xae2 */
+#define g_comment_text_maybe (*(uint16_t *)LINN(0x0ae2))
 #define g_DAT_1110_0b64 (*(uint16_t *)LINN(0x0b64))
 #define g_DAT_1110_0b66 (*(uint16_t *)LINN(0x0b66))
 #define g_DAT_1110_0b68 (*(uint16_t *)LINN(0x0b68))
@@ -276,33 +374,48 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_s_decreased_1110_0b94 ((uint8_t *)LINN(0x0b94))
 #define g_DAT_1110_0b9e (*(uint32_ua *)LINN(0x0b9e))
 #define g_DAT_1110_0ba2 (*(uint16_t *)LINN(0x0ba2))
-#define g_DAT_1110_0ba4 (*(uint32_t *)LINN(0x0ba4))
-#define g_DAT_1110_0ba8 (*(uint8_t *)LINN(0x0ba8))
+/* seg06.c format_message code S: the 5-byte text "the" at DS:0xba4 */
+#define g_str_the_maybe (*(uint32_t *)LINN(0x0ba4))
+/* seg06.c format_message code S: byte after DS:0xba4 copied */
+#define g_str_the_end_maybe (*(uint8_t *)LINN(0x0ba8))
 #define g_s_origin_1110_0ba9 ((uint8_t *)LINN(0x0ba9))
-#define g_DAT_1110_0bb4 (*(uint8_t *)LINN(0x0bb4))
+/* seg06.c unpack_message_format: returns 0x5276 when the signed byte DS:0xbb4 equals the id */
+#define g_message_format_cached_id (*(uint8_t *)LINN(0x0bb4))
 #define g_DAT_1110_0bbc (*(uint16_t *)LINN(0x0bbc))
-#define g_DAT_1110_0bbe (*(uint16_t *)LINN(0x0bbe))
-#define g_DAT_1110_0bc0 (*(uint32_t *)LINN(0x0bc0))
-#define g_DAT_1110_0bc4 (*(uint16_t *)LINN(0x0bc4))
-#define g_DAT_1110_0bc6 (*(uint32_ua *)LINN(0x0bc6))
-#define g_DAT_1110_0bca (*(uint16_t *)LINN(0x0bca))
-#define g_DAT_1110_0bcc (*(uint16_t *)LINN(0x0bcc))
-#define g_DAT_1110_0bce (*(uint16_t *)LINN(0x0bce))
-#define g_DAT_1110_0bd0 (*(uint16_t *)LINN(0x0bd0))
-#define g_DAT_1110_0bd2 (*(uint32_ua *)LINN(0x0bd2))
+/* seg03.c filter_key_message: ESC sends WM_LBUTTONUP to DS:0xBBE; seg05.c MINEWNDPROC waits for it to be 0 */
+#define g_hwnd_popup_capture_maybe (*(uint16_t *)LINN(0x0bbe))
+/* seg05.c 5:0x2ab4 info_on_click fills the descriptor at DS:0x0BC0 (kind, ids, numbers), which 24:0x091e shows. Also covers the used offsets DS:0x0bc2 (no label of their own; pass 2 reaches them through this macro) */
+#define g_info_descriptor (*(uint32_t *)LINN(0x0bc0))
+/* seg05.c info_on_click: descriptor DS:0x0BC0 field at +4. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet */
+#define g_info_descriptor_plus04 (*(uint16_t *)LINN(0x0bc4))
+/* seg05.c info_on_click: descriptor DS:0x0BC0 field at +6. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet. Also covers the used offsets DS:0x0bc8 (no label of their own; pass 2 reaches them through this macro) */
+#define g_info_descriptor_plus06 (*(uint32_ua *)LINN(0x0bc6))
+/* seg05.c info_on_click: descriptor DS:0x0BC0 field at +0xa. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet */
+#define g_info_descriptor_plus0a (*(uint16_t *)LINN(0x0bca))
+/* seg05.c info_on_click: descriptor DS:0x0BC0 field at +0xc. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet */
+#define g_info_descriptor_plus0c (*(uint16_t *)LINN(0x0bcc))
+/* seg05.c info_on_click: descriptor DS:0x0BC0 field at +0xe. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet */
+#define g_info_descriptor_plus0e (*(uint16_t *)LINN(0x0bce))
+/* seg05.c info_on_click: descriptor DS:0x0BC0 field at +0x10. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet */
+#define g_info_descriptor_plus10 (*(uint16_t *)LINN(0x0bd0))
+/* seg05.c info_on_click: descriptor DS:0x0BC0 field at +0x12. Game meaning unknown: info_on_click stores zone-dependent numbers here (a kind, ids, tech levels from the player row) and 24:0x091e is not decompiled yet */
+#define g_info_descriptor_plus12 (*(uint32_ua *)LINN(0x0bd2))
 #define g_s_Deep_Space_1110_0bfa ((uint8_t *)LINN(0x0bfa))
-#define g_DAT_1110_0c4a (*(uint16_t *)LINN(0x0c4a))
+/* seg16.c RENAMEDLG: DS:0xc4a guards the control against re-entry from its own SetWindowText */
+#define g_rename_edit_reentry_guard (*(uint16_t *)LINN(0x0c4a))
 #define g_DAT_1110_0c4c (*(uint16_t *)LINN(0x0c4c))
 #define g_DAT_1110_0c4e (*(uint16_t *)LINN(0x0c4e))
 #define g_DAT_1110_0c76 (*(uint16_t *)LINN(0x0c76))
-#define g_DAT_1110_0c7c (*(uint16_t *)LINN(0x0c7c))
+/* seg01.c load_res(0x437); seg03.c 3:0x054c patches its colour at offset 0x40c to the button-face colour and release_all_resources frees it. Game meaning unknown: no other code in src/ reads the handle */
+#define g_res_handle_437 (*(uint16_t *)LINN(0x0c7c))
 #define g_DAT_1110_0c7e (*(uint16_t *)LINN(0x0c7e))
 #define g_DAT_1110_0c94 (*(uint16_t *)LINN(0x0c94))
 #define g_DAT_1110_0c9b (*(uint16_ua *)LINN(0x0c9b))
 #define g_DAT_1110_0c9d (*(uint8_t *)LINN(0x0c9d))
 #define g_DAT_1110_0ccc (*(uint32_t *)LINN(0x0ccc))
 #define g_DAT_1110_0cd0 (*(uint8_t *)LINN(0x0cd0))
-#define g_DAT_1110_0cd2 (*(uint32_ua *)LINN(0x0cd2))
+/* seg19.c header comments: production entries are added to the list at DS:0xcd2 through 18:0x2732 and the list is committed or discarded with 26:0x0810. Also covers the used offsets DS:0x0cd4 (no label of their own; pass 2 reaches them through this macro) */
+#define g_production_list (*(uint32_ua *)LINN(0x0cd2))
 #define g_DAT_1110_0cd6 (*(uint16_t *)LINN(0x0cd6))
 #define g_DAT_1110_0cd8 (*(uint16_t *)LINN(0x0cd8))
 #define g_DAT_1110_0cdc (*(uint16_t *)LINN(0x0cdc))
@@ -312,7 +425,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_0d08 (*(uint16_t *)LINN(0x0d08))
 #define g_DAT_1110_0d0a (*(uint16_t *)LINN(0x0d0a))
 #define g_DAT_1110_0d10 (*(uint16_t *)LINN(0x0d10))
-#define g_DAT_1110_0d3e (*(uint16_t *)LINN(0x0d3e))
+/* seg06.c MESSAGEWNDPROC: set to 1 before posting command 0x100 to the main window */
+#define g_tech_pending_flag_maybe (*(uint16_t *)LINN(0x0d3e))
 #define g_DAT_1110_0d74 (*(uint32_t *)LINN(0x0d74))
 #define g_DAT_1110_0d78 (*(uint32_t *)LINN(0x0d78))
 #define g_DAT_1110_0da0 (*(uint16_t *)LINN(0x0da0))
@@ -344,7 +458,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_1410 (*(uint16_t *)LINN(0x1410))
 #define g_DAT_1110_1430 (*(uint16_t *)LINN(0x1430))
 #define g_DAT_1110_1432 (*(uint16_t *)LINN(0x1432))
-#define g_DAT_1110_1434 (*(uint8_t *)LINN(0x1434))
+/* seg04.c check_game_file: player name copied to DS:0x1434 (cleared when the dword is 0) */
+#define g_host_name_text_maybe (*(uint8_t *)LINN(0x1434))
 #define g_DAT_1110_1444 (*(uint16_t *)LINN(0x1444))
 #define g_DAT_1110_14b0 (*(uint16_t *)LINN(0x14b0))
 #define g_DAT_1110_14b3 (*(uint8_t *)LINN(0x14b3))
@@ -366,17 +481,24 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_15ba (*(uint16_t *)LINN(0x15ba))
 #define g_DAT_1110_15bc (*(uint32_t *)LINN(0x15bc))
 #define g_DAT_1110_15c0 (*(uint16_t *)LINN(0x15c0))
-#define g_DAT_1110_15c2 (*(uint16_t *)LINN(0x15c2))
+/* seg01.c ini key 0xc0 (default 1); seg04.c save_settings writes it */
+#define g_ini_value_c0_maybe (*(uint16_t *)LINN(0x15c2))
 #define g_DAT_1110_15ca (*(uint16_t *)LINN(0x15ca))
 #define g_DAT_1110_15e0 (*(uint16_t *)LINN(0x15e0))
 #define g_DAT_1110_15e2 (*(uint16_t *)LINN(0x15e2))
 #define g_DAT_1110_15e4 (*(uint8_t *)LINN(0x15e4))
-#define g_DAT_1110_15fe (*(uint16_t *)LINN(0x15fe))
-#define g_DAT_1110_1600 (*(uint16_t *)LINN(0x1600))
-#define g_DAT_1110_1602 (*(uint16_t *)LINN(0x1602))
-#define g_DAT_1110_1604 (*(uint16_t *)LINN(0x1604))
-#define g_DAT_1110_1606 (*(uint16_t *)LINN(0x1606))
-#define g_DAT_1110_1608 (*(uint32_t *)LINN(0x1608))
+/* seg17.c ai_player_turn sets 1 around the turn, seg06.c update_message_controls does nothing while it is set */
+#define g_busy_flag_maybe (*(uint16_t *)LINN(0x15fe))
+/* seg17.c info array DS:0x1600 (16 bytes a planet) */
+#define g_planet_info_array (*(uint16_t *)LINN(0x1600))
+/* seg17.c: rd8(drd16(0x1602), off) reads the planet info array through the far pointer DS:0x1600/0x1602 */
+#define g_planet_info_array_segment (*(uint16_t *)LINN(0x1602))
+/* seg21.c: far pointer DS:0x1604/0x1606 the per-planet flag table */
+#define g_planet_flag_table (*(uint16_t *)LINN(0x1604))
+/* seg21.c: far pointer DS:0x1604/0x1606 */
+#define g_planet_flag_table_segment_maybe (*(uint16_t *)LINN(0x1606))
+/* seg21.c 21:0x123e: far pointer list DS:0x1608 (DS:0x4b62 of them) of fleet/planet records. Also covers the used offsets DS:0x160a (no label of their own; pass 2 reaches them through this macro) */
+#define g_object_ptr_list (*(uint32_t *)LINN(0x1608))
 #define g_DAT_1110_160c (*(uint8_t *)LINN(0x160c))
 #define g_DAT_1110_160d (*(uint8_t *)LINN(0x160d))
 #define g_DAT_1110_1644 (*(uint16_t *)LINN(0x1644))
@@ -419,7 +541,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_1726 (*(uint16_t *)LINN(0x1726))
 #define g_DAT_1110_1728 (*(uint16_t *)LINN(0x1728))
 #define g_DAT_1110_172a (*(uint16_t *)LINN(0x172a))
-#define g_DAT_1110_1766 (*(uint16_t *)LINN(0x1766))
+/* seg01.c load_fields tables 0x164e/0x1684/0x16ba/0x16f0; seg04.c compares DS:0x1766 with them */
+#define g_report_fields_ptr_maybe (*(uint16_t *)LINN(0x1766))
 #define g_DAT_1110_1768 (*(uint16_t *)LINN(0x1768))
 #define g_DAT_1110_176a (*(uint32_ua *)LINN(0x176a))
 #define g_DAT_1110_176e (*(uint16_t *)LINN(0x176e))
@@ -428,7 +551,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_1774 (*(uint16_t *)LINN(0x1774))
 #define g_DAT_1110_1776 (*(uint16_t *)LINN(0x1776))
 #define g_DAT_1110_177a (*(uint32_ua *)LINN(0x177a))
-#define g_DAT_1110_177e (*(uint16_t *)LINN(0x177e))
+/* seg03.c filter_key_message: ESC destroys the window DS:0x177E */
+#define g_hwnd_dismissible_window_maybe (*(uint16_t *)LINN(0x177e))
 #define g_DAT_1110_1780 (*(uint8_t *)LINN(0x1780))
 #define g_DAT_1110_1781 (*(uint8_t *)LINN(0x1781))
 #define g_DAT_1110_1784 (*(uint16_t *)LINN(0x1784))
@@ -443,19 +567,31 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_1854 (*(uint8_t *)LINN(0x1854))
 #define g_DAT_1110_1875 (*(uint16_ua *)LINN(0x1875))
 #define g_s_Stars__1110_1877 ((uint8_t *)LINN(0x1877))
-#define g_DAT_1110_188a (*(uint16_t *)LINN(0x188a))
-#define g_DAT_1110_188c (*(uint16_t *)LINN(0x188c))
-#define g_DAT_1110_188e (*(uint16_t *)LINN(0x188e))
-#define g_DAT_1110_1890 (*(uint16_t *)LINN(0x1890))
-#define g_DAT_1110_1892 (*(uint16_t *)LINN(0x1892))
-#define g_DAT_1110_1894 (*(uint16_t *)LINN(0x1894))
-#define g_DAT_1110_18ae (*(uint16_t *)LINN(0x18ae))
+/* seg04.c frame_on_command: read after DialogBox(0xd6) */
+#define g_dialog_result_a_maybe (*(uint16_t *)LINN(0x188a))
+/* seg04.c frame_on_command: read after DialogBox(0xd6) */
+#define g_dialog_result_b_maybe (*(uint16_t *)LINN(0x188c))
+/* stars.h DS_MAP_OBJECTS: far pointer to MapObject[count]; offset word at DS:0x188E */
+#define g_map_objects (*(uint16_t *)LINN(0x188e))
+/* stars.h/seg33.c: far array base DS:0x188E/0x1890 (offset then segment) */
+#define g_map_objects_segment_maybe (*(uint16_t *)LINN(0x1890))
+/* stars.h/seg33.c: count DS:0x1892 of the MapObject array */
+#define g_map_object_count (*(uint16_t *)LINN(0x1892))
+/* seg33.c 33:grow: capacity DS:0x1894; grows by 10 records when not above the count */
+#define g_map_object_capacity (*(uint16_t *)LINN(0x1894))
+/* seg16.c zip_enable_preset_buttons stores hwnd, ZIPORDERDLG clears it; RENAMEZIPDLG picks title/help from it */
+#define g_hwnd_zip_order_dialog_maybe (*(uint16_t *)LINN(0x18ae))
 #define g_DAT_1110_18ba (*(uint16_t *)LINN(0x18ba))
-#define g_DAT_1110_18be (*(uint16_t *)LINN(0x18be))
-#define g_DAT_1110_18c0 (*(uint32_t *)LINN(0x18c0))
-#define g_DAT_1110_18ce (*(uint16_t *)LINN(0x18ce))
-#define g_DAT_1110_18d0 (*(uint16_t *)LINN(0x18d0))
-#define g_DAT_1110_18d2 (*(uint32_ua *)LINN(0x18d2))
+/* seg13.c toolbar_zoom_update/TBWNDPROC: the zoom combo box DS:0x18be (GetWindowText, CB messages, SetWindowLong subclass) */
+#define g_hwnd_zoom_combo (*(uint16_t *)LINN(0x18be))
+/* seg13.c TBWNDPROC: compared with the dword at BP-0x12 and updated on change */
+#define g_toolbar_last_pos_maybe (*(uint32_t *)LINN(0x18c0))
+/* seg13.c TOOLTIPWNDPROC: WM_CREATE keeps the window in DS:0x18ce */
+#define g_hwnd_tooltip (*(uint16_t *)LINN(0x18ce))
+/* seg13.c TOOLTIPWNDPROC: the timer DS:0x18d0 (0x39e when created */
+#define g_tooltip_timer (*(uint16_t *)LINN(0x18d0))
+/* seg13.c tooltip_update/TOOLTIPWNDPROC: GetTickCount() kept when the tooltip is hidden */
+#define g_tooltip_hide_tick (*(uint32_ua *)LINN(0x18d2))
 #define g_DAT_1110_18d6 (*(uint16_t *)LINN(0x18d6))
 #define g_DAT_1110_18d8 (*(uint16_t *)LINN(0x18d8))
 #define g_DAT_1110_18da (*(uint16_t *)LINN(0x18da))
@@ -464,7 +600,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_18e0 (*(uint16_t *)LINN(0x18e0))
 #define g_s__C_FILE_INFO__1110_18ea ((uint8_t *)LINN(0x18ea))
 #define g_DAT_1110_18f8 (*(uint32_t *)LINN(0x18f8))
-#define g_DAT_1110_18fc ((uint8_t *)LINN(0x18fc))
+/* docs/CONVENTIONS.md 34:0x0d68/34:0x0d84: the result stored as a double at DS:0x18FC; src/crt34.h */
+#define g_fp_result ((uint8_t *)LINN(0x18fc))
 #define g_DAT_1110_1906 (*(uint16_t *)LINN(0x1906))
 #define g_DAT_1110_190c (*(uint16_t *)LINN(0x190c))
 #define g_DAT_1110_190e (*(uint16_t *)LINN(0x190e))
@@ -489,8 +626,10 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_1c5e (*(uint8_t *)LINN(0x1c5e))
 #define g_DAT_1110_1c66 (*(uint16_t *)LINN(0x1c66))
 #define g_DAT_1110_1c68 (*(uint16_t *)LINN(0x1c68))
-#define g_DAT_1110_1c6a ((uint8_t *)LINN(0x1c6a))
-#define g_DAT_1110_1c72 ((uint8_t *)LINN(0x1c72))
+/* docs/CONVENTIONS.md 34:0x0d68: sqrt operand (pow base) stored as a double at DS:0x1C6A; src/crt34.h */
+#define g_fp_operand_a ((uint8_t *)LINN(0x1c6a))
+/* docs/CONVENTIONS.md 34:0x0d84: pow exponent stored as a double at DS:0x1C72; src/crt34.h */
+#define g_fp_operand_b ((uint8_t *)LINN(0x1c72))
 #define g_DAT_1110_1c7a ((uint8_t *)LINN(0x1c7a))
 #define g_switchdataD_1110_1c82 (*(uint16_t *)LINN(0x1c82))
 #define g_UINT_1110_1c9a (*(uint16_t *)LINN(0x1c9a))
@@ -528,7 +667,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_1e02 (*(uint8_t *)LINN(0x1e02))
 #define g_DAT_1110_1e03 (*(uint8_t *)LINN(0x1e03))
 #define g_DAT_1110_1e16 ((uint8_t *)LINN(0x1e16))
-#define g_DAT_1110_1e1e (*(uint8_t *)LINN(0x1e1e))
+/* docs/CONVENTIONS.md 34:0x0d68/34:0x0d84 and src/crt34.h: the operands are stored as doubles at DS:0x1C6A/0x1C72 only when DS:0x1E1E is 0 */
+#define g_fp_skip_operand_store_maybe (*(uint8_t *)LINN(0x1e1e))
 #define g_DAT_1110_1e20 (*(uint16_t *)LINN(0x1e20))
 #define g_DAT_1110_1e22 ((uint8_t *)LINN(0x1e22))
 #define g_DAT_1110_1e2a (*(uint16_t *)LINN(0x1e2a))
@@ -605,7 +745,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_2068 ((uint8_t *)LINN(0x2068))
 #define g_DAT_1110_2070 ((uint8_t *)LINN(0x2070))
 #define g_DAT_1110_2078 (*(uint32_t *)LINN(0x2078))
-#define g_DAT_1110_207c ((uint8_t *)LINN(0x207c))
+/* seg33.c 33:0x01a0: the double 0.99999... at DS:0x207C so the square root rounds up. Also covers the used offsets DS:0x2080 (no label of their own; pass 2 reaches them through this macro) */
+#define g_double_just_below_one ((uint8_t *)LINN(0x207c))
 #define g_DAT_1110_2084 ((uint8_t *)LINN(0x2084))
 #define g_DAT_1110_208c (*(uint32_t *)LINN(0x208c))
 #define g_DAT_1110_2090 (*(uint32_t *)LINN(0x2090))
@@ -627,31 +768,53 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_24f2 (*(uint8_t *)LINN(0x24f2))
 #define g_DAT_1110_24f3 (*(uint8_t *)LINN(0x24f3))
 #define g_DAT_1110_24f4 (*(uint16_t *)LINN(0x24f4))
-#define g_DAT_1110_2510 (*(uint32_t *)LINN(0x2510))
-#define g_DAT_1110_2514 (*(uint32_t *)LINN(0x2514))
-#define g_DAT_1110_2518 (*(uint8_t *)LINN(0x2518))
-#define g_DAT_1110_251a (*(uint8_t *)LINN(0x251a))
-#define g_DAT_1110_251c (*(uint16_t *)LINN(0x251c))
-#define g_DAT_1110_251e (*(uint16_t *)LINN(0x251e))
-#define g_DAT_1110_2520 (*(uint16_t *)LINN(0x2520))
-#define g_DAT_1110_2522 (*(uint16_t *)LINN(0x2522))
+/* seg01.c fn_01_0af8: x, y read from DS:0x2510/0x2512 for CreateWindow. Also covers the used offsets DS:0x2512 (no label of their own; pass 2 reaches them through this macro) */
+#define g_window_pos (*(uint32_t *)LINN(0x2510))
+/* seg01.c fn_01_0af8: cx, cy read from DS:0x2514/0x2516 for CreateWindow. Also covers the used offsets DS:0x2516 (no label of their own; pass 2 reaches them through this macro) */
+#define g_window_size (*(uint32_t *)LINN(0x2514))
+/* seg01.c fn_01_0af8: DS:0x2518 & 3 turns nCmdShow 1 into 3 */
+#define g_window_placement_flags (*(uint8_t *)LINN(0x2518))
+/* seg01.c ini keys: Wait is bit 2 of DS:0x251a; seg03.c DS:0x251A = 0 at start */
+#define g_startup_options (*(uint8_t *)LINN(0x251a))
+/* seg03.c WinMain sets bit 2; seg04.c FRAMEWNDPROC tests bits 2 and 1 (high byte of the word at DS:0x251a) */
+#define g_startup_options_high (*(uint8_t *)LINN(0x251b))
+/* seg01.c ini key 0x9c, default the current turn DS:0x82; seg04.c sync_selected_object compares it with the turn */
+#define g_ini_selection_turn (*(uint16_t *)LINN(0x251c))
+/* seg01.c ini Selection number via 34:0x037a(DS:0x5868); seg04.c sync_selected_object looks it up with 7:0x14a8 and 10:0x26b2 */
+#define g_ini_selection_id (*(uint16_t *)LINN(0x251e))
+/* seg01.c ini key Selection: a letter B..Q in DS:0x2520; seg04.c compared with DS:0x14c */
+#define g_ini_player_letter_maybe (*(uint16_t *)LINN(0x2520))
+/* seg01.c ini key GameID: up to 10 hex digits into the dword DS:0x2522 */
+#define g_ini_game_id (*(uint16_t *)LINN(0x2522))
 #define g_DAT_1110_2524 (*(uint16_t *)LINN(0x2524))
-#define g_DAT_1110_2526 (*(uint16_t *)LINN(0x2526))
-#define g_DAT_1110_2528 (*(uint16_t *)LINN(0x2528))
-#define g_DAT_1110_252a (*(uint16_t *)LINN(0x252a))
-#define g_DAT_1110_252c (*(uint8_t *)LINN(0x252c))
+/* seg03.c WinMain: DS:0x2526 = n - 1 (n capped at 1000); seg04.c FRAMEWNDPROC counts it down */
+#define g_cmdline_turn_count (*(uint16_t *)LINN(0x2526))
+/* seg01.c ini key 0xc8; seg04.c sync_selected_object: when above 0 it rebuilds the message index DS:0xab6 */
+#define g_ini_message_number (*(uint16_t *)LINN(0x2528))
+/* seg06.c MESSAGEWNDPROC: DS:0x252a = 1 << (DS:0x4161 & 0xf), the argument of 2:0x50f8 */
+#define g_tech_arg_mask_maybe (*(uint16_t *)LINN(0x252a))
+/* seg06.c MESSAGEWNDPROC: word DS:0x252c = (DS:0x252d << 8) or low byte of DS:0x4160 */
+#define g_tech_arg_item_low_maybe (*(uint8_t *)LINN(0x252c))
+/* seg06.c MESSAGEWNDPROC: high byte of the word DS:0x252c */
+#define g_tech_arg_item_high_maybe (*(uint8_t *)LINN(0x252d))
 #define g_DAT_1110_252e (*(uint32_ua *)LINN(0x252e))
-#define g_DAT_1110_2532 (*(uint32_ua *)LINN(0x2532))
-#define g_DAT_1110_2536 (*(uint32_ua *)LINN(0x2536))
-#define g_DAT_1110_253a (*(uint32_ua *)LINN(0x253a))
-#define g_DAT_1110_253e (*(uint16_t *)LINN(0x253e))
+/* seg06.c WM_SIZE: the rectangle DS:0x2532 (the text) */
+#define g_msg_text_rect (*(uint32_ua *)LINN(0x2532))
+/* seg06.c: rectangle DS:0x2532 (left, top) and DS:0x2536 (right, bottom). Also covers the used offsets DS:0x2538 (no label of their own; pass 2 reaches them through this macro) */
+#define g_msg_text_rect_end (*(uint32_ua *)LINN(0x2536))
+/* seg03.c 3:0x054c: the COLORREF of system colour 15 (COLOR_BTNFACE) cached in DS:0x253A; WM_CTLCOLOR background. Also covers the used offsets DS:0x253b, DS:0x253c (no label of their own; pass 2 reaches them through this macro) */
+#define g_color_btnface (*(uint32_ua *)LINN(0x253a))
+/* seg01.c CreateRectRgn(0,0,10,10) stored in DS:0x253e */
+#define g_region_tiny (*(uint16_t *)LINN(0x253e))
 #define g_DAT_1110_2540 (*(uint16_t *)LINN(0x2540))
 #define g_DAT_1110_2542 (*(uint32_ua *)LINN(0x2542))
 #define g_DAT_1110_2546 (*(uint16_t *)LINN(0x2546))
 #define g_DAT_1110_2548 (*(uint8_t *)LINN(0x2548))
 #define g_DAT_1110_2549 (*(uint8_t *)LINN(0x2549))
-#define g_DAT_1110_255c (*(uint16_t *)LINN(0x255c))
-#define g_DAT_1110_255e (*(uint16_t *)LINN(0x255e))
+/* seg19.c ai3_turn/ai7_turn: DS:0x255c = 0 before walking the fleets once more; seg17.c ai1_turn stores a counter */
+#define g_ai_fleet_index_maybe (*(uint16_t *)LINN(0x255c))
+/* seg04.c layout_panels: mode word DS:0x255e (1 or 2: panels along the right side) */
+#define g_panel_layout_mode (*(uint16_t *)LINN(0x255e))
 #define g_DAT_1110_2560 (*(uint8_t *)LINN(0x2560))
 #define g_DAT_1110_2562 (*(uint8_t *)LINN(0x2562))
 #define g_DAT_1110_2570 (*(uint16_t *)LINN(0x2570))
@@ -659,7 +822,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_2574 (*(uint16_t *)LINN(0x2574))
 #define g_DAT_1110_2576 (*(uint32_ua *)LINN(0x2576))
 #define g_DAT_1110_257a (*(uint32_ua *)LINN(0x257a))
-#define g_DAT_1110_2583 (*(uint8_t *)LINN(0x2583))
+/* stars.h ZipPreset.in_use at DS:0x2583 + n*0x28; seg01.c sets entry 0 */
+#define g_zip_preset0_in_use (*(uint8_t *)LINN(0x2583))
 #define g_DAT_1110_2584 (*(uint32_t *)LINN(0x2584))
 #define g_DAT_1110_2588 (*(uint16_t *)LINN(0x2588))
 #define g_DAT_1110_25ab (*(uint8_t *)LINN(0x25ab))
@@ -668,41 +832,65 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_2628 (*(uint16_t *)LINN(0x2628))
 #define g_DAT_1110_263e (*(uint32_ua *)LINN(0x263e))
 #define g_DAT_1110_2642 (*(uint32_ua *)LINN(0x2642))
-#define g_DAT_1110_2646 (*(uint16_t *)LINN(0x2646))
+/* seg04.c FRAMEWNDPROC WM_CREATE: DS:0x2646 = (DS:0x267a + 12) * 2 */
+#define g_panel_header_height_maybe (*(uint16_t *)LINN(0x2646))
 #define g_DAT_1110_2648 (*(uint16_t *)LINN(0x2648))
-#define g_DAT_1110_264a (*(uint16_t *)LINN(0x264a))
-#define g_DAT_1110_264c (*(uint16_t *)LINN(0x264c))
-#define g_DAT_1110_264e (*(uint16_t *)LINN(0x264e))
-#define g_DAT_1110_2650 (*(uint16_t *)LINN(0x2650))
-#define g_DAT_1110_2652 (*(uint16_t *)LINN(0x2652))
-#define g_DAT_1110_2654 (*(uint16_t *)LINN(0x2654))
-#define g_DAT_1110_2656 (*(uint16_t *)LINN(0x2656))
-#define g_DAT_1110_2658 (*(uint16_t *)LINN(0x2658))
-#define g_DAT_1110_265a (*(uint16_t *)LINN(0x265a))
-#define g_DAT_1110_265c (*(uint16_t *)LINN(0x265c))
-#define g_DAT_1110_265e (*(uint16_t *)LINN(0x265e))
+/* seg04.c WM_SIZE: DS:0x264a / 0x264c = the client size */
+#define g_client_width (*(uint16_t *)LINN(0x264a))
+/* seg04.c WM_SIZE: DS:0x264a / 0x264c = the client size */
+#define g_client_height (*(uint16_t *)LINN(0x264c))
+/* seg04.c 4:hit test: vertical bar at x = DS:0x264e */
+#define g_divider_x (*(uint16_t *)LINN(0x264e))
+/* seg04.c 4:hit test: horizontal bar at y = DS:0x2650 */
+#define g_divider_y1 (*(uint16_t *)LINN(0x2650))
+/* seg04.c 4:hit test: horizontal bar at y = DS:0x2652 */
+#define g_divider_y2 (*(uint16_t *)LINN(0x2652))
+/* seg01.c ini Style1Width (key 0xa5, default 0x18c) clamped by clamp_size; seg04.c layout_panels */
+#define g_style1_width (*(uint16_t *)LINN(0x2654))
+/* seg01.c ini Style1Height (key 0xa6, default 0x6e); seg04.c layout_panels */
+#define g_style1_height (*(uint16_t *)LINN(0x2656))
+/* seg01.c ini Style1Height2 (key 0xa7, default 0xc0); seg04.c layout_panels */
+#define g_style1_height2 (*(uint16_t *)LINN(0x2658))
+/* seg01.c ini Style2Width (key 0xa8, default 0x18c); seg04.c layout_panels */
+#define g_style2_width (*(uint16_t *)LINN(0x265a))
+/* seg01.c ini Style2Height (key 0xa9, default 0x6e); seg04.c layout_panels */
+#define g_style2_height (*(uint16_t *)LINN(0x265c))
+/* seg01.c ini Style2Height2 (key 0xaa, default 0xc0); seg04.c layout_panels */
+#define g_style2_height2 (*(uint16_t *)LINN(0x265e))
 #define g_DAT_1110_2660 (*(uint16_t *)LINN(0x2660))
 #define g_DAT_1110_2662 (*(uint16_t *)LINN(0x2662))
 #define g_DAT_1110_2664 (*(uint16_t *)LINN(0x2664))
-#define g_DAT_1110_2666 (*(uint16_t *)LINN(0x2666))
-#define g_DAT_1110_2668 (*(uint32_t *)LINN(0x2668))
-#define g_DAT_1110_266c (*(uint16_t *)LINN(0x266c))
-#define g_DAT_1110_266e (*(uint16_t *)LINN(0x266e))
-#define g_DAT_1110_2670 (*(uint16_t *)LINN(0x2670))
+/* seg01.c LoadAccelerators(0x74) -> DS:0x2666; seg03.c message loop */
+#define g_accel_table_main (*(uint16_t *)LINN(0x2666))
+/* seg13.c 13:subclass: CallWindowProc with DS:0x2668 for the combo box */
+#define g_combo_old_wndproc (*(uint32_t *)LINN(0x2668))
+/* seg03.c 3:0x054c: GetSystemMetrics(0x20) (SM_CXFRAME) stored in DS:0x266c */
+#define g_frame_width (*(uint16_t *)LINN(0x266c))
+/* seg03.c 3:0x054c: GetSystemMetrics(0x21) (SM_CYFRAME) stored in DS:0x266e */
+#define g_frame_height (*(uint16_t *)LINN(0x266e))
+/* seg01.c cursors table: resource 0x102; seg04.c hit_test_dividers returns it on the vertical bar only */
+#define g_cursor_divider_vertical (*(uint16_t *)LINN(0x2670))
 #define g_DAT_1110_2672 (*(uint16_t *)LINN(0x2672))
 #define g_DAT_1110_2674 (*(uint16_t *)LINN(0x2674))
-#define g_DAT_1110_2676 (*(uint16_t *)LINN(0x2676))
-#define g_DAT_1110_2678 (*(uint16_t *)LINN(0x2678))
-#define g_DAT_1110_267a (*(uint16_t *)LINN(0x267a))
+/* seg01.c fn_01_08a4: cell_height of the font DS:0x2938 */
+#define g_cell_height_7pt (*(uint16_t *)LINN(0x2676))
+/* seg01.c fn_01_08a4: cell_height of the font DS:0x293a */
+#define g_cell_height_6pt (*(uint16_t *)LINN(0x2678))
+/* seg03.c WM_PAINT credits: line height DS:0x267A; seg01.c 1:0x08a4 stores the text metrics */
+#define g_text_line_height (*(uint16_t *)LINN(0x267a))
 #define g_DAT_1110_267c (*(uint16_t *)LINN(0x267c))
-#define g_DAT_1110_267e (*(uint32_ua *)LINN(0x267e))
-#define g_DAT_1110_2682 (*(uint32_ua *)LINN(0x2682))
-#define g_DAT_1110_2686 (*(uint16_t *)LINN(0x2686))
+/* seg03.c 3:0x054c: system colour 16 (COLOR_BTNSHADOW) cached in DS:0x267E. Also covers the used offsets DS:0x2680 (no label of their own; pass 2 reaches them through this macro) */
+#define g_color_btnshadow (*(uint32_ua *)LINN(0x267e))
+/* seg01.c procs table: MakeProcInstance of 25:0x4632 FAKELISTPROC (docs/functions.csv); freed by seg03.c release_all_resources */
+#define g_fake_list_proc_instance (*(uint32_ua *)LINN(0x2682))
+/* seg06.c: the edit control is placed below the font height DS:0x2686 + 3 */
+#define g_edit_font_height_maybe (*(uint16_t *)LINN(0x2686))
 #define g_DAT_1110_2688 (*(uint32_t *)LINN(0x2688))
 #define g_DAT_1110_268c (*(uint16_t *)LINN(0x268c))
 #define g_DAT_1110_268e (*(uint16_t *)LINN(0x268e))
 #define g_DAT_1110_2690 (*(uint16_t *)LINN(0x2690))
-#define g_DAT_1110_26ae (*(uint16_t *)LINN(0x26ae))
+/* seg01.c load_res(0x57); seg05.c paint_info_panel mode 8 (5:0x04e8) blits one 64 x 64 picture per map-object kind (index from the kind bits) with 8:0xaa4e */
+#define g_map_object_pictures (*(uint16_t *)LINN(0x26ae))
 #define g_DAT_1110_26b0 (*(uint16_t *)LINN(0x26b0))
 #define g_DAT_1110_26b2 (*(uint32_ua *)LINN(0x26b2))
 #define g_DAT_1110_26b6 (*(uint32_ua *)LINN(0x26b6))
@@ -718,7 +906,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_2748 (*(uint32_t *)LINN(0x2748))
 #define g_DAT_1110_274c (*(uint16_t *)LINN(0x274c))
 #define g_DAT_1110_274e (*(uint16_t *)LINN(0x274e))
-#define g_DAT_1110_275c (*(uint16_t *)LINN(0x275c))
+/* seg01.c LoadBitmap(0x77); checked non-zero and deleted (seg03.c). Game meaning unknown: no code in src/ selects it */
+#define g_bitmap_res_77 (*(uint16_t *)LINN(0x275c))
 #define g_DAT_1110_2760 (*(uint16_t *)LINN(0x2760))
 #define g_DAT_1110_2762 (*(uint16_t *)LINN(0x2762))
 #define g_DAT_1110_2764 (*(uint16_t *)LINN(0x2764))
@@ -730,10 +919,12 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_2772 (*(uint32_ua *)LINN(0x2772))
 #define g_DAT_1110_2792 (*(uint8_t *)LINN(0x2792))
 #define g_DAT_1110_2793 (*(uint8_t *)LINN(0x2793))
-#define g_DAT_1110_27b2 (*(uint32_ua *)LINN(0x27b2))
+/* seg01.c procs table: MakeProcInstance of 10:0x674e FAKEEDITPROC (docs/functions.csv); freed by seg03.c release_all_resources */
+#define g_fake_edit_proc_instance (*(uint32_ua *)LINN(0x27b2))
 #define g_DAT_1110_27b6 (*(uint32_ua *)LINN(0x27b6))
 #define g_DAT_1110_27ba (*(uint16_t *)LINN(0x27ba))
-#define g_DAT_1110_27be (*(uint32_ua *)LINN(0x27be))
+/* seg01.c procs table: MakeProcInstance of 13:0x14bc FAKECOMBOPROC; seg13.c TBWNDPROC subclasses the zoom combo box (DS:0x18be) with it */
+#define g_fake_combo_proc_instance (*(uint32_ua *)LINN(0x27be))
 #define g_DAT_1110_27c2 (*(uint8_t *)LINN(0x27c2))
 #define g_DAT_1110_27d4 (*(uint16_t *)LINN(0x27d4))
 #define g_DAT_1110_27d6 (*(uint16_t *)LINN(0x27d6))
@@ -744,11 +935,16 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_27e0 (*(uint8_t *)LINN(0x27e0))
 #define g_DAT_1110_27e5 (*(uint8_t *)LINN(0x27e5))
 #define g_DAT_1110_27e7 (*(uint8_t *)LINN(0x27e7))
-#define g_DAT_1110_27ea (*(uint16_t *)LINN(0x27ea))
-#define g_DAT_1110_27ec (*(uint16_t *)LINN(0x27ec))
-#define g_DAT_1110_27ee (*(uint32_ua *)LINN(0x27ee))
-#define g_DAT_1110_27f2 (*(uint16_t *)LINN(0x27f2))
-#define g_DAT_1110_27f4 (*(uint16_t *)LINN(0x27f4))
+/* seg04.c update_caption_and_panels sets DS:0x27ea/0x27ec to 0x3e8 (1000, the coordinate origin); frame_on_command subtracts it */
+#define g_map_origin_x_maybe (*(uint16_t *)LINN(0x27ea))
+/* seg04.c update_caption_and_panels sets DS:0x27ea/0x27ec to 0x3e8; frame_on_command uses it */
+#define g_map_origin_y_maybe (*(uint16_t *)LINN(0x27ec))
+/* seg03.c 3:0x054c: system colour 5 (COLOR_WINDOW) cached in DS:0x27EE. Also covers the used offsets DS:0x27f0 (no label of their own; pass 2 reaches them through this macro) */
+#define g_color_window (*(uint32_ua *)LINN(0x27ee))
+/* seg16.c MERGEFLEETSDLG: DS:0x27f2 fleets to choose from */
+#define g_merge_fleet_count (*(uint16_t *)LINN(0x27f2))
+/* seg01.c HistoryInfo: day number 31 * (12 * year + month) + day stored in DS:0x27f4; seg04.c save_settings writes it */
+#define g_history_day (*(uint16_t *)LINN(0x27f4))
 #define g_DAT_1110_27f6 (*(uint16_t *)LINN(0x27f6))
 #define g_DAT_1110_27f8 (*(uint16_t *)LINN(0x27f8))
 #define g_DAT_1110_27fa (*(uint16_t *)LINN(0x27fa))
@@ -756,35 +952,44 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_27fe (*(uint16_t *)LINN(0x27fe))
 #define g_DAT_1110_2800 (*(uint32_t *)LINN(0x2800))
 #define g_DAT_1110_2804 (*(uint16_t *)LINN(0x2804))
-#define g_DAT_1110_2806 (*(uint16_t *)LINN(0x2806))
+/* seg03.c PostMessage(DS:0x2806 */
+#define g_main_window (*(uint16_t *)LINN(0x2806))
 #define g_DAT_1110_2808 (*(uint16_t *)LINN(0x2808))
 #define g_DAT_1110_280a (*(uint16_t *)LINN(0x280a))
 #define g_DAT_1110_2816 (*(uint16_t *)LINN(0x2816))
 #define g_DAT_1110_2818 (*(uint8_t *)LINN(0x2818))
-#define g_DAT_1110_2870 (*(uint16_t *)LINN(0x2870))
-#define g_DAT_1110_2872 (*(uint16_t *)LINN(0x2872))
+/* seg03.c 3:0x054c: system colour 18 (COLOR_BTNTEXT) cached in DS:0x2870 */
+#define g_color_btntext (*(uint16_t *)LINN(0x2870))
+/* seg03.c 3:0x054c: high word of the COLORREF of colour 18 (BTNTEXT) written at DS:0x2870/0x2872 */
+#define g_color_btntext_high_maybe (*(uint16_t *)LINN(0x2872))
 #define g_DAT_1110_2874 (*(uint16_t *)LINN(0x2874))
 #define g_DAT_1110_2876 (*(uint32_ua *)LINN(0x2876))
 #define g_DAT_1110_287a (*(uint16_t *)LINN(0x287a))
 #define g_DAT_1110_287c (*(uint16_t *)LINN(0x287c))
-#define g_DAT_1110_287e (*(uint16_t *)LINN(0x287e))
-#define g_DAT_1110_2880 (*(uint16_t *)LINN(0x2880))
+/* seg01.c load_res(0x4f); only checked non-zero (seg01.c) and freed (seg03.c). Game meaning unknown: no code in src/ reads it */
+#define g_res_handle_4f (*(uint16_t *)LINN(0x287e))
+/* seg01.c load_res(0x50); only checked non-zero (seg01.c) and freed (seg03.c). Game meaning unknown: no code in src/ reads it */
+#define g_res_handle_50 (*(uint16_t *)LINN(0x2880))
 #define g_DAT_1110_2882 (*(uint16_t *)LINN(0x2882))
-#define g_DAT_1110_2884 (*(uint16_t *)LINN(0x2884))
+/* seg06.c 6:paint: bitmap DS:0x5a54 and its mask DS:0x2884 */
+#define g_bitmap_msg_icons_mask (*(uint16_t *)LINN(0x2884))
 #define g_DAT_1110_2886 (*(uint16_t *)LINN(0x2886))
 #define g_DAT_1110_2888 (*(uint16_t *)LINN(0x2888))
-#define g_DAT_1110_288a (*(uint16_t *)LINN(0x288a))
+/* seg01.c fn_01_08a4: GetTextExtent of 8 characters at DS:0x74a with font DS:0x292e */
+#define g_text_width_8_chars (*(uint16_t *)LINN(0x288a))
 #define g_DAT_1110_2890 (*(uint32_t *)LINN(0x2890))
 #define g_DAT_1110_290c (*(uint16_t *)LINN(0x290c))
 #define g_DAT_1110_290e (*(uint16_t *)LINN(0x290e))
-#define g_DAT_1110_2910 (*(uint16_t *)LINN(0x2910))
+/* stars.h BlockHeader.word read at DS:0x2910 by 14:0x305a; seg06.c load_player_messages masks type and length. Also covers the used offsets DS:0x2911 (no label of their own; pass 2 reaches them through this macro) */
+#define g_block_header_word (*(uint16_t *)LINN(0x2910))
 #define g_DAT_1110_2912 (*(uint16_t *)LINN(0x2912))
 #define g_DAT_1110_2914 (*(uint16_t *)LINN(0x2914))
 #define g_DAT_1110_2916 (*(uint16_t *)LINN(0x2916))
 #define g_DAT_1110_2918 (*(uint16_t *)LINN(0x2918))
 #define g_DAT_1110_291a (*(uint16_t *)LINN(0x291a))
 #define g_DAT_1110_291c (*(uint16_t *)LINN(0x291c))
-#define g_DAT_1110_291e (*(uint16_t *)LINN(0x291e))
+/* seg04.c FRAMEWNDPROC: passed as the third argument of 10:0x1aec with the window DS:0x156 */
+#define g_panel_param_maybe (*(uint16_t *)LINN(0x291e))
 #define g_DAT_1110_2920 (*(uint16_t *)LINN(0x2920))
 #define g_DAT_1110_2922 (*(uint16_t *)LINN(0x2922))
 #define g_DAT_1110_2924 (*(uint16_t *)LINN(0x2924))
@@ -792,27 +997,37 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_2928 (*(uint16_t *)LINN(0x2928))
 #define g_DAT_1110_292a (*(uint16_t *)LINN(0x292a))
 #define g_DAT_1110_292c (*(uint16_t *)LINN(0x292c))
-#define g_DAT_1110_292e (*(uint16_t *)LINN(0x292e))
-#define g_DAT_1110_2930 (*(uint16_t *)LINN(0x2930))
+/* seg01.c 1:0x08a4: DS:0x292e .. 0x2934 the four names at 8 pt; inventory.md face names Arial */
+#define g_font_arial_8pt (*(uint16_t *)LINN(0x292e))
+/* seg01.c 1:0x08a4: second of the four 8 pt faces; face name 1 = Arial Bold */
+#define g_font_arial_bold_8pt (*(uint16_t *)LINN(0x2930))
 #define g_DAT_1110_2934 (*(uint16_t *)LINN(0x2934))
-#define g_DAT_1110_2936 (*(uint16_t *)LINN(0x2936))
-#define g_DAT_1110_2938 (*(uint16_t *)LINN(0x2938))
-#define g_DAT_1110_293a (*(uint16_t *)LINN(0x293a))
+/* seg01.c fn_01_08a4: face name 1 (Arial Bold), 8 pt, lfEscapement 0xc4e */
+#define g_font_arial_bold_8pt_rotated (*(uint16_t *)LINN(0x2936))
+/* seg01.c fn_01_08a4: 7 pt font of name 0, cell height in DS:0x2676 */
+#define g_font_arial_7pt (*(uint16_t *)LINN(0x2938))
+/* seg01.c fn_01_08a4: 6 pt font of name 0, cell height in DS:0x2678 */
+#define g_font_arial_6pt (*(uint16_t *)LINN(0x293a))
 #define g_DAT_1110_293c (*(uint16_t *)LINN(0x293c))
 #define g_DAT_1110_293e (*(uint16_t *)LINN(0x293e))
-#define g_DAT_1110_2940 (*(uint16_t *)LINN(0x2940))
+/* seg01.c cursors table: resource 0x104; seg04.c hit_test_dividers returns it on a horizontal bar only */
+#define g_cursor_divider_horizontal (*(uint16_t *)LINN(0x2940))
 #define g_DAT_1110_2942 (*(uint16_t *)LINN(0x2942))
 #define g_DAT_1110_2944 (*(uint16_t *)LINN(0x2944))
 #define g_DAT_1110_2946 (*(uint16_t *)LINN(0x2946))
 #define g_DAT_1110_2948 (*(uint16_t *)LINN(0x2948))
 #define g_DAT_1110_294a (*(uint32_ua *)LINN(0x294a))
 #define g_DAT_1110_294e (*(uint32_ua *)LINN(0x294e))
-#define g_DAT_1110_29c2 (*(uint32_ua *)LINN(0x29c2))
+/* seg01.c procs table: MakeProcInstance of 13:0x1508 FAKECEPROC; seg13.c TBWNDPROC subclasses the combo box child with it */
+#define g_fake_ce_proc_instance (*(uint32_ua *)LINN(0x29c2))
 #define g_DAT_1110_29c6 (*(uint16_t *)LINN(0x29c6))
-#define g_DAT_1110_29c8 (*(uint32_t *)LINN(0x29c8))
-#define g_DAT_1110_29cc (*(uint32_t *)LINN(0x29cc))
+/* seg13.c 13:tooltip_update: the item rectangle DS:0x29c8 */
+#define g_tooltip_item_rect (*(uint32_t *)LINN(0x29c8))
+/* seg13.c tooltip_update: the item rectangle's right and bottom (rect + 4) kept in DS:0x29cc */
+#define g_tooltip_item_rect_end (*(uint32_t *)LINN(0x29cc))
 #define g_DAT_1110_29d2 (*(uint16_t *)LINN(0x29d2))
-#define g_DAT_1110_29d4 (*(uint16_t *)LINN(0x29d4))
+/* seg13.c TOOLTIPWNDPROC WM_ERASEBKGND fills the client rectangle with DS:0x29d4 */
+#define g_brush_tooltip_bg (*(uint16_t *)LINN(0x29d4))
 #define g_DAT_1110_29d6 (*(uint16_t *)LINN(0x29d6))
 #define g_DAT_1110_29d8 (*(uint16_t *)LINN(0x29d8))
 #define g_DAT_1110_29da (*(uint16_t *)LINN(0x29da))
@@ -824,106 +1039,154 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_29e6 (*(uint16_t *)LINN(0x29e6))
 #define g_DAT_1110_29e8 (*(uint16_t *)LINN(0x29e8))
 #define g_DAT_1110_29ea (*(uint16_t *)LINN(0x29ea))
-#define g_DAT_1110_31b6 (*(uint32_ua *)LINN(0x31b6))
-#define g_DAT_1110_31ba (*(uint32_ua *)LINN(0x31ba))
+/* seg13.c 13:subclass: CallWindowProc with DS:0x31b6 for the edit control */
+#define g_edit_old_wndproc (*(uint32_ua *)LINN(0x31b6))
+/* seg21.c: DS:0x31ba is the planet coordinate table (4 bytes per planet); seg16.c/seg19.c index */
+#define g_planet_xy_table (*(uint32_ua *)LINN(0x31ba))
 #define g_DAT_1110_31be (*(uint32_ua *)LINN(0x31be))
 #define g_DAT_1110_31c2 (*(uint16_t *)LINN(0x31c2))
 #define g_DAT_1110_31c4 (*(uint16_t *)LINN(0x31c4))
-#define g_DAT_1110_4156 (*(uint16_t *)LINN(0x4156))
-#define g_DAT_1110_4158 (*(uint16_t *)LINN(0x4158))
+/* seg06.c update_message_controls: set for the goto kinds 6 and 10; DS:0x4156 is passed to 7:0x01a0 */
+#define g_message_goto_arg_a_maybe (*(uint16_t *)LINN(0x4156))
+/* seg06.c update_message_controls: set for goto kind 6 with DS:0x4156 */
+#define g_message_goto_arg_b_maybe (*(uint16_t *)LINN(0x4158))
 #define g_DAT_1110_415a (*(uint16_t *)LINN(0x415a))
-#define g_DAT_1110_415c (*(uint16_t *)LINN(0x415c))
+/* seg06.c goto kind of the shown message into DS:0x415c (0 none */
+#define g_message_goto_kind (*(uint16_t *)LINN(0x415c))
 #define g_DAT_1110_415e (*(uint16_t *)LINN(0x415e))
-#define g_DAT_1110_4160 (*(uint16_t *)LINN(0x4160))
+/* seg06.c update_message_controls: subject (w & 0x7fff) of the shown message; MESSAGEWNDPROC passes it to 9:0x2ed8 and 10:0x26b2. Also covers the used offsets DS:0x4161 (no label of their own; pass 2 reaches them through this macro) */
+#define g_message_goto_subject (*(uint16_t *)LINN(0x4160))
 #define g_DAT_1110_4162 (*(uint16_t *)LINN(0x4162))
 #define g_DAT_1110_4164 (*(uint16_t *)LINN(0x4164))
-#define g_DAT_1110_4166 (*(uint32_ua *)LINN(0x4166))
-#define g_DAT_1110_416a (*(uint16_t *)LINN(0x416a))
-#define g_DAT_1110_416c (*(uint16_t *)LINN(0x416c))
-#define g_DAT_1110_4174 (*(uint16_t *)LINN(0x4174))
+/* seg03.c 3:0x054c: system colour 20 (COLOR_BTNHIGHLIGHT) cached in DS:0x4166. Also covers the used offsets DS:0x4168 (no label of their own; pass 2 reaches them through this macro) */
+#define g_color_btnhighlight (*(uint32_ua *)LINN(0x4166))
+/* seg03.c WinMain clears 10 bytes at DS:0x416A; seg04.c HOSTMODEDIALOG tests DS:0x416c / 0x416a */
+#define g_host_pending_a_maybe (*(uint16_t *)LINN(0x416a))
+/* seg03.c WinMain sets DS:0x416C = 1; seg04.c HOSTMODEDIALOG tests it with DS:0x416a */
+#define g_host_pending_b_maybe (*(uint16_t *)LINN(0x416c))
+/* seg01.c LoadBitmap(string 0x661); seg05.c paint_info_panel selects it into a memory DC */
+#define g_bitmap_info_panel_maybe (*(uint16_t *)LINN(0x4174))
 #define g_DAT_1110_4176 (*(uint16_t *)LINN(0x4176))
 #define g_DAT_1110_4178 (*(uint16_t *)LINN(0x4178))
-#define g_DAT_1110_417a (*(uint16_t *)LINN(0x417a))
+/* seg17.c design slot records of 0x8d bytes at DS:0x417a (slot k at 0x417a + 0x8d * k) */
+#define g_design_slots (*(uint16_t *)LINN(0x417a))
 #define g_DAT_1110_417e (*(uint8_t *)LINN(0x417e))
 #define g_DAT_1110_4182 (*(uint8_t *)LINN(0x4182))
 #define g_DAT_1110_41a2 (*(uint16_t *)LINN(0x41a2))
 #define g_DAT_1110_41ac (*(uint16_t *)LINN(0x41ac))
-#define g_DAT_1110_41b6 (*(uint8_t *)LINN(0x41b6))
-#define g_DAT_1110_41f6 (*(uint8_t *)LINN(0x41f6))
-#define g_DAT_1110_41fd (*(uint32_ua *)LINN(0x41fd))
-#define g_DAT_1110_4207 (*(uint16_ua *)LINN(0x4207))
+/* seg19.c: the byte at +0x3c of slot 0 compared with small numbers of the 0x8d-byte record of design slot 0 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot0_field_3c_maybe (*(uint8_t *)LINN(0x41b6))
+/* seg17.c, seg19.c, seg21.c: bit 1 of byte +0x7c (slot 0) tested in the computer-player turns of the 0x8d-byte record of design slot 0 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot0_flags (*(uint8_t *)LINN(0x41f6))
+/* seg17.c: the dword at +0x7f of slot 0 read as a value in seg17.c ai1_turn of the 0x8d-byte record of design slot 0 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot0_field_7f_maybe (*(uint16_ua *)LINN(0x41f9))
+/* seg17.c, seg19.c, seg21.c: the dword at +0x83 of slot 0 tested for zero of the 0x8d-byte record of design slot 0 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field. Also covers the used offsets DS:0x41ff (no label of their own; pass 2 reaches them through this macro) */
+#define g_design_slot0_field_83_maybe (*(uint32_ua *)LINN(0x41fd))
+/* seg17.c, seg19.c: the first word of slot 1 compared with 1 and 0xb of the 0x8d-byte record of design slot 1 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot1_kind_maybe (*(uint16_ua *)LINN(0x4207))
 #define g_DAT_1110_420b (*(uint8_t *)LINN(0x420b))
 #define g_DAT_1110_420f (*(uint8_t *)LINN(0x420f))
 #define g_DAT_1110_4210 (*(uint8_t *)LINN(0x4210))
 #define g_DAT_1110_4239 (*(uint16_ua *)LINN(0x4239))
-#define g_DAT_1110_4243 (*(uint8_t *)LINN(0x4243))
-#define g_DAT_1110_4283 (*(uint8_t *)LINN(0x4283))
+/* seg17.c, seg19.c: the byte at +0x3c of slot 1 compared with small numbers of the 0x8d-byte record of design slot 1 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot1_field_3c_maybe (*(uint8_t *)LINN(0x4243))
+/* seg17.c, seg19.c: bit 1 of byte +0x7c (slot 1) tested in the computer-player turns of the 0x8d-byte record of design slot 1 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot1_flags (*(uint8_t *)LINN(0x4283))
 #define g_DAT_1110_4284 (*(uint16_t *)LINN(0x4284))
-#define g_DAT_1110_428a (*(uint32_ua *)LINN(0x428a))
+/* seg17.c, seg19.c, seg21.c: the dword at +0x83 of slot 1 tested for zero of the 0x8d-byte record of design slot 1 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field. Also covers the used offsets DS:0x428c (no label of their own; pass 2 reaches them through this macro) */
+#define g_design_slot1_field_83_maybe (*(uint32_ua *)LINN(0x428a))
 #define g_DAT_1110_4294 (*(uint32_t *)LINN(0x4294))
 #define g_DAT_1110_4298 (*(uint8_t *)LINN(0x4298))
 #define g_DAT_1110_42d0 (*(uint8_t *)LINN(0x42d0))
-#define g_DAT_1110_4310 (*(uint8_t *)LINN(0x4310))
-#define g_DAT_1110_4311 (*(uint16_ua *)LINN(0x4311))
+/* seg17.c, seg19.c, seg21.c: bit 1 of byte +0x7c (slot 2) tested in the computer-player turns of the 0x8d-byte record of design slot 2 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot2_flags (*(uint8_t *)LINN(0x4310))
+/* seg21.c: the word at +0x7d of slot 2 compared with the current turn plus 0x14 or 0x1e of the 0x8d-byte record of design slot 2 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot2_turn_maybe (*(uint16_ua *)LINN(0x4311))
 #define g_DAT_1110_4313 (*(uint32_ua *)LINN(0x4313))
-#define g_DAT_1110_4317 (*(uint32_ua *)LINN(0x4317))
-#define g_DAT_1110_439d (*(uint8_t *)LINN(0x439d))
-#define g_DAT_1110_442a (*(uint8_t *)LINN(0x442a))
-#define g_DAT_1110_442b (*(uint16_ua *)LINN(0x442b))
-#define g_DAT_1110_44b7 (*(uint8_t *)LINN(0x44b7))
+/* seg17.c: the dword at +0x83 of slot 2 tested for zero of the 0x8d-byte record of design slot 2 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot2_field_83_maybe (*(uint32_ua *)LINN(0x4317))
+/* seg19.c, seg21.c: bit 1 of byte +0x7c (slot 3) tested in the computer-player turns of the 0x8d-byte record of design slot 3 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot3_flags (*(uint8_t *)LINN(0x439d))
+/* seg17.c, seg19.c, seg21.c: bit 1 of byte +0x7c (slot 4) tested in the computer-player turns of the 0x8d-byte record of design slot 4 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot4_flags (*(uint8_t *)LINN(0x442a))
+/* seg21.c: the word at +0x7d of slot 4 compared with the current turn plus 0x14 or 0x1e of the 0x8d-byte record of design slot 4 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot4_turn_maybe (*(uint16_ua *)LINN(0x442b))
+/* seg19.c, seg21.c: bit 1 of byte +0x7c (slot 5) tested in the computer-player turns of the 0x8d-byte record of design slot 5 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot5_flags (*(uint8_t *)LINN(0x44b7))
 #define g_DAT_1110_44b8 (*(uint16_t *)LINN(0x44b8))
-#define g_DAT_1110_4544 (*(uint8_t *)LINN(0x4544))
-#define g_DAT_1110_4545 (*(uint16_ua *)LINN(0x4545))
+/* seg19.c, seg21.c: bit 1 of byte +0x7c (slot 6) tested in the computer-player turns of the 0x8d-byte record of design slot 6 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot6_flags (*(uint8_t *)LINN(0x4544))
+/* seg21.c: the word at +0x7d of slot 6 compared with the current turn plus 0x14 or 0x1e of the 0x8d-byte record of design slot 6 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot6_turn_maybe (*(uint16_ua *)LINN(0x4545))
 #define g_DAT_1110_4555 (*(uint16_ua *)LINN(0x4555))
 #define g_DAT_1110_4559 (*(uint8_t *)LINN(0x4559))
 #define g_DAT_1110_45d1 (*(uint8_t *)LINN(0x45d1))
 #define g_DAT_1110_45d2 (*(uint16_t *)LINN(0x45d2))
 #define g_DAT_1110_45d8 (*(uint32_t *)LINN(0x45d8))
 #define g_DAT_1110_45e2 (*(uint32_ua *)LINN(0x45e2))
-#define g_DAT_1110_465e (*(uint8_t *)LINN(0x465e))
+/* seg17.c: bit 1 of byte +0x7c (slot 8) tested in the computer-player turns of the 0x8d-byte record of design slot 8 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot8_flags (*(uint8_t *)LINN(0x465e))
 #define g_DAT_1110_465f (*(uint16_ua *)LINN(0x465f))
 #define g_DAT_1110_4665 (*(uint32_ua *)LINN(0x4665))
 #define g_DAT_1110_466f (*(uint32_ua *)LINN(0x466f))
 #define g_DAT_1110_4673 (*(uint8_t *)LINN(0x4673))
-#define g_DAT_1110_46eb (*(uint8_t *)LINN(0x46eb))
+/* seg17.c, seg19.c: bit 1 of byte +0x7c (slot 9) tested in the computer-player turns of the 0x8d-byte record of design slot 9 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot9_flags (*(uint8_t *)LINN(0x46eb))
 #define g_DAT_1110_46ec (*(uint16_t *)LINN(0x46ec))
 #define g_DAT_1110_46f2 (*(uint32_ua *)LINN(0x46f2))
-#define g_DAT_1110_4778 (*(uint8_t *)LINN(0x4778))
+/* seg17.c: bit 1 of byte +0x7c (slot 10) tested in the computer-player turns of the 0x8d-byte record of design slot 10 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot10_flags (*(uint8_t *)LINN(0x4778))
 #define g_DAT_1110_4779 (*(uint16_ua *)LINN(0x4779))
 #define g_DAT_1110_4805 (*(uint8_t *)LINN(0x4805))
 #define g_DAT_1110_4806 (*(uint16_t *)LINN(0x4806))
 #define g_DAT_1110_4816 (*(uint16_t *)LINN(0x4816))
-#define g_DAT_1110_4892 (*(uint8_t *)LINN(0x4892))
-#define g_DAT_1110_4899 (*(uint32_ua *)LINN(0x4899))
+/* seg17.c: bit 1 of byte +0x7c (slot 12) tested in the computer-player turns of the 0x8d-byte record of design slot 12 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot12_flags (*(uint8_t *)LINN(0x4892))
+/* seg17.c: the dword at +0x83 of slot 12 tested for zero of the 0x8d-byte record of design slot 12 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot12_field_83_maybe (*(uint32_ua *)LINN(0x4899))
 #define g_DAT_1110_48a3 (*(uint16_ua *)LINN(0x48a3))
-#define g_DAT_1110_491f (*(uint8_t *)LINN(0x491f))
+/* seg17.c: bit 1 of byte +0x7c (slot 13) tested in the computer-player turns of the 0x8d-byte record of design slot 13 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot13_flags (*(uint8_t *)LINN(0x491f))
 #define g_DAT_1110_4930 (*(uint16_t *)LINN(0x4930))
 #define g_DAT_1110_4934 (*(uint8_t *)LINN(0x4934))
 #define g_DAT_1110_496c (*(uint8_t *)LINN(0x496c))
 #define g_DAT_1110_4974 (*(uint8_t *)LINN(0x4974))
-#define g_DAT_1110_49ac (*(uint8_t *)LINN(0x49ac))
-#define g_DAT_1110_49ad (*(uint16_ua *)LINN(0x49ad))
+/* seg17.c, seg19.c, seg21.c: bit 1 of byte +0x7c (slot 14) tested in the computer-player turns of the 0x8d-byte record of design slot 14 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot14_flags (*(uint8_t *)LINN(0x49ac))
+/* seg21.c: the word at +0x7d of slot 14 compared with the current turn plus 0x14 or 0x1e of the 0x8d-byte record of design slot 14 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot14_turn_maybe (*(uint16_ua *)LINN(0x49ad))
 #define g_DAT_1110_49b3 (*(uint32_ua *)LINN(0x49b3))
 #define g_DAT_1110_49bd (*(uint16_ua *)LINN(0x49bd))
 #define g_DAT_1110_4a01 (*(uint8_t *)LINN(0x4a01))
-#define g_DAT_1110_4a39 (*(uint8_t *)LINN(0x4a39))
+/* seg17.c: bit 1 of byte +0x7c (slot 15) tested in the computer-player turns of the 0x8d-byte record of design slot 15 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot15_flags (*(uint8_t *)LINN(0x4a39))
+/* seg21.c: the word at +0x7d of slot 15 subtracted from the current turn of the 0x8d-byte record of design slot 15 (array DS:0x417a). Game meaning unknown: pass 1 only compares it, no code names the field */
+#define g_design_slot15_turn_maybe (*(uint16_t *)LINN(0x4a3a))
 #define g_DAT_1110_4a40 (*(uint32_t *)LINN(0x4a40))
 #define g_DAT_1110_4a4a (*(uint8_t *)LINN(0x4a4a))
 #define g_DAT_1110_4a4b (*(uint8_t *)LINN(0x4a4b))
 #define g_DAT_1110_4a4e (*(uint32_ua *)LINN(0x4a4e))
-#define g_DAT_1110_4a5a (*(uint16_t *)LINN(0x4a5a))
-#define g_DAT_1110_4a5c (*(uint16_t *)LINN(0x4a5c))
+/* seg01.c 1:0x08a4: DS:0x4a5a */
+#define g_font_arial_10pt (*(uint16_t *)LINN(0x4a5a))
+/* seg01.c 1:0x08a4: DS:0x4a5a */
+#define g_font_arial_bold_10pt (*(uint16_t *)LINN(0x4a5c))
 #define g_DAT_1110_4a5e (*(uint16_t *)LINN(0x4a5e))
-#define g_DAT_1110_4a60 (*(uint8_t *)LINN(0x4a60))
-#define g_DAT_1110_4a61 (*(uint8_t *)LINN(0x4a61))
-#define g_DAT_1110_4a62 (*(uint8_t *)LINN(0x4a62))
-#define g_DAT_1110_4a63 (*(uint8_t *)LINN(0x4a63))
+/* seg21.c 21:0x0000: DS:0x4a60 to 0x4a63 computed from the turn like DS:0x5340 to 0x5343 */
+#define g_ai_threshold2_0_maybe (*(uint8_t *)LINN(0x4a60))
+/* seg21.c 21:0x0000: half of DS:0x4a60 */
+#define g_ai_threshold2_1_maybe (*(uint8_t *)LINN(0x4a61))
+/* seg21.c 21:0x0000: 6 + (turn - 0x64) / 0x16, at most 0xc */
+#define g_ai_threshold2_2_maybe (*(uint8_t *)LINN(0x4a62))
+/* seg21.c 21:0x0000: min(DS:0x4a62 / 2 - 1, 3) */
+#define g_ai_threshold2_3_maybe (*(uint8_t *)LINN(0x4a63))
 #define g_DAT_1110_4a64 (*(uint16_t *)LINN(0x4a64))
 #define g_DAT_1110_4a66 (*(uint16_t *)LINN(0x4a66))
-#define g_DAT_1110_4ac0 (*(uint32_t *)LINN(0x4ac0))
+/* seg03.c 3:0x054c: system colour 8 cached in DS:0x4AC0; seg13.c tooltip text colour. Also covers the used offsets DS:0x4ac2 (no label of their own; pass 2 reaches them through this macro) */
+#define g_color_windowtext (*(uint32_t *)LINN(0x4ac0))
 #define g_DAT_1110_4ac4 (*(uint16_t *)LINN(0x4ac4))
 #define g_DAT_1110_4ac6 (*(uint16_t *)LINN(0x4ac6))
-#define g_DAT_1110_4ac8 (*(uint16_t *)LINN(0x4ac8))
+/* seg01.c cursors table, resource 0x108; seg05.c MINEWNDPROC WM_SETCURSOR shows it outside the cycle-button strip (zone 9) */
+#define g_cursor_info_panel (*(uint16_t *)LINN(0x4ac8))
 #define g_DAT_1110_4aca (*(uint32_ua *)LINN(0x4aca))
 #define g_DAT_1110_4ace (*(uint32_ua *)LINN(0x4ace))
 #define g_DAT_1110_4ad2 (*(uint32_ua *)LINN(0x4ad2))
@@ -962,27 +1225,48 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_4b58 (*(uint16_t *)LINN(0x4b58))
 #define g_DAT_1110_4b5a (*(uint32_ua *)LINN(0x4b5a))
 #define g_DAT_1110_4b5e (*(uint32_ua *)LINN(0x4b5e))
-#define g_DAT_1110_4b62 (*(uint16_t *)LINN(0x4b62))
-#define g_DAT_1110_4b64 (*(uint16_t *)LINN(0x4b64))
-#define g_DAT_1110_4b66 (*(uint16_t *)LINN(0x4b66))
-#define g_DAT_1110_4b68 (*(uint16_t *)LINN(0x4b68))
-#define g_DAT_1110_4b6a (*(uint16_t *)LINN(0x4b6a))
-#define g_DAT_1110_4b6c (*(uint16_t *)LINN(0x4b6c))
+/* seg21.c 21:0x123e: DS:0x4b62 far pointers in the list DS:0x1608 */
+#define g_object_ptr_count (*(uint16_t *)LINN(0x4b62))
+/* seg06.c hit test: PtInRect(DS:0x4b64) the title line rectangle */
+#define g_msg_title_rect (*(uint16_t *)LINN(0x4b64))
+/* seg06.c hit_test_message_window: rectangle DS:0x4b64 (left) 4b66 (top) 4b68 (right) 4b6a (bottom) */
+#define g_msg_title_rect_top (*(uint16_t *)LINN(0x4b66))
+/* seg06.c hit_test_message_window: rectangle DS:0x4b64.. right edge */
+#define g_msg_title_rect_right (*(uint16_t *)LINN(0x4b68))
+/* seg06.c hit_test_message_window: rectangle DS:0x4b64.. bottom edge */
+#define g_msg_title_rect_bottom (*(uint16_t *)LINN(0x4b6a))
+/* seg01.c load_res(0x70); only checked non-zero (seg01.c) and freed (seg03.c). Game meaning unknown: no code in src/ reads it */
+#define g_res_handle_70 (*(uint16_t *)LINN(0x4b6c))
 #define g_DAT_1110_4b6e (*(uint16_t *)LINN(0x4b6e))
-#define g_DAT_1110_4b70 (*(uint32_t *)LINN(0x4b70))
-#define g_DAT_1110_4b74 (*(uint16_t *)LINN(0x4b74))
+/* seg04.c FRAMEWNDPROC: x, y at DS:0x4b70/0x4b72 above 0x3e8 go to 11:0x5142. Also covers the used offsets DS:0x4b72 (no label of their own; pass 2 reaches them through this macro) */
+#define g_goto_place_xy_maybe (*(uint32_t *)LINN(0x4b70))
+/* seg03.c WM_KEYDOWN: DELETE/BACKSPACE act when DS:0x4B74 is 2; seg04.c mode letter */
+#define g_selection_kind_maybe (*(uint16_t *)LINN(0x4b74))
 #define g_DAT_1110_4b76 (*(uint16_t *)LINN(0x4b76))
-#define g_DAT_1110_4b78 (*(uint16_t *)LINN(0x4b78))
-#define g_DAT_1110_4b7a (*(uint16_t *)LINN(0x4b7a))
-#define g_DAT_1110_4b7c (*(uint32_t *)LINN(0x4b7c))
-#define g_DAT_1110_4b80 (*(uint16_t *)LINN(0x4b80))
-#define g_DAT_1110_4b84 (*(uint16_t *)LINN(0x4b84))
-#define g_DAT_1110_4b86 (*(uint16_t *)LINN(0x4b86))
-#define g_DAT_1110_4b8a (*(uint16_t *)LINN(0x4b8a))
-#define g_DAT_1110_4b8c (*(uint16_t *)LINN(0x4b8c))
+/* seg04.c open_game_file sets the dword DS:0x4b78 to -1; seg06.c MESSAGEWNDPROC compares DS:0x4160 with it */
+#define g_selected_object_id_maybe (*(uint16_t *)LINN(0x4b78))
+/* seg03.c filter_key_message: record DS:0x4B7A of the table DS:0x4BF2:0x4BF0 (stride 0x12); seg16.c same table */
+#define g_selected_waypoint_index_maybe (*(uint16_t *)LINN(0x4b7a))
+/* seg05.c 5:0x36a8 several_things_at_place: the selected place DS:0x4B7C is an x */
+#define g_selected_place_xy (*(uint32_t *)LINN(0x4b7c))
+/* seg05.c header: the kind of the selected thing is DS:0x4B80 (DS:0x4B82 when it is 4) */
+#define g_selection_mode (*(uint16_t *)LINN(0x4b80))
+/* seg05.c 5:0x2840: byte DS:0x4B82 bits allow planet (0) fleet (1) map object (3) */
+#define g_selection_allowed_mask (*(uint16_t *)LINN(0x4b82))
+/* seg05.c header and 5:0x04e8: planet index DS:0x4B84 */
+#define g_selected_planet (*(uint16_t *)LINN(0x4b84))
+/* seg05.c header and 5:0x04e8: fleet index DS:0x4B86 */
+#define g_selected_fleet (*(uint16_t *)LINN(0x4b86))
+/* seg05.c info_on_click: DS:0x4B88 read when nothing is selected (the saved region DS:0x4B7C..0x4B8B) */
+#define g_selection_extra_maybe (*(uint16_t *)LINN(0x4b88))
+/* seg05.c header and 5:0x04e8: map object index DS:0x4B8A */
+#define g_selected_map_object (*(uint16_t *)LINN(0x4b8a))
+/* seg16.c MERGEFLEETSDLG: the line of the current fleet, its id is DS:0x4b8c */
+#define g_current_fleet_id (*(uint16_t *)LINN(0x4b8c))
 #define g_DAT_1110_4b8e (*(uint16_t *)LINN(0x4b8e))
 #define g_DAT_1110_4b90 (*(uint16_t *)LINN(0x4b90))
-#define g_DAT_1110_4b92 (*(uint16_t *)LINN(0x4b92))
+/* seg17.c/seg19.c: DS:0x4b92 compared with 0xffff (none) in the computer-player turns */
+#define g_cursor_target_maybe (*(uint16_t *)LINN(0x4b92))
 #define g_DAT_1110_4b94 (*(uint16_t *)LINN(0x4b94))
 #define g_DAT_1110_4b96 (*(uint16_t *)LINN(0x4b96))
 #define g_DAT_1110_4b98 (*(uint16_t *)LINN(0x4b98))
@@ -993,51 +1277,76 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_4bd8 (*(uint32_t *)LINN(0x4bd8))
 #define g_DAT_1110_4bdc (*(uint32_t *)LINN(0x4bdc))
 #define g_DAT_1110_4be8 (*(uint32_t *)LINN(0x4be8))
-#define g_DAT_1110_4bec (*(uint8_t *)LINN(0x4bec))
-#define g_DAT_1110_4bee (*(uint16_t *)LINN(0x4bee))
-#define g_DAT_1110_4bf0 (*(uint16_t *)LINN(0x4bf0))
-#define g_DAT_1110_4bf2 (*(uint16_t *)LINN(0x4bf2))
-#define g_DAT_1110_4c08 (*(uint16_t *)LINN(0x4c08))
-#define g_DAT_1110_4c0a (*(uint16_t *)LINN(0x4c0a))
-#define g_DAT_1110_4c0c (*(uint32_t *)LINN(0x4c0c))
+/* seg17.c ai0_turn and seg21.c 21:0x0000 set the byte DS:0x4bec to 4 before waypoint orders (beside DS:0x4bee and the table DS:0x4bf0) */
+#define g_waypoint_mode_maybe (*(uint8_t *)LINN(0x4bec))
+/* seg03.c filter_key_message: DS:0x4bee > 1 beside the waypoint index DS:0x4b7a; seg17.c ai0_turn sets it to 1 */
+#define g_waypoint_count_maybe (*(uint16_t *)LINN(0x4bee))
+/* seg03.c WM_KEYDOWN: table at DS:0x4BF2:0x4BF0 (stride 0x12); seg19.c waypoint list DS:0x4bf0 */
+#define g_waypoint_table (*(uint16_t *)LINN(0x4bf0))
+/* seg03.c: far pointer DS:0x4BF2:0x4BF0 */
+#define g_waypoint_table_segment_maybe (*(uint16_t *)LINN(0x4bf2))
+/* seg04.c FRAMEWNDPROC passes DS:0x4c08 to 9:0x3082; seg21.c calls 7:0x0358(-1, 0x4c08) */
+#define g_cursor_planet_maybe (*(uint16_t *)LINN(0x4c08))
+/* seg19.c ai7_turn: DS:0x4c0a compared with the current player DS:0x14c (a field of the cursor struct near DS:0x4bf0) */
+#define g_cursor_owner_maybe (*(uint16_t *)LINN(0x4c0a))
+/* seg17.c/seg19.c: the high byte DS:0x4c0d has bit 1 tested in the computer-player turns, beside DS:0x4c0a and DS:0x4b92. Also covers the used offsets DS:0x4c0d (no label of their own; pass 2 reaches them through this macro) */
+#define g_cursor_flags_word_maybe (*(uint32_t *)LINN(0x4c0c))
 #define g_DAT_1110_4c13 (*(uint8_t *)LINN(0x4c13))
 #define g_DAT_1110_4c1c (*(uint32_t *)LINN(0x4c1c))
-#define g_DAT_1110_4c20 (*(uint32_t *)LINN(0x4c20))
+/* seg17.c ai1_turn: DS:0x4c20/0x4c22 xor-ed with bit masks. Also covers the used offsets DS:0x4c22 (no label of their own; pass 2 reaches them through this macro) */
+#define g_cursor_flags_dword_maybe (*(uint32_t *)LINN(0x4c20))
 #define g_DAT_1110_4c24 (*(uint32_t *)LINN(0x4c24))
 #define g_DAT_1110_4c28 (*(uint16_t *)LINN(0x4c28))
 #define g_DAT_1110_4c2a (*(uint16_t *)LINN(0x4c2a))
 #define g_DAT_1110_4c2c (*(uint16_t *)LINN(0x4c2c))
 #define g_DAT_1110_4c2e (*(uint16_t *)LINN(0x4c2e))
-#define g_DAT_1110_4c30 (*(uint32_t *)LINN(0x4c30))
+/* seg17.c 17:0x1b70: cursor value DS:0x4c30 compared with 0xbb8 and 0x32 as a signed dword */
+#define g_cursor_value (*(uint32_t *)LINN(0x4c30))
 #define g_DAT_1110_4c34 (*(uint8_t *)LINN(0x4c34))
-#define g_DAT_1110_4c36 (*(uint16_t *)LINN(0x4c36))
+/* seg21.c 21:0x1e2a: the bit field word DS:0x4c36 (the cursor's what word). Also covers the used offsets DS:0x4c37 (no label of their own; pass 2 reaches them through this macro) */
+#define g_cursor_what_word (*(uint16_t *)LINN(0x4c36))
 #define g_DAT_1110_4c38 (*(uint16_t *)LINN(0x4c38))
-#define g_DAT_1110_4c3c (*(uint32_t *)LINN(0x4c3c))
+/* seg04.c frame_on_command: when non-zero, DS:0x4c3c/0x4c3e is passed to 9:0x431c with DS:0x5440. Also covers the used offsets DS:0x4c3e (no label of their own; pass 2 reaches them through this macro) */
+#define g_list_data_ptr_maybe (*(uint32_t *)LINN(0x4c3c))
 #define g_DAT_1110_4c52 (*(uint16_t *)LINN(0x4c52))
 #define g_DAT_1110_4c54 (*(uint16_t *)LINN(0x4c54))
-#define g_DAT_1110_4c72 (*(uint16_t *)LINN(0x4c72))
-#define g_DAT_1110_4c74 (*(uint16_t *)LINN(0x4c74))
-#define g_DAT_1110_4c76 (*(uint16_t *)LINN(0x4c76))
+/* seg01.c LoadAccelerators(0x438) -> DS:0x4c72; seg03.c message loop picks it when DS:0x312 is set */
+#define g_accel_table_alt (*(uint16_t *)LINN(0x4c72))
+/* seg01.c LoadBitmap(string 0x656); seg05.c 5:0x344a draw_cycle_button selects it into a memory DC */
+#define g_bitmap_cycle_button (*(uint16_t *)LINN(0x4c74))
+/* seg13.c 13:0x09ae: bit mask of 4 values, 0xf = all; seg01.c ini value & 0xf */
+#define g_map_set_mask (*(uint16_t *)LINN(0x4c76))
 #define g_DAT_1110_4c78 (*(uint32_t *)LINN(0x4c78))
 #define g_DAT_1110_4c7c (*(uint32_t *)LINN(0x4c7c))
 #define g_DAT_1110_4c80 (*(uint16_t *)LINN(0x4c80))
 #define g_DAT_1110_4c82 (*(uint16_t *)LINN(0x4c82))
-#define g_DAT_1110_4c84 (*(uint16_t *)LINN(0x4c84))
-#define g_DAT_1110_4d86 (*(uint16_t *)LINN(0x4d86))
+/* seg04.c WM_COMMAND 0x3a98..0x3afb: DS:0x4c84 = id - 0x3a98 (a recent-file slot) */
+#define g_recent_file_slot (*(uint16_t *)LINN(0x4c84))
+/* seg13.c 13:tooltip_update: DS:0x4d86 = width */
+#define g_tooltip_width (*(uint16_t *)LINN(0x4d86))
 #define g_DAT_1110_4d88 (*(uint16_t *)LINN(0x4d88))
 #define g_DAT_1110_4d8a (*(uint16_t *)LINN(0x4d8a))
-#define g_DAT_1110_4d8e (*(uint16_t *)LINN(0x4d8e))
-#define g_DAT_1110_4d92 (*(uint16_t *)LINN(0x4d92))
+/* seg01.c fn_01_0000: 8:0xa910(DS:0x4d8e) builds the palette DS:0x54f8 */
+#define g_palette_source_maybe (*(uint16_t *)LINN(0x4d8e))
+/* seg01.c pattern_brush(string 0x60a); seg04.c FRAMEWNDPROC WM_LBUTTONDOWN selects it while a panel divider is dragged */
+#define g_brush_divider_drag (*(uint16_t *)LINN(0x4d92))
 #define g_DAT_1110_4d94 (*(uint16_t *)LINN(0x4d94))
-#define g_DAT_1110_4d96 (*(uint16_t *)LINN(0x4d96))
-#define g_DAT_1110_4d98 (*(uint16_t *)LINN(0x4d98))
+/* seg19.c planets (table DS:0xb6 */
+#define g_planet_count (*(uint16_t *)LINN(0x4d96))
+/* seg01.c LoadBitmap(0x58); checked non-zero and deleted (seg03.c). Game meaning unknown: no code in src/ selects it */
+#define g_bitmap_res_58 (*(uint16_t *)LINN(0x4d98))
 #define g_DAT_1110_4d9a (*(uint16_t *)LINN(0x4d9a))
 #define g_DAT_1110_4d9c (*(uint16_t *)LINN(0x4d9c))
-#define g_DAT_1110_4d9e (*(uint16_t *)LINN(0x4d9e))
-#define g_DAT_1110_4da0 (*(uint16_t *)LINN(0x4da0))
-#define g_DAT_1110_4da2 (*(uint16_t *)LINN(0x4da2))
-#define g_DAT_1110_4da4 (*(uint16_t *)LINN(0x4da4))
-#define g_DAT_1110_4da6 (*(uint16_t *)LINN(0x4da6))
+/* seg06.c WM_CREATE: four BUTTON children DS:0x4d9e..0x4da4: previous */
+#define g_hwnd_msg_prev_button (*(uint16_t *)LINN(0x4d9e))
+/* seg06.c WM_CREATE: buttons DS:0x4d9e..0x4da4: previous */
+#define g_hwnd_msg_goto_button (*(uint16_t *)LINN(0x4da0))
+/* seg06.c WM_CREATE: buttons DS:0x4d9e..0x4da4: previous */
+#define g_hwnd_msg_next_button (*(uint16_t *)LINN(0x4da2))
+/* seg06.c WM_CREATE: buttons DS:0x4d9e..0x4da4: previous */
+#define g_hwnd_msg_delete_button (*(uint16_t *)LINN(0x4da4))
+/* seg13.c TOOLTIPWNDPROC: the shown id DS:0x4da6 (-1 none) */
+#define g_tooltip_item_id (*(uint16_t *)LINN(0x4da6))
 #define g_DAT_1110_4da8 (*(uint16_t *)LINN(0x4da8))
 #define g_DAT_1110_4daa (*(uint16_t *)LINN(0x4daa))
 #define g_DAT_1110_4dac (*(uint16_t *)LINN(0x4dac))
@@ -1046,18 +1355,22 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_4db2 (*(uint8_t *)LINN(0x4db2))
 #define g_DAT_1110_4db4 (*(uint8_t *)LINN(0x4db4))
 #define g_DAT_1110_4db6 (*(uint32_ua *)LINN(0x4db6))
-#define g_DAT_1110_4dba (*(uint8_t *)LINN(0x4dba))
-#define g_DAT_1110_4dbb (*(uint16_ua *)LINN(0x4dbb))
+/* stars.h FileHeader.version at DS:0x4db2 + 8; seg04.c check_game_file masks it with 0xfe0 */
+#define g_file_header_version (*(uint8_t *)LINN(0x4dba))
+/* seg04.c check_game_file: (DS:0x4dbb & 0xf0) must be 0x20 */
+#define g_file_header_version_high_maybe (*(uint16_ua *)LINN(0x4dbb))
 #define g_DAT_1110_4dbd (*(uint8_t *)LINN(0x4dbd))
 #define g_DAT_1110_4dbe (*(uint16_t *)LINN(0x4dbe))
-#define g_DAT_1110_4dc0 (*(uint16_t *)LINN(0x4dc0))
+/* stars.h FileHeader.flags at DS:0x4db2 + 0xe; seg04.c check_game_file requires byte 5 */
+#define g_file_header_flags (*(uint16_t *)LINN(0x4dc0))
 #define g_DAT_1110_4dc4 (*(uint16_t *)LINN(0x4dc4))
 #define g_DAT_1110_4dc8 (*(uint16_t *)LINN(0x4dc8))
 #define g_DAT_1110_4dca (*(uint8_t *)LINN(0x4dca))
 #define g_DAT_1110_4dcb (*(uint8_t *)LINN(0x4dcb))
 #define g_DAT_1110_4dcc (*(uint16_t *)LINN(0x4dcc))
 #define g_DAT_1110_4dd0 (*(uint16_t *)LINN(0x4dd0))
-#define g_DAT_1110_51b2 (*(uint8_t *)LINN(0x51b2))
+/* seg16.c zip_enable_preset_buttons/ZIPORDERDLG: DS:0x51b2 is the selected ZIP preset (radio id - 0x431) */
+#define g_zip_selected_preset (*(uint8_t *)LINN(0x51b2))
 #define g_DAT_1110_51b4 (*(uint32_t *)LINN(0x51b4))
 #define g_DAT_1110_51b8 (*(uint32_t *)LINN(0x51b8))
 #define g_DAT_1110_51c0 (*(uint32_t *)LINN(0x51c0))
@@ -1070,13 +1383,18 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_5238 (*(uint32_t *)LINN(0x5238))
 #define g_DAT_1110_5254 (*(uint16_t *)LINN(0x5254))
 #define g_DAT_1110_5258 (*(uint32_t *)LINN(0x5258))
-#define g_DAT_1110_5274 (*(uint16_t *)LINN(0x5274))
+/* seg03.c 3:0x054c: GetSystemMetrics(4) (SM_CYCAPTION) stored in DS:0x5274 */
+#define g_caption_height (*(uint16_t *)LINN(0x5274))
 #define g_DAT_1110_5276 (*(uint8_t *)LINN(0x5276))
 #define g_DAT_1110_5277 (*(uint8_t *)LINN(0x5277))
-#define g_DAT_1110_5340 (*(uint8_t *)LINN(0x5340))
-#define g_DAT_1110_5341 (*(uint8_t *)LINN(0x5341))
-#define g_DAT_1110_5342 (*(uint8_t *)LINN(0x5342))
-#define g_DAT_1110_5343 (*(uint8_t *)LINN(0x5343))
+/* seg19.c ai2_turn:1010 and seg17.c ai0_turn:1423 / ai1_turn:2729 write the thresholds DS:0x5340..0x5343 from the turn DS:0x82; the cursor tests of the computer-player turns read them */
+#define g_ai_threshold_0 (*(uint8_t *)LINN(0x5340))
+/* seg19.c:1011, seg17.c:1425 and :2731: half of DS:0x5340 */
+#define g_ai_threshold_1 (*(uint8_t *)LINN(0x5341))
+/* seg19.c:1016, seg17.c:1441 and :2747: 6 + (turn - 0x64) / 0x16, at most 0xc */
+#define g_ai_threshold_2 (*(uint8_t *)LINN(0x5342))
+/* seg19.c:1021, seg17.c:1450 and :2756: min(DS:0x5342 / 2 - 1, 3) */
+#define g_ai_threshold_3 (*(uint8_t *)LINN(0x5343))
 #define g_DAT_1110_5344 (*(uint16_t *)LINN(0x5344))
 #define g_DAT_1110_534e (*(uint8_t *)LINN(0x534e))
 #define g_DAT_1110_534f (*(uint8_t *)LINN(0x534f))
@@ -1086,34 +1404,49 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_5384 (*(uint8_t *)LINN(0x5384))
 #define g_DAT_1110_5386 (*(uint8_t *)LINN(0x5386))
 #define g_DAT_1110_5388 (*(uint8_t *)LINN(0x5388))
-#define g_DAT_1110_538e (*(uint16_t *)LINN(0x538e))
-#define g_DAT_1110_5390 (*(uint16_t *)LINN(0x5390))
+/* seg13.c item 0xf edits the bits DS:0x538e (8) */
+#define g_map_option_bits (*(uint16_t *)LINN(0x538e))
+/* seg03.c credits WM_INITDIALOG/WM_TIMER: DS:0x5390 pixel offset */
+#define g_credits_pixel_offset (*(uint16_t *)LINN(0x5390))
 #define g_DAT_1110_5392 (*(uint16_t *)LINN(0x5392))
-#define g_DAT_1110_5394 (*(uint16_t *)LINN(0x5394))
-#define g_DAT_1110_5396 (*(uint16_t *)LINN(0x5396))
+/* seg03.c 3:file load: the end of the loaded text in DS:0x5394/0x5396 */
+#define g_file_text_end (*(uint16_t *)LINN(0x5394))
+/* seg03.c read_batch_file_name: the end of the loaded text is DS:0x5394 (offset) / DS:0x5396 (segment) */
+#define g_file_text_end_segment_maybe (*(uint16_t *)LINN(0x5396))
 #define g_DAT_1110_5398 (*(uint16_t *)LINN(0x5398))
 #define g_DAT_1110_539a (*(uint16_t *)LINN(0x539a))
 #define g_DAT_1110_539c (*(uint16_t *)LINN(0x539c))
-#define g_DAT_1110_539e (*(uint16_t *)LINN(0x539e))
-#define g_DAT_1110_53a0 (*(uint16_t *)LINN(0x53a0))
+/* seg03.c filter_key_message: one of the edit/combo windows compared with the focus */
+#define g_hwnd_text_control_b_maybe (*(uint16_t *)LINN(0x539e))
+/* seg16.c MERGEFLEETSDLG: array of fleet table indices pointed to by DS:0x53a0 */
+#define g_merge_fleet_indices (*(uint16_t *)LINN(0x53a0))
 #define g_DAT_1110_53a2 (*(uint8_t *)LINN(0x53a2))
 #define g_DAT_1110_53a3 (*(uint8_t *)LINN(0x53a3))
 #define g_DAT_1110_53a6 (*(uint32_ua *)LINN(0x53a6))
-#define g_DAT_1110_53b2 (*(uint16_t *)LINN(0x53b2))
-#define g_DAT_1110_53b4 (*(uint32_t *)LINN(0x53b4))
+/* seg01.c cursors table: resource 0x107; seg04.c hit_test_dividers returns it where the bars cross */
+#define g_cursor_divider_both (*(uint16_t *)LINN(0x53b2))
+/* seg01.c procs table: MakeProcInstance of 27:0x1604 BROWSERDLG; seg04.c frame_on_command CreateDialog(.., DS:0x53b4) */
+#define g_browser_dlg_proc_instance (*(uint32_t *)LINN(0x53b4))
 #define g_DAT_1110_53b8 (*(uint32_t *)LINN(0x53b8))
 #define g_DAT_1110_53bc (*(uint32_t *)LINN(0x53bc))
 #define g_DAT_1110_53c0 (*(uint8_t *)LINN(0x53c0))
 #define g_DAT_1110_53dc (*(uint16_t *)LINN(0x53dc))
 #define g_DAT_1110_53de (*(uint16_t *)LINN(0x53de))
-#define g_DAT_1110_53e0 (*(uint16_t *)LINN(0x53e0))
-#define g_DAT_1110_53e2 (*(uint32_ua *)LINN(0x53e2))
+/* seg06.c file header: combo box MsgDD DS:0x53e0 */
+#define g_hwnd_msg_subject_combo (*(uint16_t *)LINN(0x53e0))
+/* seg04.c 10000 ms timer with procedure DS:0x53e2 */
+#define g_timer_proc (*(uint32_ua *)LINN(0x53e2))
 #define g_DAT_1110_53e6 (*(uint16_t *)LINN(0x53e6))
-#define g_DAT_1110_53ea (*(uint32_ua *)LINN(0x53ea))
-#define g_DAT_1110_53ee (*(uint16_t *)LINN(0x53ee))
-#define g_DAT_1110_53f0 (*(uint8_t *)LINN(0x53f0))
-#define g_DAT_1110_53f1 (*(uint8_t *)LINN(0x53f1))
-#define g_DAT_1110_53f2 (*(uint16_t *)LINN(0x53f2))
+/* seg06.c 6:comment store: text buffer DS:0x53ea. Also covers the used offsets DS:0x53ec (no label of their own; pass 2 reaches them through this macro) */
+#define g_comment_text_buffer (*(uint32_ua *)LINN(0x53ea))
+/* seg01.c pattern_brush(string 0x616); deleted by seg03.c. Game meaning unknown: no code in src/ selects it */
+#define g_brush_pattern_0616 (*(uint16_t *)LINN(0x53ee))
+/* seg04.c FRAMEWNDPROC/frame_on_command: bit 2 tested, bits 3 toggled (the byte pair DS:0x53f0/0x53f1 is also read as a word) */
+#define g_frame_flags_a_maybe (*(uint8_t *)LINN(0x53f0))
+/* seg04.c FRAMEWNDPROC: high byte xor-ed into the word DS:0x53f0 (bit 9) */
+#define g_frame_flags_b_maybe (*(uint8_t *)LINN(0x53f1))
+/* seg04.c FRAMEWNDPROC: cleared with the frame flags after a command */
+#define g_frame_aux_maybe (*(uint16_t *)LINN(0x53f2))
 #define g_DAT_1110_53f4 (*(uint16_t *)LINN(0x53f4))
 #define g_DAT_1110_53f6 (*(uint16_t *)LINN(0x53f6))
 #define g_DAT_1110_53f8 (*(uint16_t *)LINN(0x53f8))
@@ -1124,11 +1457,15 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_5402 (*(uint32_ua *)LINN(0x5402))
 #define g_DAT_1110_5406 (*(uint16_t *)LINN(0x5406))
 #define g_DAT_1110_543c (*(uint16_t *)LINN(0x543c))
-#define g_DAT_1110_543e (*(uint16_t *)LINN(0x543e))
-#define g_DAT_1110_5440 (*(uint16_t *)LINN(0x5440))
-#define g_DAT_1110_5442 (*(uint16_t *)LINN(0x5442))
+/* seg01.c CreateRectRgn(-10,-10,2000,2000) stored in DS:0x543e */
+#define g_region_huge (*(uint16_t *)LINN(0x543e))
+/* seg03.c filter_key_message: compared with the focus; seg04.c passes it to 9:0x431c */
+#define g_hwnd_text_control_c_maybe (*(uint16_t *)LINN(0x5440))
+/* seg01.c cursors table, resource 0x109; SetCursor over the cycle-button strip (seg05.c zone 9), over a hit message-window item (seg06.c) and in HOSTMODEDIALOG (seg04.c) */
+#define g_cursor_hot_spot (*(uint16_t *)LINN(0x5442))
 #define g_DAT_1110_5444 (*(uint16_t *)LINN(0x5444))
-#define g_DAT_1110_5446 (*(uint16_t *)LINN(0x5446))
+/* seg01.c pattern_brush(string 0x61f); deleted by seg03.c. Game meaning unknown: no code in src/ selects it */
+#define g_brush_pattern_061f (*(uint16_t *)LINN(0x5446))
 #define g_DAT_1110_5448 (*(uint32_t *)LINN(0x5448))
 #define g_DAT_1110_544c (*(uint32_t *)LINN(0x544c))
 #define g_DAT_1110_5452 (*(uint16_t *)LINN(0x5452))
@@ -1143,16 +1480,24 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_54aa (*(uint16_t *)LINN(0x54aa))
 #define g_DAT_1110_54e8 (*(uint16_t *)LINN(0x54e8))
 #define g_DAT_1110_54ea (*(uint8_t *)LINN(0x54ea))
-#define g_DAT_1110_54ec (*(uint16_t *)LINN(0x54ec))
-#define g_DAT_1110_54ee (*(uint16_t *)LINN(0x54ee))
+/* seg13.c item 0xd edits the layers DS:0x54ec (16 bits) */
+#define g_map_layers (*(uint16_t *)LINN(0x54ec))
+/* seg01.c fn_01_08a4: cell_height of the font DS:0x4a5a */
+#define g_cell_height_10pt (*(uint16_t *)LINN(0x54ee))
 #define g_DAT_1110_54f0 (*(uint16_t *)LINN(0x54f0))
-#define g_DAT_1110_54f2 (*(uint16_t *)LINN(0x54f2))
-#define g_DAT_1110_54f4 (*(uint16_t *)LINN(0x54f4))
-#define g_DAT_1110_54f6 (*(uint16_t *)LINN(0x54f6))
-#define g_DAT_1110_54f8 (*(uint16_t *)LINN(0x54f8))
-#define g_DAT_1110_54fa (*(uint16_t *)LINN(0x54fa))
+/* seg03.c filter_key_message: compared with the focus */
+#define g_hwnd_text_control_d_maybe (*(uint16_t *)LINN(0x54f2))
+/* seg03.c WinMain: DS:0x54F4 = hInstance; used as hInstance by CreateWindow in seg01/seg04 */
+#define g_app_instance (*(uint16_t *)LINN(0x54f4))
+/* seg03.c 3:0x054c: last step DS:0x54F6 = planes * bits per pixel of the screen */
+#define g_screen_bits_per_pixel (*(uint16_t *)LINN(0x54f6))
+/* seg13.c TBWNDPROC realizes the palette DS:0x54f8 */
+#define g_palette (*(uint16_t *)LINN(0x54f8))
+/* seg03.c filter_key_message: di == DS:0x54fa chooses a key action */
+#define g_hwnd_key_target_maybe (*(uint16_t *)LINN(0x54fa))
 #define g_DAT_1110_54fc (*(uint16_t *)LINN(0x54fc))
-#define g_DAT_1110_54fe (*(uint16_t *)LINN(0x54fe))
+/* seg06.c WM_CREATE: edit control DS:0x54fe for long messages */
+#define g_hwnd_msg_long_edit (*(uint16_t *)LINN(0x54fe))
 #define g_DAT_1110_5500 (*(uint16_t *)LINN(0x5500))
 #define g_DAT_1110_5502 (*(uint16_t *)LINN(0x5502))
 #define g_DAT_1110_5504 (*(uint16_t *)LINN(0x5504))
@@ -1165,9 +1510,11 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_5514 (*(uint8_t *)LINN(0x5514))
 #define g_DAT_1110_5515 (*(uint8_t *)LINN(0x5515))
 #define g_DAT_1110_551a (*(uint8_t *)LINN(0x551a))
-#define g_DAT_1110_553a (*(uint16_t *)LINN(0x553a))
+/* seg16.c /seg19.c: count DS:0x553A of the fleet pointer table DS:0xBA */
+#define g_fleet_count (*(uint16_t *)LINN(0x553a))
 #define g_DAT_1110_553c (*(uint16_t *)LINN(0x553c))
-#define g_DAT_1110_553e (*(uint8_t *)LINN(0x553e))
+/* seg06.c 6:0x7778 format_message expands a message into DS:0x553e */
+#define g_message_text_buffer (*(uint8_t *)LINN(0x553e))
 #define g_DAT_1110_553f (*(uint8_t *)LINN(0x553f))
 #define g_DAT_1110_5540 (*(uint8_t *)LINN(0x5540))
 #define g_DAT_1110_5541 (*(uint16_ua *)LINN(0x5541))
@@ -1182,8 +1529,10 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_564c (*(uint32_t *)LINN(0x564c))
 #define g_DAT_1110_5650 (*(uint16_t *)LINN(0x5650))
 #define g_DAT_1110_5652 (*(uint8_t *)LINN(0x5652))
-#define g_DAT_1110_5658 (*(uint16_t *)LINN(0x5658))
-#define g_DAT_1110_565a (*(uint16_t *)LINN(0x565a))
+/* seg06.c MESSAGEWNDPROC: InvalidateRect(DS:0x5658) when the dialog DS:0x14e exists */
+#define g_hwnd_modeless_list_maybe (*(uint16_t *)LINN(0x5658))
+/* seg01.c load_res(0x85); seg05.c paint_info_panel: 32 x 32 sprites chosen by the owner icon number (player row byte >> 3) as (icon & 7) columns by (icon >> 3) rows */
+#define g_player_icon_sprites (*(uint16_t *)LINN(0x565a))
 #define g_DAT_1110_565c (*(uint16_t *)LINN(0x565c))
 #define g_DAT_1110_565e (*(uint8_t *)LINN(0x565e))
 #define g_DAT_1110_565f (*(uint8_t *)LINN(0x565f))
@@ -1191,9 +1540,11 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_5733 (*(uint8_t *)LINN(0x5733))
 #define g_DAT_1110_5735 (*(uint16_ua *)LINN(0x5735))
 #define g_DAT_1110_5737 (*(uint8_t *)LINN(0x5737))
-#define g_DAT_1110_573c (*(uint16_t *)LINN(0x573c))
+/* seg05.c header: the order button DS:0x573c */
+#define g_hwnd_order_button (*(uint16_t *)LINN(0x573c))
 #define g_DAT_1110_573e (*(uint16_t *)LINN(0x573e))
-#define g_DAT_1110_5740 (*(uint16_t *)LINN(0x5740))
+/* seg01.c fn_01_0000: DS:0x5740 cleared between the two pen groups */
+#define g_pen_none_maybe (*(uint16_t *)LINN(0x5740))
 #define g_DAT_1110_5742 (*(uint16_t *)LINN(0x5742))
 #define g_DAT_1110_5744 (*(uint16_t *)LINN(0x5744))
 #define g_DAT_1110_5746 (*(uint16_t *)LINN(0x5746))
@@ -1201,7 +1552,8 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_574a (*(uint16_t *)LINN(0x574a))
 #define g_DAT_1110_574c (*(uint16_t *)LINN(0x574c))
 #define g_DAT_1110_574e (*(uint16_t *)LINN(0x574e))
-#define g_DAT_1110_5750 (*(uint16_t *)LINN(0x5750))
+/* seg01.c fn_01_0000: DS:0x5750 cleared between the two brush groups */
+#define g_brush_none_maybe (*(uint16_t *)LINN(0x5750))
 #define g_DAT_1110_5752 (*(uint16_t *)LINN(0x5752))
 #define g_DAT_1110_5754 (*(uint16_t *)LINN(0x5754))
 #define g_DAT_1110_5756 (*(uint16_t *)LINN(0x5756))
@@ -1212,34 +1564,45 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_5760 (*(uint16_t *)LINN(0x5760))
 #define g_DAT_1110_5762 (*(uint8_t *)LINN(0x5762))
 #define g_DAT_1110_5763 (*(uint8_t *)LINN(0x5763))
-#define g_DAT_1110_5764 (*(uint16_t *)LINN(0x5764))
+/* seg03.c DS:0x5764 is the game file name; seg01.c ini key File1 copied to it */
+#define g_game_file_name (*(uint16_t *)LINN(0x5764))
 #define g_DAT_1110_5864 (*(uint16_t *)LINN(0x5864))
-#define g_DAT_1110_5866 (*(uint16_t *)LINN(0x5866))
-#define g_DAT_1110_5868 (*(uint8_t *)LINN(0x5868))
+/* seg03.c/seg04.c/seg13.c: _wsprintf(DS:0x5866. Also covers the used offsets DS:0x5867 (no label of their own; pass 2 reaches them through this macro) */
+#define g_text_buffer (*(uint16_t *)LINN(0x5866))
+/* seg01.c cleared before the HistoryInfo date parse; seg04.c update_main_menu writes 0x20; seg01.c reads the Selection number from it */
+#define g_ini_selection_number_text (*(uint8_t *)LINN(0x5868))
 #define g_DAT_1110_5869 (*(uint8_t *)LINN(0x5869))
-#define g_DAT_1110_586b (*(uint8_t *)LINN(0x586b))
+/* seg01.c HistoryInfo: DS:0x586b = 0 inside the date text buffer DS:0x5866 */
+#define g_date_text_nul_maybe (*(uint8_t *)LINN(0x586b))
 #define g_DAT_1110_586c (*(uint8_t *)LINN(0x586c))
 #define g_DAT_1110_586d (*(uint8_t *)LINN(0x586d))
 #define g_DAT_1110_586e (*(uint8_t *)LINN(0x586e))
 #define g_DAT_1110_586f (*(uint8_t *)LINN(0x586f))
-#define g_DAT_1110_588e (*(uint8_t *)LINN(0x588e))
+/* seg06.c MSGDLG WM_PAINT: string 0x4b9 + (signed byte DS:0x588e); seg06.c MESSAGEWNDPROC sets 2 */
+#define g_msgdlg_text_index (*(uint8_t *)LINN(0x588e))
 #define g_DAT_1110_58a6 (*(uint8_t *)LINN(0x58a6))
 #define g_DAT_1110_58a7 (*(uint8_t *)LINN(0x58a7))
 #define g_DAT_1110_58a8 (*(uint8_t *)LINN(0x58a8))
 #define g_DAT_1110_58a9 (*(uint8_t *)LINN(0x58a9))
 #define g_DAT_1110_58aa (*(uint8_t *)LINN(0x58aa))
-#define g_DAT_1110_592e (*(uint8_t *)LINN(0x592e))
-#define g_DAT_1110_592f (*(uint8_t *)LINN(0x592f))
-#define g_DAT_1110_5960 (*(uint8_t *)LINN(0x5960))
-#define g_DAT_1110_5961 (*(uint8_t *)LINN(0x5961))
+/* seg13.c toolbar_set_item: DS:0x592e = 0xff */
+#define g_toolbar_sel_a_maybe (*(uint8_t *)LINN(0x592e))
+/* seg13.c toolbar_set_item: DS:0x592f = 0 */
+#define g_toolbar_sel_a_aux_maybe (*(uint8_t *)LINN(0x592f))
+/* seg13.c toolbar_set_item: DS:0x5960 = 0xff */
+#define g_toolbar_sel_b_maybe (*(uint8_t *)LINN(0x5960))
+/* seg13.c toolbar_set_item: DS:0x5961 = 0 */
+#define g_toolbar_sel_b_aux_maybe (*(uint8_t *)LINN(0x5961))
 #define g_DAT_1110_59ab (*(uint8_t *)LINN(0x59ab))
 #define g_DAT_1110_59b0 (*(uint32_t *)LINN(0x59b0))
 #define g_DAT_1110_59ce (*(uint16_t *)LINN(0x59ce))
-#define g_DAT_1110_59dc (*(uint16_t *)LINN(0x59dc))
+/* seg04.c FRAMEWNDPROC WM_CREATE: GetTextMetrics height stored in DS:0x59dc */
+#define g_text_metrics_height (*(uint16_t *)LINN(0x59dc))
 #define g_DAT_1110_59de (*(uint16_t *)LINN(0x59de))
 #define g_DAT_1110_59e0 (*(uint16_t *)LINN(0x59e0))
 #define g_DAT_1110_59e2 (*(uint16_t *)LINN(0x59e2))
-#define g_DAT_1110_59e6 (*(uint16_t *)LINN(0x59e6))
+/* seg06.c 6:comment store: GetWindowText(DS:0x59e6 */
+#define g_hwnd_msg_comment_edit (*(uint16_t *)LINN(0x59e6))
 #define g_DAT_1110_59e8 (*(uint16_t *)LINN(0x59e8))
 #define g_DAT_1110_59ec (*(uint32_t *)LINN(0x59ec))
 #define g_DAT_1110_59f0 (*(uint32_t *)LINN(0x59f0))
@@ -1250,25 +1613,32 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_59fe (*(uint16_t *)LINN(0x59fe))
 #define g_DAT_1110_5a00 (*(uint16_t *)LINN(0x5a00))
 #define g_DAT_1110_5a3a (*(uint16_t *)LINN(0x5a3a))
-#define g_DAT_1110_5a3c (*(uint16_t *)LINN(0x5a3c))
+/* seg01.c LoadBitmap(0xf9); deleted by seg03.c. Game meaning unknown: no code in src/ selects it */
+#define g_bitmap_res_f9 (*(uint16_t *)LINN(0x5a3c))
 #define g_DAT_1110_5a3e (*(uint32_ua *)LINN(0x5a3e))
 #define g_DAT_1110_5a42 (*(uint16_t *)LINN(0x5a42))
-#define g_DAT_1110_5a44 (*(uint16_t *)LINN(0x5a44))
+/* seg13.c TOOLTIPWNDPROC: DS:0x5a44 + 10000 compared with the tick to destroy the tooltip */
+#define g_tooltip_last_move_tick (*(uint16_t *)LINN(0x5a44))
 #define g_DAT_1110_5a46 (*(uint16_t *)LINN(0x5a46))
 #define g_DAT_1110_5a48 (*(uint16_t *)LINN(0x5a48))
 #define g_DAT_1110_5a4a (*(uint16_t *)LINN(0x5a4a))
 #define g_DAT_1110_5a4c (*(uint16_t *)LINN(0x5a4c))
-#define g_DAT_1110_5a4e (*(uint16_t *)LINN(0x5a4e))
+/* seg01.c load_res(0xb2); seg03.c 3:0x054c patches its colour at offset 0x41c; seg13.c 13:0x05a4 toolbar_paint_button blits the glyph strip (item * 0x18 wide cells) from it */
+#define g_toolbar_glyph_dib (*(uint16_t *)LINN(0x5a4e))
 #define g_DAT_1110_5a50 (*(uint16_t *)LINN(0x5a50))
 #define g_DAT_1110_5a52 (*(uint16_t *)LINN(0x5a52))
-#define g_DAT_1110_5a54 (*(uint16_t *)LINN(0x5a54))
-#define g_DAT_1110_5a56 (*(uint16_t *)LINN(0x5a56))
+/* seg06.c 6:paint: bitmap DS:0x5a54 (and its mask DS:0x2884) through a memory DC */
+#define g_bitmap_msg_icons (*(uint16_t *)LINN(0x5a54))
+/* seg03.c credits WM_INITDIALOG: DS:0x5A56 = -11 (first credits line) */
+#define g_credits_first_line (*(uint16_t *)LINN(0x5a56))
 #define g_DAT_1110_5a58 (*(uint16_t *)LINN(0x5a58))
 #define g_DAT_1110_5a5a (*(uint16_t *)LINN(0x5a5a))
-#define g_DAT_1110_5a5c (*(uint16_t *)LINN(0x5a5c))
+/* seg01.c brushes1: colour 0xff0000 (blue) stored in DS:0x5a5c; seg04.c paint_host_player_list */
+#define g_brush_blue (*(uint16_t *)LINN(0x5a5c))
 #define g_DAT_1110_5a5e (*(uint16_t *)LINN(0x5a5e))
 #define g_DAT_1110_5a60 (*(uint16_t *)LINN(0x5a60))
-#define g_DAT_1110_5a62 (*(uint16_t *)LINN(0x5a62))
+/* seg21.c 21:0x1e8a: near pointer, count DS:0x6686, walked from the last entry */
+#define g_entry_list_ptr_maybe (*(uint16_t *)LINN(0x5a62))
 #define g_DAT_1110_5a64 (*(uint32_t *)LINN(0x5a64))
 #define g_DAT_1110_5a68 (*(uint32_t *)LINN(0x5a68))
 #define g_DAT_1110_5a6c (*(uint16_t *)LINN(0x5a6c))
@@ -1316,6 +1686,7 @@ typedef uint32_t uint32_ua __attribute__((aligned(1)));
 #define g_DAT_1110_6664 (*(uint16_t *)LINN(0x6664))
 #define g_DAT_1110_6666 (*(uint16_t *)LINN(0x6666))
 #define g_DAT_1110_6668 (*(uint16_t *)LINN(0x6668))
-#define g_DAT_1110_6686 (*(uint16_t *)LINN(0x6686))
+/* seg21.c 21:0x1e8a: count DS:0x6686 of the list DS:0x5a62 */
+#define g_entry_list_count_maybe (*(uint16_t *)LINN(0x6686))
 
 #endif

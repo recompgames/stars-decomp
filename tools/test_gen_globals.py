@@ -55,6 +55,17 @@ class GenGlobalsTest(unittest.TestCase):
         out = self.gen("name,offset,type\nbad name.x,0x0004,uint8_t\n")
         self.assertIn("#define g_bad_name_x ", out)
 
+    def test_comment_column_is_emitted_above_the_macro(self):
+        out = self.gen('name,offset,type,comment\n'
+                       'selected_planet,0x4b84,uint16_t,"seg05.c: planet index, -1 when none"\n'
+                       'plain,0x0010,uint8_t,\n'
+                       'tricky,0x0020,uint8_t,"ends */ early"\n')
+        self.assertIn("/* seg05.c: planet index, -1 when none */\n"
+                      "#define g_selected_planet (*(uint16_t *)LINN(0x4b84))\n", out)
+        self.assertIn("\n#define g_plain (*(uint8_t *)LINN(0x0010))\n", out)    # no comment, no line
+        self.assertNotIn("/* */", out)
+        self.assertIn("/* ends *\\/ early */\n#define g_tricky ", out)        # cannot close the comment
+
     def test_errors(self):
         for bad, pat in (("a,0x10000,int16_t\n", "offset"),
                          ("a,0x10,int\n", "type"),

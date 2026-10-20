@@ -937,7 +937,7 @@ uint16_t apply_stargate_losses(uint32_t fleet, uint16_t a, uint16_t b, uint16_t 
       if (ls == 0x64) {
         lost += (int16_t)FLT.ship_count[i];
         FLT.ship_count[i] = 0;
-        FLT.fld_2c[i] = 0;
+        FLT.damage[i] = 0;
         cnt--;
       } else {
         int16_t si = (int16_t)FLT.ship_count[i];
@@ -947,9 +947,9 @@ uint16_t apply_stargate_losses(uint32_t fleet, uint16_t a, uint16_t b, uint16_t 
                                                     (uint16_t)(0x5a64 + (uint16_t)(rd16(fseg, (uint16_t)(foff + 2)) * 0xc0)), 14);
         uint8_t hit = attr == 7 ? 0 : (uint8_t)((int16_t)ls / 3);
         uint16_t w8 = 0;
-        if (FLT.fld_2c[i] != 0)
-          w8 = (uint16_t)idiv32((int32_t)(int16_t)(FLT.fld_2c[i] & 0x7f) * si, 100, 0x0962);
-        if (FLT.fld_2c[i] != 0 && w8 == 0) w8 = 1;
+        if (FLT.damage[i] != 0)
+          w8 = (uint16_t)idiv32((int32_t)(int16_t)(FLT.damage[i] & 0x7f) * si, 100, 0x0962);
+        if (FLT.damage[i] != 0 && w8 == 0) w8 = 1;
         if (hit != 0) {
           uint16_t rounds = 0;
           if ((int16_t)FLT.ship_count[i] > 0) {
@@ -961,7 +961,7 @@ uint16_t apply_stargate_losses(uint32_t fleet, uint16_t a, uint16_t b, uint16_t 
                 survivors--;
                 if (si != 0) {
                   uint16_t roll2 = (uint16_t)CALL_ORIG(8, 0x8730, FAR_CDECL, 1, 0x1f4);
-                  if ((uint16_t)(FLT.fld_2c[i] >> 7) > roll2) si--;
+                  if ((uint16_t)(FLT.damage[i] >> 7) > roll2) si--;
                 }
               }
               rounds++;
@@ -973,8 +973,8 @@ uint16_t apply_stargate_losses(uint32_t fleet, uint16_t a, uint16_t b, uint16_t 
         }
         if (si != 0) {
           uint16_t wa = 0, wl;
-          if (FLT.fld_2c[i] != 0) {
-            wa = (uint16_t)idiv32((int32_t)(uint16_t)(FLT.fld_2c[i] >> 7) * strength, 500, 0x0962);
+          if (FLT.damage[i] != 0) {
+            wa = (uint16_t)idiv32((int32_t)(uint16_t)(FLT.damage[i] >> 7) * strength, 500, 0x0962);
             if (wa == 0) wa = 1;
           }
           wl = (uint16_t)idiv32((int32_t)(int16_t)ls * strength, 100, 0x0962);
@@ -989,14 +989,14 @@ uint16_t apply_stargate_losses(uint32_t fleet, uint16_t a, uint16_t b, uint16_t 
             uint16_t dmg = (uint16_t)idiv32(mul32(q1, 500), strength, 0x0962);
             if (dmg == 0) dmg = 1;
             uint16_t t = (uint16_t)(dmg << 7);
-            uint8_t old = (uint8_t)FLT.fld_2c[i];
+            uint8_t old = (uint8_t)FLT.damage[i];
             uint16_t nw = (uint16_t)(t ^ (uint16_t)((uint8_t)(old ^ (uint8_t)t) & 0x7f));
-            FLT.fld_2c[i] = (uint16_t)((nw & 0xff00) | (uint8_t)(((uint8_t)nw & 0xe4) | 0x64));
+            FLT.damage[i] = (uint16_t)((nw & 0xff00) | (uint8_t)(((uint8_t)nw & 0xe4) | 0x64));
           }
         }
         FLT.ship_count[i] = (uint16_t)si;
         if (si == 0) {
-          FLT.fld_2c[i] = 0;
+          FLT.damage[i] = 0;
           cnt--;
         }
       }
