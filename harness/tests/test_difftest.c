@@ -964,6 +964,177 @@ static void test_K_near(void) {
   CHECK_EQ(r.status, DT_PASS);
 }
 
+/* ---- stars-decomp-z3l.1: a mirrored frame holds the same SI/DI/BP words as the original ---- */
+
+/* G, FAR PASCAL(buf): copies N words from SS:buf to DS:0x0200 (the copy is game state: it is
+ * compared; N is patched into the MOV CX below). PUSH BP; MOV BP,SP; PUSH DI; PUSH SI; PUSH DS;
+ * POP ES; MOV SI,[BP+6]; MOV DI,0x200; MOV CX,N; CLD; SS: REP MOVSW; POP SI; POP DI; POP BP; RETF 2 */
+#define FS_COPY_N 14
+static const uint8_t FS_COPY[] = {0x55, 0x8b, 0xec, 0x57, 0x56, 0x1e, 0x07, 0x8b, 0x76, 0x06, 0xbf, 0x00, 0x02,
+                                  0xb9, 0x06, 0x00, 0xfc, 0x36, 0xf3, 0xa5, 0x5e, 0x5f, 0x5d, 0xca, 0x02, 0x00};
+static uint16_t g_fs_copy_sel;
+
+/* F, REGISTER: PUSH BP; MOV BP,SP; PUSH AX (local at BP-2); then the real register pushes of the
+ * Stars! prologues, PUSH DI; PUSH SI (57 56), PUSH SI (56) or PUSH DI (57); LEA AX,[buf]; PUSH AX;
+ * CALL FAR G; the pops; MOV SP,BP; POP BP; RETF. G copies [buf, BP+6): the pushed registers, the
+ * local, the saved BP and the 4-byte return address of F. */
+static uint32_t fs_f_body(Regs16 *r, int kind) {
+  uint16_t buf;
+  if (kind == 2) FRAME_ENTER_REGS(2, 2);
+  else if (kind == 1) FRAME_ENTER_REGS(2, 1);
+  else FRAME_ENTER_DI(2);
+  BP_LOCAL(uint16_t, -2) = r->ax;
+  buf = (uint16_t)(rt_bp - (kind == 2 ? 6 : 4));
+  r->ax = buf;
+  r->es = MEM_SEL_DGROUP;
+  rt_call_far(MK_FP(g_fs_copy_sel, 0), FAR_PASCAL, &buf, 1);
+  FRAME_LEAVE();
+  return 0;
+}
+static uint32_t ad_fs_both(uint16_t ss, uint16_t sp, Regs16 *r) { (void)ss; (void)sp; return fs_f_body(r, 2); }
+static uint32_t ad_fs_si(uint16_t ss, uint16_t sp, Regs16 *r) { (void)ss; (void)sp; return fs_f_body(r, 1); }
+static uint32_t ad_fs_di(uint16_t ss, uint16_t sp, Regs16 *r) { (void)ss; (void)sp; return fs_f_body(r, 0); }
+
+/* kind 2 = PUSH DI; PUSH SI, 1 = PUSH SI, 0 = PUSH DI */
+static void fs_case(const char *name, int kind, DtAdapter ad) {
+  uint8_t g[sizeof FS_COPY], f[32];
+  size_t n = 0;
+  uint16_t fsel;
+  Regs16 in;
+  DtResult r;
+  memcpy(g, FS_COPY, sizeof g);
+  g[FS_COPY_N] = kind == 2 ? 6 : 5;
+  g_fs_copy_sel = harness_alloc_code(g, sizeof g);
+  f[n++] = 0x55; f[n++] = 0x8b; f[n++] = 0xec; f[n++] = 0x50;
+  if (kind == 2) { f[n++] = 0x57; f[n++] = 0x56; }
+  else f[n++] = kind == 1 ? 0x56 : 0x57;
+  f[n++] = 0x8d; f[n++] = 0x46; f[n++] = (uint8_t)(kind == 2 ? 0xfa : 0xfc); f[n++] = 0x50;
+  f[n++] = 0x9a; f[n++] = 0; f[n++] = 0; f[n++] = (uint8_t)g_fs_copy_sel; f[n++] = (uint8_t)(g_fs_copy_sel >> 8);
+  if (kind == 2) { f[n++] = 0x5e; f[n++] = 0x5f; }
+  else f[n++] = kind == 1 ? 0x5e : 0x5f;
+  f[n++] = 0x8b; f[n++] = 0xe5; f[n++] = 0x5d; f[n++] = 0xcb;
+  fsel = harness_alloc_code(f, (unsigned)n);
+  regfn(fsel, name, REGISTER, ad, 0);
+  memset(&in, 0, sizeof in);
+  in.ax = 0x7777; in.si = 0x1234; in.di = 0x5678; in.bp = 0x4321;
+  r = difftest_run(fsel, 0, REGISTER, NULL, 0, &in);
+  if (r.status != DT_PASS) fprintf(stderr, "frame_slots_copy %s: %s\n", name, r.msg);
+  CHECK_EQ(r.status, DT_PASS);
+  /* no entry registers: SI/DI/BP are zero in both runs */
+  memset(&in, 0, sizeof in);
+  r = difftest_run(fsel, 0, REGISTER, NULL, 0, &in);
+  if (r.status != DT_PASS) fprintf(stderr, "frame_slots_copy %s (zero regs): %s\n", name, r.msg);
+  CHECK_EQ(r.status, DT_PASS);
+}
+
+static void test_frame_slots_copy(void) {
+  fs_case("fs_f_di_si", 2, ad_fs_both);
+  fs_case("fs_f_si", 1, ad_fs_si);
+  fs_case("fs_f_di", 0, ad_fs_di);
+}
+
+/* ---- API log: register and vararg inputs (stars-decomp-z3l.3) ---- */
+
+static uint32_t g_th_reg, g_th_va;
+static uint16_t g_dec_ah;     /* AH the DECOMP side passes to DOS3Call */
+static uint16_t g_dec_va2;    /* second vararg the DECOMP side passes to _wsprintf */
+#define LV_FMT 0x0100u        /* scratch DGROUP offsets, written before the run */
+#define LV_OUT 0x0200u
+#define LV_VA 0x0310u
+
+/* What byname_DOS3Call does: log the call with the eight input registers. */
+static uint32_t ad_dos3(uint16_t ss, uint16_t sp, Regs16 *r) {
+  Regs16 g;
+  uint16_t rg[HARNESS_LOG_NREGS];
+  size_t i;
+  (void)ss; (void)sp; (void)r;
+  harness_regs(&g);
+  rg[0] = (uint16_t)(g_dec_ah << 8); rg[1] = 1; rg[2] = 2; rg[3] = 3; rg[4] = 4; rg[5] = 5;
+  rg[6] = g.ds; rg[7] = g.es;
+  i = harness_log_begin("KERNEL", 102, NULL, 0);
+  harness_log_set_regs(i, rg);
+  harness_log_end(i, 0);
+  return 0;
+}
+
+/* What byname__wsprintf does: fixed part is out then fmt, the variable arguments are at LV_VA. */
+static uint32_t ad_wsprintf(uint16_t ss, uint16_t sp, Regs16 *r) {
+  uint32_t out = MK_FP(MEM_SEL_DGROUP, LV_OUT), fmt = MK_FP(MEM_SEL_DGROUP, LV_FMT);
+  uint16_t w[] = {(uint16_t)(fmt >> 16), (uint16_t)fmt, (uint16_t)(out >> 16), (uint16_t)out};
+  size_t i;
+  (void)ss; (void)sp; (void)r; /* the words at LV_VA were written before the run */
+  i = harness_log_begin("USER", 420, w, 4);
+  harness_log_set_va(i, fmt, MK_FP(MEM_SEL_DGROUP, LV_VA));
+  harness_log_end(i, 0);
+  return 0;
+}
+
+static void test_log_register_inputs(void) {
+  uint8_t code[] = {0xb8, 0x00, 0x3d, 0xbb, 1, 0, 0xb9, 2, 0, 0xba, 3, 0, 0xbe, 4, 0, 0xbf, 5, 0,
+                    0x9a, 0, 0, 0, 0, 0xcb}; /* AX=3D00h (open) BX..DI=1..5; CALL FAR thunk; RETF */
+  uint16_t sel;
+  DtResult r;
+  g_th_reg = harness_add_import("KERNEL", 102, "DOS3Call", HK_REGISTER, 0, HR_NONE, api_handler);
+  CHECK(g_th_reg != 0);
+  code[19] = (uint8_t)FP_OFF(g_th_reg); code[20] = (uint8_t)(FP_OFF(g_th_reg) >> 8);
+  code[21] = (uint8_t)FP_SEG(g_th_reg); code[22] = (uint8_t)(FP_SEG(g_th_reg) >> 8);
+  sel = harness_alloc_code(code, sizeof code);
+  regfn(sel, "dos3caller", FAR_PASCAL, ad_dos3, 0);
+
+  g_dec_ah = 0x3D; /* same AH: passes (the test is not vacuous) */
+  r = difftest_run(sel, 0, FAR_PASCAL, NULL, 0, NULL);
+  CHECK_EQ(r.status, DT_PASS);
+  if (r.status != DT_PASS) fprintf(stderr, "log_register_inputs same: %s\n", r.msg);
+
+  g_dec_ah = 0x3F; /* DECOMP reads where the original opens */
+  r = difftest_run(sel, 0, FAR_PASCAL, NULL, 0, NULL);
+  CHECK_EQ(r.status, DT_FAIL);
+  CHECK(strstr(r.msg, "API log differs") != NULL);
+  CHECK(strstr(r.msg, "AX=3d00") != NULL);
+  CHECK(strstr(r.msg, "AX=3f00") != NULL);
+  fprintf(stdout, "log_register_inputs report: %s\n", r.msg);
+  g_dec_ah = 0x3D;
+}
+
+static void test_log_varargs(void) {
+  /* PUSH 6; PUSH 7; PUSH fmt seg; PUSH fmt off; PUSH out seg; PUSH out off; CALL FAR thunk; ADD SP,12; RETF */
+  uint8_t code[] = {0x68, 6, 0, 0x68, 7, 0, 0x68, 0, 0, 0x68, 0, 0, 0x68, 0, 0, 0x68, 0, 0,
+                    0x9a, 0, 0, 0, 0, 0x83, 0xc4, 12, 0xcb};
+  uint16_t sel;
+  DtResult r;
+  memcpy(LIN(MK_FP(MEM_SEL_DGROUP, LV_FMT)), "%d,%d", 6);
+  g_th_va = harness_add_import("USER", 420, "_wsprintf", HK_VARARGS, 8, HR_RET16, api_handler);
+  CHECK(g_th_va != 0);
+  code[7] = (uint8_t)MEM_SEL_DGROUP; code[8] = (uint8_t)(MEM_SEL_DGROUP >> 8);
+  code[10] = (uint8_t)LV_FMT; code[11] = (uint8_t)(LV_FMT >> 8);
+  code[13] = (uint8_t)MEM_SEL_DGROUP; code[14] = (uint8_t)(MEM_SEL_DGROUP >> 8);
+  code[16] = (uint8_t)LV_OUT; code[17] = (uint8_t)(LV_OUT >> 8);
+  code[19] = (uint8_t)FP_OFF(g_th_va); code[20] = (uint8_t)(FP_OFF(g_th_va) >> 8);
+  code[21] = (uint8_t)FP_SEG(g_th_va); code[22] = (uint8_t)(FP_SEG(g_th_va) >> 8);
+  sel = harness_alloc_code(code, sizeof code);
+  regfn(sel, "wspcaller", FAR_PASCAL, ad_wsprintf, 0);
+
+  g_dec_va2 = 6; /* same arguments: passes (original pushes 7 then 6: word 0 is 7) */
+  {
+    const uint16_t va[2] = {7, 6};
+    memcpy(LIN(MK_FP(MEM_SEL_DGROUP, LV_VA)), va, 4);
+  }
+  r = difftest_run(sel, 0, FAR_PASCAL, NULL, 0, NULL);
+  CHECK_EQ(r.status, DT_PASS);
+  if (r.status != DT_PASS) fprintf(stderr, "log_varargs same: %s\n", r.msg);
+
+  g_dec_va2 = 9; /* a different second vararg */
+  {
+    const uint16_t va[2] = {7, 9};
+    memcpy(LIN(MK_FP(MEM_SEL_DGROUP, LV_VA)), va, 4);
+  }
+  r = difftest_run(sel, 0, FAR_PASCAL, NULL, 0, NULL);
+  CHECK_EQ(r.status, DT_FAIL);
+  CHECK(strstr(r.msg, "API log differs") != NULL);
+  fprintf(stdout, "log_varargs report: %s\n", r.msg);
+  g_dec_va2 = 6;
+}
+
 int main(void) {
   if (harness_load(EXE) != 0) {
     fprintf(stderr, "harness_load failed\n");
@@ -995,6 +1166,9 @@ int main(void) {
   test_I_isolation();
   test_J_near_aborts();
   test_K_near();
+  test_frame_slots_copy();
+  test_log_register_inputs();
+  test_log_varargs();
   difftest_reset_summary();
   reg_add2();
   g_bias = 0;

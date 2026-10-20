@@ -93,15 +93,30 @@ static inline uint32_t byname_GetTextExtent(uint16_t hdc, uint32_t str, int16_t 
   harness_log_end(i, r);
   return r;
 }
-/* _wsprintf is VARARGS: the thunk logs the fixed part only, the two far pointers (8 bytes); the
- * variable arguments follow them in memory at lpArgs and are not part of the log. cdecl pushes
- * the format pointer first, then the output pointer. */
+/* _wsprintf is VARARGS: the fixed part is the two far pointers (8 bytes); the variable arguments
+ * follow them in memory at lpArgs. Like the thunk, the log also records the variable argument
+ * bytes, counted from the format string (harness_log_set_va). cdecl pushes the format pointer
+ * first, then the output pointer. */
 static inline int16_t byname__wsprintf(uint32_t out, uint32_t fmt, uint32_t args) {
   const uint16_t w[] = {BYNAME_HI(fmt), BYNAME_LO(fmt), BYNAME_HI(out), BYNAME_LO(out)};
   size_t i = harness_log_begin("USER", 420, w, 4);
+  harness_log_set_va(i, fmt, args);
   int16_t r = (_wsprintf)(out, fmt, args);
   harness_log_end(i, (uint16_t)r);
   return r;
+}
+
+/* DOS3Call is a REGISTER import: its inputs are the eight registers, which the thunk logs, so this
+ * wrapper logs the KDosRegs the caller passes in (AX BX CX DX SI DI DS ES). The log has no
+ * argument bytes and ret 0, as the thunk handler leaves them. InitTask has no wrapper: its inputs
+ * are the registers the loader leaves, which decompiled C does not have; add one when a caller needs it. */
+static inline void byname_DOS3Call(KDosRegs *regs) {
+  const uint16_t rg[HARNESS_LOG_NREGS] = {regs->ax, regs->bx, regs->cx, regs->dx,
+                                          regs->si, regs->di, regs->ds, regs->es};
+  size_t i = harness_log_begin("KERNEL", 102, NULL, 0);
+  harness_log_set_regs(i, rg);
+  (DOS3Call)(regs);
+  harness_log_end(i, 0);
 }
 
 /* Added by stars-bfj.5 (segment 3): the other APIs it calls by name. Each wrapper logs exactly what the
@@ -691,6 +706,7 @@ static inline void byname_SetRect(uint32_t rect, int16_t l, int16_t t, int16_t r
 #define SetBkMode byname_SetBkMode
 #define GetTextExtent byname_GetTextExtent
 #define _wsprintf byname__wsprintf
+#define DOS3Call byname_DOS3Call
 #define MakeProcInstance byname_MakeProcInstance
 #define FreeProcInstance byname_FreeProcInstance
 #define FreeResource byname_FreeResource
@@ -1147,5 +1163,15 @@ static inline uint16_t byname_WritePrivateProfileString(uint32_t app, uint32_t k
   return r;
 }
 #define WritePrivateProfileString byname_WritePrivateProfileString
+
+/* Added by stars-decomp-z3l.34 (segment 26): KERNEL.lstrlen. */
+static inline uint16_t byname_lstrlen(uint32_t str) {
+  const uint16_t a[] = {BYNAME_HI(str), BYNAME_LO(str)};
+  size_t i = harness_log_begin("KERNEL", 90, a, 2);
+  uint16_t r = (lstrlen)(str);
+  harness_log_end(i, r);
+  return r;
+}
+#define lstrlen byname_lstrlen
 
 #endif /* STARS_HARNESS_BYNAME_H */

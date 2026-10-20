@@ -37,7 +37,7 @@
  * does (CONVENTIONS rule f). host_options_paint_nop is a placeholder for an empty function. The old
  * fn_04_<off> names are kept as aliases in the comment above each function.
  *
- * Every function that calls anything mirrors its original frame (CONVENTIONS rule d): FRAME_ENTER(n + 2 *
+ * Every function that calls anything mirrors its original frame (CONVENTIONS rule d): FRAME_ENTER_REGS(n,
  * pushes) with n the ENTER size (or 0 after PUSH BP; MOV BP,SP) and one push for each PUSH SI / PUSH DI.
  * Leaves that never expose a stack address use ordinary C locals. Near calls inside the segment are
  * PUSH CS; CALL near, i.e. far calls with a 4-byte return address; a callee that mirrors a frame is
@@ -122,7 +122,7 @@ void host_options_paint_nop(void)
 DECOMP(4, 0x3b30, get_main_submenu, FAR_CDECL)
 uint16_t get_main_submenu(uint16_t hwnd, int16_t pos)
 {
-  FRAME_ENTER(0 + 2);
+  FRAME_ENTER_REGS(0, 1);
   uint16_t si;
   if (drd16(0x0152) != 0 && IsZoomed(drd16(0x0152)) != 0)
     si = 1;
@@ -142,7 +142,7 @@ uint16_t get_main_submenu(uint16_t hwnd, int16_t pos)
 DECOMP(4, 0x4fd6, get_normal_window_rect, FAR_CDECL)
 void get_normal_window_rect(uint16_t hwnd, uint16_t rect)
 {
-  FRAME_ENTER(0x16 + 4);
+  FRAME_ENTER_REGS(0x16, 2);
   L16(-0x16) = 0x16;
   (void)GetWindowPlacement(hwnd, bpfp(-0x16));
   /* MOVSD x2 from SS:[BP-8] to DS:[rect] */
@@ -162,7 +162,7 @@ void get_normal_window_rect(uint16_t hwnd, uint16_t rect)
 DECOMP(4, 0x500c, format_window_state, FAR_CDECL)
 uint16_t format_window_state(uint16_t unused, uint16_t hwnd)
 {
-  FRAME_ENTER(0xa + 2);
+  FRAME_ENTER_REGS(0xa, 1);
   (void)unused;
   uint8_t letter;
   if (IsZoomed(hwnd) != 0)
@@ -266,7 +266,7 @@ uint16_t hit_test_dividers(int16_t x, int16_t y, uint16_t out)
 DECOMP(4, 0x4580, refresh_turn_states, FAR_CDECL)
 uint16_t refresh_turn_states(void)
 {
-  FRAME_ENTER(0xa + 4);
+  FRAME_ENTER_REGS(0xa, 2);
   uint16_t di, si;
   dwr16(0x076e, 1);
   dwr8(0x0790, (uint8_t)(drd8(0x0790) | 2));
@@ -338,7 +338,7 @@ uint16_t refresh_turn_states(void)
 DECOMP(4, 0x451c, refresh_turn_states_as_host, FAR_CDECL)
 uint16_t refresh_turn_states_as_host(void)
 {
-  FRAME_ENTER(4 + 4);
+  FRAME_ENTER_REGS(4, 2);
   uint16_t si = (uint16_t)((drd16(0x0790) & 8) >> 3);
   uint16_t di = (uint16_t)((drd16(0x0790) & 2) >> 1);
   L16(-2) = drd16(0x014c);
@@ -375,7 +375,7 @@ uint16_t refresh_turn_states_as_host(void)
 DECOMP(4, 0x1e5e, select_home_object, FAR_CDECL)
 uint16_t select_home_object(void)
 {
-  FRAME_ENTER(8 + 4);
+  FRAME_ENTER_REGS(8, 2);
   uint16_t si, bx, cx, di;
   uint16_t player = drd16(0x014c);
   uint32_t r = CALL_ORIG(7, 0x01e4, FAR_CDECL, 1, drd16((uint16_t)(player * 0xc0 + 0x5a6c)));
@@ -441,7 +441,7 @@ L1ed0:
 DECOMP(4, 0x197a, sync_selected_object, FAR_CDECL)
 void sync_selected_object(void)
 {
-  FRAME_ENTER(4 + 2);
+  FRAME_ENTER_REGS(4, 1);
   uint16_t si;
   uint32_t r;
   if (drd16(0x2520) != drd16(0x014c)) goto L1a8c;
@@ -539,7 +539,7 @@ static inline uint8_t rnd16(void)
 DECOMP(4, 0x1af2, encode_serial, FAR_CDECL)
 void encode_serial(uint32_t key, uint16_t src, uint16_t out)
 {
-  FRAME_ENTER(0x36 + 4);
+  FRAME_ENTER_REGS(0x36, 2);
   uint16_t di, si;
   (void)CALL_ORIG(8, 0x0000, FAR_CDECL, 2, 0x000b, 0x0011);
   (void)CALL_ORIG(8, 0x8672, FAR_CDECL, 2, (uint16_t)key, (uint16_t)(key >> 16));
@@ -629,7 +629,7 @@ void encode_serial(uint32_t key, uint16_t src, uint16_t out)
 DECOMP(4, 0x1c78, decode_serial, FAR_CDECL)
 uint16_t decode_serial(uint16_t key, uint16_t data, uint16_t text)
 {
-  FRAME_ENTER(0x3a + 4);
+  FRAME_ENTER_REGS(0x3a, 2);
   uint16_t di, si;
   dwr32(key, 0);
   for (uint16_t k = 0; k < 11; k++) dwr8((uint16_t)(data + k), 0);
@@ -761,7 +761,7 @@ static inline void strcat_at(uint16_t seg, uint16_t dst, uint16_t src)
 DECOMP(4, 0x39f8, run_computer_player_turns, FAR_CDECL)
 void run_computer_player_turns(void)
 {
-  FRAME_ENTER(0x2c + 4);
+  FRAME_ENTER_REGS(0x2c, 2);
   uint16_t di, si, bx, dx;
   L16(-0xc) = (uint16_t)((drd16(0x0790) & 0x10) >> 4);
   L16(-0xa) = 0;
@@ -852,7 +852,7 @@ void run_computer_player_turns(void)
 DECOMP(4, 0x3ecc, check_game_file, FAR_CDECL)
 uint16_t check_game_file(uint16_t name, uint16_t strict)
 {
-  FRAME_ENTER(0xde + 4);
+  FRAME_ENTER_REGS(0xde, 2);
   uint16_t bx, dx;
   L16(-0xc) = 0xffff;
   L16(-6) = 0;
@@ -934,7 +934,7 @@ L4046:
 DECOMP(4, 0x4dba, host_timer_proc, FAR_PASCAL)
 void host_timer_proc(uint16_t hwnd, uint16_t msg, uint16_t id, uint32_t time)
 {
-  FRAME_ENTER(0xa + 4);
+  FRAME_ENTER_REGS(0xa, 2);
   uint16_t di, ax;
   (void)msg;
   (void)id;
@@ -1037,7 +1037,7 @@ L4fc3:
 DECOMP(4, 0x4090, run_host_mode, FAR_CDECL)
 void run_host_mode(void)
 {
-  FRAME_ENTER(0xc + 2);
+  FRAME_ENTER_REGS(0xc, 1);
   uint16_t si, ax, dx, w;
   uint32_t pi;
   if ((drd8(0x0790) & 8) == 0) {
@@ -1123,7 +1123,7 @@ static uint16_t child_window(uint16_t cls, int16_t x, int16_t y, int16_t cx, int
 DECOMP(4, 0x02ca, update_caption_and_panels, FAR_CDECL)
 void update_caption_and_panels(void)
 {
-  FRAME_ENTER(0x7a + 4);
+  FRAME_ENTER_REGS(0x7a, 2);
   uint16_t si, di, dx, ax, bx;
   if (drd16(0x014c) == 0xffff) goto L038a;
   dx = 0x5764;
@@ -1217,7 +1217,7 @@ L0524:
 DECOMP(4, 0x3b66, open_game_file, FAR_CDECL)
 uint16_t open_game_file(uint16_t hwnd, uint16_t mode)
 {
-  FRAME_ENTER(0x34a + 4);
+  FRAME_ENTER_REGS(0x34a, 2);
   uint16_t si, di, ax, bx;
   if ((drd8(0x251a) & 1) != 0) {
     strcpy_at(rt_ss, bpoff(-0x14a), 0x5764);
@@ -1456,7 +1456,7 @@ fail:
 DECOMP(4, 0x5d98, layout_panels, FAR_CDECL)
 void layout_panels(void)
 {
-  FRAME_ENTER(0xa + 4);
+  FRAME_ENTER_REGS(0xa, 2);
   int16_t ax, cx, si, di, bx;
   if (drd16(0x2806) == 0) {
     FRAME_LEAVE();
@@ -1642,7 +1642,7 @@ static void frame_quit(void)
 DECOMP(4, 0x0528, FRAMEWNDPROC, FAR_PASCAL)
 uint32_t FRAMEWNDPROC(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0x24 + 4);
+  FRAME_ENTER_REGS(0x24, 2);
   uint16_t di, si, ax, cx;
   const uint16_t lp_lo = (uint16_t)lParam, lp_hi = (uint16_t)(lParam >> 16);
   di = msg;
@@ -1855,7 +1855,7 @@ m102: /* WM_CHAR */
     goto ret0;
   }
   if (drd16(0x0156) != 0 && drd16(0x4b74) == 1 && (si == 0x71 || si == 0x51)) {
-    (void)CALL_ORIG(26, 0x0000, FAR_CDECL, 1, 0);
+    (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0000), FAR_CDECL, (const uint16_t[]){0}, 1);
     goto ret0;
   }
   if ((drd8(0x4b74) & 3) == 0) goto ret0;
@@ -2238,7 +2238,7 @@ static uint16_t times13(void)
 DECOMP(4, 0x143a, drag_divider_bars, FAR_CDECL)
 uint32_t drag_divider_bars(uint16_t hdc, uint16_t bits, uint16_t dx, uint16_t dy, uint16_t prev)
 {
-  FRAME_ENTER(0x14 + 4);
+  FRAME_ENTER_REGS(0x14, 2);
   uint16_t si = bits, px = dx, py = dy, ax, bx, cx;
   L32(-0x10) = ((uint32_t)dy << 16) | dx;
   if (prev != 0 && si != 1) {
@@ -2435,7 +2435,7 @@ static int32_t map_scale(int16_t a, int16_t b, int16_t c)
 DECOMP(4, 0x1f40, frame_on_command, FAR_CDECL)
 void frame_on_command(uint16_t hwnd, uint16_t idarg)
 {
-  FRAME_ENTER(0x17e + 4);
+  FRAME_ENTER_REGS(0x17e, 2);
   uint16_t si = idarg, di = 0, ax, cx, bx;
   uint16_t id = idarg; /* [BP+8], which a few commands change */
   if (si >= 0x3a98 && si < 0x3afc) {
@@ -3333,7 +3333,7 @@ L2524: /* the print dialog and the map printing loop */
 DECOMP(4, 0x379a, update_main_menu, FAR_CDECL)
 void update_main_menu(uint16_t menu)
 {
-  FRAME_ENTER(0xa + 4);
+  FRAME_ENTER_REGS(0xa, 2);
   uint16_t si = menu, di, cx;
   if (si == 0) si = GetMenu(drd16(0x2806));
   {
@@ -3423,7 +3423,7 @@ void update_main_menu(uint16_t menu)
 DECOMP(4, 0x4cec, HOSTOPTIONSDIALOG, FAR_PASCAL)
 uint16_t HOSTOPTIONSDIALOG(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0x28 + 2);
+  FRAME_ENTER_REGS(0x28, 1);
   uint16_t si, ax, cx;
   (void)lParam;
   if (msg == 0x000f) {
@@ -3477,7 +3477,7 @@ ret1:
 DECOMP(4, 0x41f8, paint_host_player_list, FAR_CDECL)
 void paint_host_player_list(uint16_t hwnd, uint16_t hdc)
 {
-  FRAME_ENTER(0x38 + 4);
+  FRAME_ENTER_REGS(0x38, 2);
   uint16_t si, di, ax;
   if (hdc != 0)
     si = hdc;
@@ -3614,7 +3614,7 @@ void paint_host_player_list(uint16_t hwnd, uint16_t hdc)
 DECOMP(4, 0x467c, HOSTMODEDIALOG, FAR_PASCAL)
 uint16_t HOSTMODEDIALOG(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0x42 + 4);
+  FRAME_ENTER_REGS(0x42, 2);
   uint16_t si, di, ax, cx;
   (void)lParam;
   si = msg;
@@ -3921,7 +3921,7 @@ static inline void ini_itoa(uint16_t v)
 DECOMP(4, 0x506c, save_settings, FAR_CDECL)
 void save_settings(void)
 {
-  FRAME_ENTER(0x40 + 4);
+  FRAME_ENTER_REGS(0x40, 2);
   uint16_t di, si, ax, cx, dx;
   L8(-0x10) = 0x25;
   L8(-0x0f) = 0x64;
@@ -4203,7 +4203,7 @@ static inline uint16_t sdiv2(uint16_t ax)
 DECOMP(4, 0x60f6, TITLEWNDPROC, FAR_PASCAL)
 uint32_t TITLEWNDPROC(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0x46 + 4);
+  FRAME_ENTER_REGS(0x46, 2);
   uint16_t di, si, ax, cx;
   uint16_t q, r;
   if (msg == 0x0f) goto m0f;

@@ -25,7 +25,7 @@
  * descriptive, not the game's. The old fn_12_<off> names are kept as aliases in the comment above
  * each function.
  *
- * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER(n + 2 * pushes) with
+ * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER_REGS(n, pushes) with
  * n the ENTER size and one push for each PUSH SI / PUSH DI, and a mirrored callee is reached through
  * rt_call_far. 12:0x01fc (heap_reset) and 12:0x0372 (heap_find_segment) are leaves, so they
  * use ordinary C locals and may be called as plain C functions.
@@ -73,7 +73,7 @@ static void copy_fwd(uint16_t dseg, uint16_t doff, uint16_t sseg, uint16_t soff,
 DECOMP(12, 0x0000, heap_new_segment, FAR_CDECL)
 uint32_t heap_new_segment(uint16_t size, int16_t heap)
 {
-  FRAME_ENTER(8 + 4);
+  FRAME_ENTER_REGS(8, 2);
   uint16_t di = (uint16_t)(size + 0x10);
   uint16_t minsz = drd16((uint16_t)(DS_HEAP_MIN + (uint16_t)((uint16_t)heap + (uint16_t)heap)));
   if (minsz > di) di = minsz;
@@ -110,7 +110,7 @@ uint32_t heap_new_segment(uint16_t size, int16_t heap)
 DECOMP(12, 0x0098, heap_grow_segment, FAR_CDECL)
 uint32_t heap_grow_segment(uint32_t p)
 {
-  FRAME_ENTER(0xc + 4);
+  FRAME_ENTER_REGS(0xc, 2);
   if (p == 0) {
     FRAME_LEAVE();
     return 0;
@@ -168,7 +168,7 @@ uint32_t heap_grow_segment(uint32_t p)
 DECOMP(12, 0x01b0, heap_free_chain, FAR_CDECL)
 void heap_free_chain(uint32_t p)
 {
-  FRAME_ENTER(6 + 4);
+  FRAME_ENTER_REGS(6, 2);
   uint16_t si = FP_OFF(p), seg = FP_SEG(p);
   if ((seg | si) != 0) {
     do {
@@ -221,7 +221,7 @@ void heap_reset(int16_t heap)
 DECOMP(12, 0x0232, heap_alloc, FAR_CDECL)
 uint32_t heap_alloc(uint16_t size, int16_t heap)
 {
-  FRAME_ENTER(0x10 + 4);
+  FRAME_ENTER_REGS(0x10, 2);
   uint16_t slot = (uint16_t)((uint16_t)heap << 2);
   uint16_t si = drd16((uint16_t)(DS_HEAP_HEADS + slot));
   uint16_t l_e = drd16((uint16_t)(DS_HEAP_HEADS + slot + 2));
@@ -340,7 +340,7 @@ uint32_t heap_find_segment(uint16_t off, uint16_t seg, int16_t heap)
 DECOMP(12, 0x03ec, heap_realloc, FAR_CDECL)
 uint32_t heap_realloc(uint32_t p, uint16_t size, int16_t heap)
 {
-  FRAME_ENTER(0xa + 4);
+  FRAME_ENTER_REGS(0xa, 2);
   uint16_t poff = FP_OFF(p), pseg = FP_SEG(p);
   uint16_t cur = rd16(pseg, (uint16_t)(poff - 2));
   uint16_t want = (uint16_t)((uint16_t)(size + 1) & 0xfffe);
@@ -389,7 +389,7 @@ uint32_t heap_realloc(uint32_t p, uint16_t size, int16_t heap)
 DECOMP(12, 0x04d0, heap_free, FAR_CDECL)
 void heap_free(uint32_t p, int16_t heap)
 {
-  FRAME_ENTER(4 + 4);
+  FRAME_ENTER_REGS(4, 2);
   if (p != 0) {
     uint16_t poff = FP_OFF(p), pseg = FP_SEG(p);
     uint32_t r = heap_find_segment(poff, pseg, heap);
@@ -418,7 +418,7 @@ void heap_free(uint32_t p, int16_t heap)
 DECOMP(12, 0x0528, typed_array_resize, FAR_CDECL)
 uint32_t typed_array_resize(uint32_t p, uint16_t count)
 {
-  FRAME_ENTER(0 + 4);
+  FRAME_ENTER_REGS(0, 2);
   uint16_t w = rd16(FP_SEG(p), FP_OFF(p));
   uint16_t code = (uint16_t)((uint16_t)(w & 0xe00) >> 9);
   uint16_t sz = (uint16_t)((uint16_t)((w & 0xff) * count) + 4);
@@ -440,7 +440,7 @@ uint32_t typed_array_resize(uint32_t p, uint16_t count)
 DECOMP(12, 0x0568, typed_array_alloc, FAR_CDECL)
 uint32_t typed_array_alloc(uint16_t elem, uint16_t count, int16_t heap)
 {
-  FRAME_ENTER(4 + 2);
+  FRAME_ENTER_DI(4);
   uint16_t args[2] = {(uint16_t)((uint32_t)count * elem + 4), (uint16_t)heap};
   uint32_t r = rt_call_far(MK_FP(SEG_SEL(12), 0x0232), FAR_CDECL, args, 2);
   uint16_t seg = FP_SEG(r), off = FP_OFF(r);
@@ -469,7 +469,7 @@ uint32_t typed_array_alloc(uint16_t elem, uint16_t count, int16_t heap)
 DECOMP(12, 0x05be, typed_array_free, FAR_CDECL)
 void typed_array_free(uint32_t p)
 {
-  FRAME_ENTER(0 + 2);
+  FRAME_ENTER_REGS(0, 1);
   if (p != 0) {
     uint16_t ax = (uint16_t)((uint16_t)rd8(FP_SEG(p), (uint16_t)(FP_OFF(p) + 1)) << 8);
     uint16_t args[3] = {FP_OFF(p), FP_SEG(p), (uint16_t)((uint16_t)(ax & 0xe00) >> 9)};

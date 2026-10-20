@@ -203,6 +203,11 @@ static const StubCfg g_stubs[S_NSTUB] = {
     [S_4_506C] = {"4:506c", 4, 0x506c, 0, -1},
     [S_4_1F40] = {"4:1f40", 4, 0x1f40, 2, -1},
     [S_4_379A] = {"4:379a", 4, 0x379a, 1, -1},
+    /* Rule j2 justification: 26:0x0000 is decompiled (src/seg26.c, diffed in tests/scenarios/test_seg26.c), but it stays a double
+     * here. Only the WM_CHAR scenario reaches it (keys 0x71 / 0x51) and its world is random state; the real function builds
+     * the production list from the planet copy at DS:0x4c08 and queue pointer DS:0x4c3c and opens a modal dialog, so the two
+     * runs then differ in the heap block it allocates (measured: 4:0x0528 DIFF fails on a heap block with the double removed).
+     * Blind spot: what 26:0x0000 does is not checked here, only that 4:0x0528 calls it with argument 0. */
     [S_26_0000] = {"26:0000", 26, 0x0000, 1, -1},
     [S_9_3082] = {"9:3082", 9, 0x3082, 2, -1},
     [S_10_1AEC] = {"10:1aec", 10, 0x1aec, 4, -1},

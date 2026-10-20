@@ -103,9 +103,9 @@ static __attribute__((unused)) Fp80 crt_pow_34_0d84(Fp80 base, Fp80 expo)
     Fp80 t = fp80_fyl2x(base, expo); /* FYL2X: expo * log2(base), rounded to a double */
     Fp80 limit;
     {
-      uint64_t sg = 0x8000000000000000ull; /* the xword at DS:0x1ADA: 2^14 */
+      uint32_t sg[2] = {0, 0x80000000u}; /* the xword at DS:0x1ADA: 2^14 (significand 0x8000000000000000, low dword first) */
       uint16_t se = 0x400d;
-      memcpy(&limit, &sg, 8);
+      memcpy(&limit, sg, 8);
       memcpy((uint8_t *)&limit + 8, &se, 2);
     }
     Fp80 abst = t;

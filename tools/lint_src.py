@@ -14,24 +14,34 @@ Checks:
     Only a const that qualifies the declarator itself exempts a variable ('const T *p' is mutable). Host pointers stored in
     arena memory cannot be found statically; the diff tests catch those.
  2. every DECOMP(seg, 0xOFF, ...) has a row in the csv, the row's status is not todo, and a
-    segNN.c file only holds DECOMP lines for segment NN; every csv row with status decompiled or
-    tested has a DECOMP (rules f, i).
- 3. every csv row with status tested has a DIFF(seg, 0xOFF, ...) in tests/scenarios/*.c.
+    segNN.c file only holds DECOMP lines for segment NN; every csv row with status decompiled, tested or
+    readable has a DECOMP (rules f, i).
+ 3. every csv row with status tested or readable has a DIFF(seg, 0xOFF, ...) in tests/scenarios/*.c.
  4. no CALL_ORIG(seg, 0xOFF, ...) targets a function that is already decompiled (a DECOMP line or
     csv status decompiled/tested).
- 5. csv statuses are todo/decompiled/tested/unused, and unused rows carry evidence in notes.
+ 5. csv statuses are todo/decompiled/tested/readable/unused, and unused rows carry evidence in notes.
+ 6. frames (rule d): a DECOMP function whose body calls another DECOMP function, CALL_ORIG,
+    rt_call_far or a Win16 API (the names in runtime/win16_api.inc next to the src dir) must contain
+    FRAME_ENTER and a FRAME_LEAVE before every return. Exempt with a comment
+    /* lint: leaf-frame-ok <reason> */ between the previous function and the end of this one.
+ 7. calls (rule e): a DECOMP function that contains FRAME_ENTER is never called by name from
+    another DECOMP function: go through rt_call_far.
+ 8. readability (rules i, k; docs/PLAN.md section 5): a function whose csv status is readable has a
+    DECOMP, a DIFF, and in its code zero raw rd*/wr*/drd*/dwr*/LINN accesses, zero placeholder names,
+    zero unnamed hex constants and the tag line seg:0xOFF in its comment (tools/readability.py).
 """
 import csv
 import re
 import sys
 from pathlib import Path
 
-STATUSES = {"todo", "decompiled", "tested", "unused"}
+STATUSES = {"todo", "decompiled", "tested", "readable", "unused"}
 HOSTPTR = "host pointers do not belong in game code"
 NOALLOC = "no host allocation: game memory comes from the emulated heap"
 BANNED_WORDS = {
     "int": "Ghidra's int/uint are 16-bit: use int16_t/uint16_t (int32_t only for a 32-bit original)", "short": "use int16_t", "long": "use int32_t",
     "unsigned": "use uint16_t/uint32_t", "signed": "use int8_t/int16_t/int32_t",
+    "int64_t": "no 64-bit type: use 32-bit pieces (hi, lo)", "uint64_t": "no 64-bit type: use 32-bit pieces (hi, lo)",
     "char": "use int8_t/uint8_t", "uintptr_t": HOSTPTR, "intptr_t": HOSTPTR, "ptrdiff_t": HOSTPTR,
     "malloc": NOALLOC, "calloc": NOALLOC, "realloc": NOALLOC, "free": NOALLOC,
 }
@@ -40,6 +50,8 @@ NUM = r"(0[xX][0-9a-fA-F]+|\d+)"
 DECOMP_RE = re.compile(r"^\s*DECOMP\(\s*(\d+)\s*,\s*" + NUM + r"\s*,\s*(\w+)\s*,")
 CALL_ORIG_RE = re.compile(r"\bCALL_ORIG\(\s*(\d+)\s*,\s*" + NUM + r"\s*,")
 DIFF_RE = re.compile(r"\bDIFF\(\s*(\d+)\s*,\s*" + NUM + r"\s*,")
+W16API_RE = re.compile(r'W16API\(\s*\w+\s*,\s*\d+\s*,\s*"(\w+)"')
+EXEMPT_RE = re.compile(r"/\*\s*lint:\s*leaf-frame-ok\s+\S.*?\*/", re.S)
 SEGFILE_RE = re.compile(r"^seg(\d\d)\.c$")
 
 
@@ -166,6 +178,86 @@ def check_mutable_globals(path, code, errs):
                                     "in DGROUP (src/globals.h); tables must be const")
 
 
+def api_names(src):
+    """Win16 API names from runtime/win16_api.inc beside the src directory (none if it is absent)."""
+    inc = Path(src).parent / "runtime" / "win16_api.inc"
+    if not inc.is_file():
+        return set()
+    return set(W16API_RE.findall(inc.read_text(encoding="utf-8", errors="replace")))
+
+
+def function_bodies(text, code):
+    """[(name, DECOMP line, body line offset, body code, exempt)] for each DECOMP function. The body
+    runs from the first '{' after the DECOMP line to its matching '}' in the stripped code; the
+    exemption comment is searched in the raw text since the previous function's end."""
+    out, prev_end = [], 0
+    for m in re.finditer(r"^[ \t]*DECOMP\(\s*\d+\s*,\s*" + NUM + r"\s*,\s*(\w+)\s*,[^\n]*", code, re.M):
+        brace = code.find("{", m.end())
+        if brace < 0:
+            continue
+        depth, i = 0, brace
+        while i < len(code):
+            depth += (code[i] == "{") - (code[i] == "}")
+            i += 1
+            if depth == 0:
+                break
+        line = code.count("\n", 0, m.start()) + 1
+        body_line = code.count("\n", 0, brace) + 1
+        out.append((m.group(2), line, body_line, code[brace:i],
+                    bool(EXEMPT_RE.search(text[prev_end:i]))))
+        prev_end = i
+    return out
+
+
+def check_frames(files, texts, codes, apis, errs):
+    funcs = {p: function_bodies(texts[p], codes[p]) for p in files}
+    names = {f[0] for fs in funcs.values() for f in fs}
+    framed = {f[0] for fs in funcs.values() for f in fs if "FRAME_ENTER" in f[3]}
+    for p, fs in funcs.items():
+        for name, line, body_line, body, exempt in fs:
+            idents = {m.group(1) for m in re.finditer(r"\b([A-Za-z_]\w*)\s*\(", body)}
+            for callee in sorted((idents & framed) - {name}):
+                errs.append(f"{p}:{line}: {name} calls {callee} by name, but {callee} mirrors a frame: "
+                            "call it through rt_call_far (rule (e))")
+            calls = idents & ({"CALL_ORIG", "rt_call_far"} | apis | (names - {name}))
+            if not calls or exempt:
+                continue
+            why = f"calls {sorted(calls)[0]}"
+            if "FRAME_ENTER" not in body:
+                errs.append(f"{p}:{line}: {name} {why} but has no FRAME_ENTER: mirror the frame "
+                            "(rule (d)) or add /* lint: leaf-frame-ok <reason> */")
+                continue
+            last = 0
+            rets = [m.start() for m in re.finditer(r"\breturn\b", body)]
+            for pos in rets or [len(body)]:
+                if "FRAME_LEAVE" not in body[last:pos]:
+                    at = body_line + body.count("\n", 0, pos)
+                    errs.append(f"{p}:{at}: {name} returns without FRAME_LEAVE() (rule (d))"
+                                if rets else f"{p}:{line}: {name} never calls FRAME_LEAVE() (rule (d))")
+                last = pos
+
+
+def check_readable(files, texts, rows, csv_path, errs):
+    """Check 8: functions marked readable in the csv meet the readability targets."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import readability   # imported here: readability itself imports this module
+    for p in files:
+        if not SEGFILE_RE.match(p.name):
+            continue
+        for f in readability.file_metrics(texts[p]):
+            row = rows.get((f.seg, f.off))
+            if not row or (row[0].get("status") or "").strip() != "readable":
+                continue
+            bad = [msg for n, msg in ((f.raw, f"{f.raw} raw rd/wr/drd/dwr/LINN access(es)"),
+                                      (f.placeholders, f"{f.placeholders} placeholder name(s)"),
+                                      (f.magic, f"{f.magic} unnamed magic constant(s)"),
+                                      (not f.tagged, f"no tag line {f.seg}:0x{f.off:04x} in its comment"))
+                   if n]
+            if bad:
+                errs.append(f"{p}: readability: {f.name} ({f.seg}:0x{f.off:04x}) is readable in {csv_path} "
+                            "but has " + ", ".join(bad) + " (rules (i), (k))")
+
+
 def read_csv(path):
     rows = {}
     with open(path, newline="", encoding="utf-8") as f:
@@ -217,16 +309,16 @@ def lint(src, csv_path, scenarios):
             diffs |= {(int(m.group(1)), int(m.group(2), 0)) for m in DIFF_RE.finditer(code)}
     done = set(decomps)
     for key, (r, _n) in rows.items():
-        if (r.get("status") or "").strip() in ("decompiled", "tested"):
+        if (r.get("status") or "").strip() in ("decompiled", "tested", "readable"):
             done.add(key)
     for (seg, off), (r, n) in sorted(rows.items()):
         st, name, loc = (r.get("status") or "").strip(), r.get("name", ""), f"{csv_path}:{n}"
         if st not in STATUSES:
-            errs.append(f"{loc}: {name} has unknown status '{st}' (todo/decompiled/tested/unused)")
-        if st in ("decompiled", "tested") and (seg, off) not in decomps:
+            errs.append(f"{loc}: {name} has unknown status '{st}' (todo/decompiled/tested/readable/unused)")
+        if st in ("decompiled", "tested", "readable") and (seg, off) not in decomps:
             errs.append(f"{loc}: {name} ({seg}:0x{off:04x}) is {st} but there is no DECOMP line in {src}")
-        if st == "tested" and (seg, off) not in diffs:
-            errs.append(f"{loc}: {name} ({seg}:0x{off:04x}) is tested but has no DIFF in {scenarios}")
+        if st in ("tested", "readable") and (seg, off) not in diffs:
+            errs.append(f"{loc}: {name} ({seg}:0x{off:04x}) is {st} but has no DIFF in {scenarios}")
         if st == "unused" and not (r.get("notes") or "").strip():
             errs.append(f"{loc}: {name} is unused but notes has no evidence (no callers, not an entry "
                         "point, not referenced from data)")
@@ -237,6 +329,8 @@ def lint(src, csv_path, scenarios):
                 if key in done:
                     errs.append(f"{p}:{ln}: CALL_ORIG {key[0]}:0x{key[1]:04x} targets a function that is "
                                 "already decompiled: call it by its C name")
+    check_frames(files, texts, codes, api_names(src), errs)
+    check_readable(files, texts, rows, csv_path, errs)
     return errs
 
 

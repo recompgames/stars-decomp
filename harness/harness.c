@@ -288,6 +288,98 @@ void harness_log_end(size_t idx, uint32_t ret) {
   if (idx < g_n_log) g_log[idx].ret = ret;
 }
 
+/* DOS3Call (KERNEL.102) reads only the registers its AH function defines as inputs; the others
+ * hold whatever the caller left, and the C version of a caller cannot reproduce that, so they are
+ * logged as 0. Bits: 1 AL, 2 BX, 4 CX, 8 DX, 0x10 SI, 0x20 DI, 0x40 DS, 0x80 ES; DL only for
+ * 0x100. AH is always logged. AH values not listed log every register. */
+static unsigned dos3_input_mask(unsigned ah, unsigned al) {
+  switch (ah) {
+    case 0x1A: return 0x08 | 0x40;
+    case 0x25: return 1 | 0x08 | 0x40;
+    case 0x2A: case 0x2C: case 0x2F: case 0x4F: return 0;
+    case 0x30: case 0x35: case 0x4C: return 1;
+    case 0x36: return 0x100;
+    case 0x39: case 0x3A: case 0x3B: case 0x41: return 0x08 | 0x40;
+    case 0x3C: case 0x4E: return 0x04 | 0x08 | 0x40;
+    case 0x3D: return 1 | 0x08 | 0x40;
+    case 0x3E: return 0x02;
+    case 0x3F: case 0x40: return 0x02 | 0x04 | 0x08 | 0x40;
+    case 0x42: return 1 | 0x02 | 0x04 | 0x08;
+    case 0x43: return 1 | (al == 1 ? 0x04 : 0) | 0x08 | 0x40; /* CX is an input only to set */
+    case 0x56: return 0x08 | 0x20 | 0x40 | 0x80;
+    default: return 0xFF;
+  }
+}
+
+void harness_log_set_regs(size_t idx, const uint16_t regs[HARNESS_LOG_NREGS]) {
+  HLogEntry *e;
+  if (idx >= g_n_log) return;
+  e = &g_log[idx];
+  e->has_regs = true;
+  memcpy(e->regs, regs, sizeof e->regs);
+  if (e->ordinal == 102 && strcmp(e->module, "KERNEL") == 0) {
+    unsigned m = dos3_input_mask(regs[0] >> 8, regs[0] & 0xFF);
+    static const unsigned bit[HARNESS_LOG_NREGS] = {0, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
+    for (unsigned i = 1; i < HARNESS_LOG_NREGS; i++)
+      if (!(m & bit[i])) e->regs[i] = 0;
+    if (m & 0x100) e->regs[3] = (uint16_t)(regs[3] & 0xFF), e->regs[0] = (uint16_t)(regs[0] & 0xFF00);
+    else if (!(m & 1)) e->regs[0] = (uint16_t)(regs[0] & 0xFF00);
+  }
+}
+
+/* Bytes of variable arguments a printf-style format consumes, with the rules of _wsprintf
+ * (runtime/wsprintf.c parse_format): flags, width and precision digits, an optional l or h, then
+ * the type. c d i u x X p take one word (two with l), s and S take a far pointer, an unknown type
+ * character takes nothing. The scan is bounded by the arena and by 512 characters. */
+static unsigned format_va_bytes(uint32_t fmt) {
+  unsigned words = 0, n = 0;
+  if (!fmt || !mem_check(fmt, 1)) return 0;
+#define FCH(k) ((n + (k)) < 512 && mem_check(fmt + n + (k), 1) ? ((const char *)LIN(fmt))[n + (k)] : 0)
+  while (FCH(0)) {
+    unsigned lng = 0;
+    if (FCH(0) != '%') { n++; continue; }
+    n++;
+    if (FCH(0) == '%') { n++; continue; }
+    if (FCH(0) == '-') n++;
+    if (FCH(0) == '#') n++;
+    if (FCH(0) == '0') n++;
+    while (FCH(0) >= '0' && FCH(0) <= '9') n++;
+    if (FCH(0) == '.') {
+      n++;
+      while (FCH(0) >= '0' && FCH(0) <= '9') n++;
+    }
+    if (FCH(0) == 'l') { lng = 1; n++; }
+    else if (FCH(0) == 'h') n++;
+    switch (FCH(0)) {
+      case 'c': case 'C': case 'd': case 'i': case 'u': case 'X': case 'x': case 'p':
+        words += lng ? 2 : 1;
+        n++;
+        break;
+      case 's': case 'S':
+        words += 2;
+        n++;
+        break;
+      default: break; /* unknown type: printed as text, consumes no argument */
+    }
+  }
+#undef FCH
+  return words * 2;
+}
+
+void harness_log_set_va(size_t idx, uint32_t fmt, uint32_t va) {
+  HLogEntry *e;
+  unsigned bytes, n;
+  if (idx >= g_n_log) return;
+  e = &g_log[idx];
+  bytes = format_va_bytes(fmt);
+  e->has_va = true;
+  e->va_bytes = (uint16_t)bytes;
+  n = bytes < HARNESS_MAX_LOG_ARGS ? bytes : HARNESS_MAX_LOG_ARGS;
+  for (unsigned i = 0; i < n; i++) {
+    if (va && mem_check(va + i, 1)) e->va[i] = ((const uint8_t *)LIN(va))[i];
+  }
+}
+
 static HLogEntry *log_new(void) {
   if (g_n_log == g_cap_log) {
     size_t cap = g_cap_log ? g_cap_log * 2 : 256;
@@ -305,6 +397,12 @@ static HLogEntry *log_new(void) {
 uint16_t hcall_word(const HCall *c, unsigned n) {
   if (n * 2u + 2u > 0xFFFFu) return 0;
   return (uint16_t)(*(uint16_t *)LIN(c->args + n * 2u));
+}
+
+static uint32_t hcall_dword_at(uint32_t base, unsigned off) {
+  uint32_t v = 0;
+  if (mem_check(base + off, 4)) memcpy(&v, LIN(base + off), 4);
+  return v;
 }
 
 static void on_intr(uc_engine *uc, uint32_t intno, void *ud) {
@@ -346,6 +444,29 @@ static void on_intr(uc_engine *uc, uint32_t intno, void *ud) {
   {
     unsigned n = t->argbytes < HARNESS_MAX_LOG_ARGS ? t->argbytes : HARNESS_MAX_LOG_ARGS;
     if ((size_t)sp_lin + 4 + n <= mem_size()) memcpy(e->args, mem_arena() + sp_lin + 4, n);
+  }
+
+  if (t->kind == HK_REGISTER) {
+    const uint16_t rg[HARNESS_LOG_NREGS] = {before.ax, before.bx, before.cx, before.dx,
+                                            before.si, before.di, before.ds, before.es};
+    harness_log_set_regs(log_idx, rg);
+  } else if (t->kind == HK_VARARGS) {
+    /* cdecl: the fixed part comes first. _wsprintf is (out far, fmt far) then the arguments;
+     * _DebugOutput is (flags word, fmt far) then the arguments. WOW16Call has no format string
+     * (the game does not call it): it aborts rather than logging only its fixed part. Test
+     * scenarios also use HK_VARARGS for synthetic "STUBS" thunks (caller pops); those are not
+     * Win16 APIs and log the fixed part only. */
+    bool ws = t->ordinal == 420 && strcmp(t->module, "USER") == 0;
+    bool dbg = t->ordinal == 328 && strcmp(t->module, "KERNEL") == 0;
+    if (t->ordinal == 500 && strcmp(t->module, "KERNEL") == 0) {
+      fprintf(stderr, "harness: KERNEL.500 WOW16Call has no argument decoder (harness/harness.c)\n");
+      abort();
+    }
+    if (ws || dbg) {
+      uint32_t base = MK_FP(r.ss, (uint16_t)(r.sp + 4));
+      uint32_t fmt = hcall_dword_at(base, ws ? 4 : 2);
+      harness_log_set_va(log_idx, fmt, MK_FP(r.ss, (uint16_t)(r.sp + 4 + t->argbytes)));
+    }
   }
 
   fn = find_handler(t);

@@ -45,6 +45,39 @@ static void same_entry(const HLogEntry *a, const HLogEntry *b, bool want_ret) {
   CHECK_MEM(a->args, b->args, a->argbytes);
   if (want_ret) CHECK_EQ(a->ret, b->ret);
   CHECK_EQ(a->implemented, b->implemented);
+  CHECK_EQ(a->has_regs, b->has_regs);
+  CHECK_MEM(a->regs, b->regs, sizeof a->regs);
+  CHECK_EQ(a->has_va, b->has_va);
+  CHECK_EQ(a->va_bytes, b->va_bytes);
+  CHECK_MEM(a->va, b->va, a->va_bytes < HARNESS_MAX_LOG_ARGS ? a->va_bytes : HARNESS_MAX_LOG_ARGS);
+}
+
+/* DOS3Call by name logs the eight input registers (stars-decomp-z3l.3). */
+static void test_dos3call_regs(void) {
+  KDosRegs r = {0x7F00, 1, 2, 3, 4, 5, 6, 7, 0}; /* AH not implemented: every register is logged */
+  harness_log_clear();
+  DOS3Call(&r);
+  CHECK_EQ(harness_log_count(), 1);
+  const HLogEntry *e = harness_log_get(0);
+  CHECK(e && e->has_regs);
+  if (e) {
+    CHECK_EQ(e->ordinal, 102);
+    CHECK_EQ(e->regs[0], 0x7F00);
+    CHECK_EQ(e->regs[1], 1);
+    CHECK_EQ(e->regs[5], 5);
+    CHECK_EQ(e->regs[6], 6);
+    CHECK_EQ(e->regs[7], 7);
+  }
+  /* AH=2Ah (get date) reads no register: the leftovers the caller holds are not logged */
+  KDosRegs d = {0x2A18, 1, 2, 3, 4, 5, 6, 7, 0};
+  harness_log_clear();
+  DOS3Call(&d);
+  e = harness_log_get(0);
+  CHECK(e && e->has_regs);
+  if (e) {
+    CHECK_EQ(e->regs[0], 0x2A00);
+    for (int i = 1; i < HARNESS_LOG_NREGS; i++) CHECK_EQ(e->regs[i], 0);
+  }
 }
 
 static void test_alloc(void) {
@@ -169,6 +202,7 @@ static void test_gdi_user(void) {
   CHECK_EQ(n2, 8); /* "7-131073" */
   CHECK_MEM(first, LIN(out), 9);
   CHECK_EQ(strcmp((const char *)LIN(out), "7-131073"), 0);
+  CHECK_EQ(harness_log_get(1)->va_bytes, 6); /* %d is one word, %ld two */
   CHECK_EQ(GlobalFree(h), 0);
 }
 
@@ -469,6 +503,7 @@ int main(void) {
   test_alloc();
   test_order_and_returns();
   test_gdi_user();
+  test_dos3call_regs();
   test_seg3_wrappers();
   test_seg13_wrappers();
   test_seg16_wrappers();

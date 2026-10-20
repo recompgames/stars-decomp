@@ -13,7 +13,7 @@
  *   1:0x0d90  read the whole ini file into DGROUP
  *   1:0x1da0  apply a letter string ("ABc*") to a table of 16-byte entries
  * The functions with callees that take or depend on a stack address (1:0x0000, 0x0af8, 0x0c36, 0x08a4, 0x0d90)
- * mirror their frames (rule d): FRAME_ENTER(n + 2 * pushes), the callees that mirror a frame are reached
+ * mirror their frames (rule d): FRAME_ENTER_REGS(n, pushes), the callees that mirror a frame are reached
  * through rt_call_far (this includes 4:0x1c78, decompiled), 8:* and 34:* through CALL_ORIG. 1:0x0bb4 and 1:0x1da0 are leaves with ordinary
  * C locals. DGROUP words are read and written at the original offsets with the helpers below, as in
  * src/seg13.c (the generated globals.h guesses some widths). DS = SS = DGROUP in every function. */
@@ -179,7 +179,7 @@ void fn_01_0bb4(void)
 DECOMP(1, 0x0c36, fn_01_0c36, FAR_CDECL)
 void fn_01_0c36(uint16_t app, uint16_t file, uint16_t id, uint16_t dest)
 {
-  FRAME_ENTER(0x28 + 4);
+  FRAME_ENTER_REGS(0x28, 2);
   const uint16_t keyp = (uint16_t)(rt_bp - 0x28);
   int16_t val[4];            /* BP-0x10 .. BP-0xa */
   int16_t res[4];            /* BP-0x18 .. BP-0x12 */
@@ -272,7 +272,7 @@ static uint16_t font_height(uint16_t hdc, uint16_t points)
 DECOMP(1, 0x08a4, fn_01_08a4, FAR_CDECL)
 uint16_t fn_01_08a4(uint16_t hdc)
 {
-  FRAME_ENTER(0x26 + 4);
+  FRAME_ENTER_REGS(0x26, 2);
   const uint16_t lf = LocalAlloc(0x40, 0x32);   /* BP-6 */
   uint16_t face;
   for (uint16_t i = 0, name = 0x06ca; name < 0x074a; i++, name = (uint16_t)(name + 0x20)) {
@@ -418,7 +418,7 @@ static void set_flag_bit(uint16_t off, uint16_t bit, uint16_t value)
 DECOMP(1, 0x0d90, fn_01_0d90, FAR_CDECL)
 void fn_01_0d90(void)
 {
-  FRAME_ENTER(0x46 + 4);
+  FRAME_ENTER_REGS(0x46, 2);
   const uint16_t app = ini_app(), key = ini_key();
   uint16_t v, n, i, len, ax;
 
@@ -743,7 +743,7 @@ void fn_01_0d90(void)
 DECOMP(1, 0x0af8, fn_01_0af8, FAR_CDECL)
 uint16_t fn_01_0af8(int16_t cmd_show)
 {
-  FRAME_ENTER(8 + 4);
+  FRAME_ENTER_REGS(8, 2);
   uint16_t result = 0;
   dwr16(0x251a, (uint16_t)(drd16(0x251a) & 0xfe1a));
   dwr16(0x2520, 0xffff);
@@ -854,7 +854,7 @@ static void alloc_far(uint16_t size, uint16_t flags, uint16_t dest)
 DECOMP(1, 0x0000, fn_01_0000, FAR_CDECL)
 uint16_t fn_01_0000(void)
 {
-  FRAME_ENTER(8 + 4);
+  FRAME_ENTER_REGS(8, 2);
   uint16_t failed = 0;   /* BP-8 */
   uint16_t i, h;
   int16_t cx = GetSystemMetrics(0);

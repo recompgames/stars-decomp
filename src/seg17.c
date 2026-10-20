@@ -24,7 +24,7 @@
  * 18:0x0630 in the design slot its first argument names. The old fn_17_<off> names are kept as
  * aliases in the comment above each function.
  *
- * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER(n + 2 * pushes) with
+ * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER_REGS(n, pushes) with
  * n the ENTER size and one push for each PUSH SI / PUSH DI. Leaves that never expose a stack address
  * use ordinary C locals. The functions are written as the original's basic blocks where the control
  * flow is not a plain loop: the registers are C locals, the stack locals whose address a callee
@@ -98,22 +98,68 @@ static void div16_(uint16_t *a, uint16_t *d, uint16_t den, uint16_t where)
   *a = (uint16_t)(num / den);
   *d = (uint16_t)(num % den);
 }
+/* 64-bit pieces built from 32-bit operations (rule (a) has no 64-bit type). A 64-bit value is the pair
+ * (hi, lo) of uint32_t, as in EDX:EAX. */
+
+/* The high 32 bits of the unsigned product a * b: a = a1:a0, b = b1:b0 in 16-bit limbs; mid cannot
+ * overflow (at most 0xffff + 0xffff + 0xffff). */
+static uint32_t umulh32_(uint32_t a, uint32_t b)
+{
+  uint32_t a0 = a & 0xffffu, a1 = a >> 16, b0 = b & 0xffffu, b1 = b >> 16;
+  uint32_t p00 = a0 * b0, p01 = a0 * b1, p10 = a1 * b0, p11 = a1 * b1;
+  uint32_t mid = (p00 >> 16) + (p01 & 0xffffu) + (p10 & 0xffffu);
+  return p11 + (p01 >> 16) + (p10 >> 16) + (mid >> 16);
+}
+/* IMUL r/m32 (one operand): EDX:EAX = EAX * b, signed. The low half is the wrapped product; the signed high
+ * half is the unsigned one minus b when a is negative and minus a when b is negative (mod 2^32). */
+static void imul32_(uint32_t *a, uint32_t *d, uint32_t b)
+{
+  uint32_t x = *a;
+  uint32_t hi = umulh32_(x, b);
+  if (x >> 31) hi -= b;
+  if (b >> 31) hi -= x;
+  *a = x * b;
+  *d = hi;
+}
+/* The unsigned 64 by 32 division of (hi, lo) by den: the quotient has to fit 32 bits (hi < den, den != 0),
+ * the shift-and-subtract division then runs 32 steps on the remainder in hi (a carry out of the shifted
+ * remainder always means it is at least den). */
+static void udivmod64_(uint32_t hi, uint32_t lo, uint32_t den, uint32_t *q, uint32_t *r)
+{
+  uint32_t quo = 0;
+  for (uint16_t i = 0; i < 32; i++) {
+    uint32_t carry = hi >> 31;
+    hi = (hi << 1) | (lo >> 31);
+    lo <<= 1;
+    quo <<= 1;
+    if (carry || hi >= den) { hi -= den; quo |= 1; }
+  }
+  *q = quo;
+  *r = hi;
+}
 static void idiv32_(uint32_t *a, uint32_t *d, uint32_t den, uint16_t where)
 {
-  int64_t num = (int64_t)(((uint64_t)*d << 32) | *a);
-  int32_t dv = (int32_t)den;
-  if (dv == 0 || (num == INT64_MIN && dv == -1)) div_trap(true, 32, where);
-  int64_t q = num / dv;
-  if (q > INT32_MAX || q < INT32_MIN) div_trap(true, 32, where);
-  *a = (uint32_t)q;
-  *d = (uint32_t)(num % dv);
+  uint32_t lo = *a, hi = *d;
+  bool nneg = (hi >> 31) != 0, dneg = (den >> 31) != 0;
+  if (den == 0) div_trap(true, 32, where);
+  if (nneg) { lo = ~lo + 1u; hi = ~hi + (lo == 0 ? 1u : 0u); } /* |num|; INT64_MIN stays 2^63 */
+  uint32_t dv = dneg ? ~den + 1u : den; /* |den|, up to 2^31 */
+  if (hi >= dv) div_trap(true, 32, where); /* |quotient| >= 2^32 (also INT64_MIN / -1) */
+  uint32_t q, r;
+  udivmod64_(hi, lo, dv, &q, &r);
+  bool qneg = nneg != dneg;
+  /* the quotient has to be in -2^31 .. 2^31 - 1 */
+  if (qneg ? q > 0x80000000u : q > 0x7fffffffu) div_trap(true, 32, where);
+  *a = qneg ? ~q + 1u : q;
+  *d = nneg ? ~r + 1u : r; /* the remainder takes the sign of the dividend */
 }
 static void div32_(uint32_t *a, uint32_t *d, uint32_t den, uint16_t where)
 {
-  uint64_t num = ((uint64_t)*d << 32) | *a;
-  if (den == 0 || num / den > 0xffffffffu) div_trap(false, 32, where);
-  *a = (uint32_t)(num / den);
-  *d = (uint32_t)(num % den);
+  if (den == 0 || *d >= den) div_trap(false, 32, where);
+  uint32_t q, r;
+  udivmod64_(*d, *a, den, &q, &r);
+  *a = q;
+  *d = r;
 }
 
 /* The code segment's data at 17:0x0205 to 17:0x0461 (605 bytes): the part lists of the designs, their
@@ -224,7 +270,7 @@ static uint8_t dist_bonus(uint32_t r)
 DECOMP(17, 0x216c, cb_score_planet_by_distance, FAR_CDECL)
 uint16_t cb_score_planet_by_distance(uint32_t a, uint32_t b)
 {
-  FRAME_ENTER(6 + 4);
+  FRAME_ENTER_REGS(6, 2);
   uint16_t asg = (uint16_t)(a >> 16), aoff = (uint16_t)a, bsg = (uint16_t)(b >> 16), boff = (uint16_t)b;
   uint16_t bx;
   uint8_t v;
@@ -257,7 +303,7 @@ none:
 DECOMP(17, 0x2252, cb_score_planet_rec_by_distance, FAR_CDECL)
 uint16_t cb_score_planet_rec_by_distance(uint32_t a, uint32_t b)
 {
-  FRAME_ENTER(6 + 4);
+  FRAME_ENTER_REGS(6, 2);
   uint16_t asg = (uint16_t)(a >> 16), aoff = (uint16_t)a, bsg = (uint16_t)(b >> 16), boff = (uint16_t)b;
   uint16_t id, bx;
   uint8_t v;
@@ -292,7 +338,7 @@ none:
 DECOMP(17, 0x3c30, cb_score_planet_info1, FAR_CDECL)
 uint16_t cb_score_planet_info1(uint32_t a, uint32_t b)
 {
-  FRAME_ENTER(2 + 4);
+  FRAME_ENTER_REGS(2, 2);
   uint8_t v;
   if ((uint16_t)b == (uint16_t)a && (uint16_t)(b >> 16) == (uint16_t)(a >> 16)) goto none;
   v = rd8(drd16(0x1602), (uint16_t)((uint16_t)(rd16((uint16_t)(b >> 16), (uint16_t)b) << 4) + drd16(0x1600) + 1));
@@ -315,7 +361,7 @@ none:
 DECOMP(17, 0x3c82, cb_score_planet_info3, FAR_CDECL)
 uint16_t cb_score_planet_info3(uint32_t a, uint32_t b)
 {
-  FRAME_ENTER(2 + 2);
+  FRAME_ENTER_REGS(2, 1);
   uint16_t bsg = (uint16_t)(b >> 16), boff = (uint16_t)b;
   uint16_t bx;
   uint8_t b0a, b3;
@@ -362,7 +408,7 @@ static uint32_t far_call(uint16_t seg, uint16_t off, const uint16_t *args, int16
 DECOMP(17, 0x0000, ai_player_turn, FAR_CDECL)
 void ai_player_turn(uint16_t player, uint16_t type)
 {
-  FRAME_ENTER(0x106 + 4);
+  FRAME_ENTER_REGS(0x106, 2);
   uint16_t si = player;
   L16(-0x2) = drd16(0x014c);
   dwr16(0x15fe, 1);
@@ -420,7 +466,7 @@ void ai_player_turn(uint16_t player, uint16_t type)
           case 2: (void)far_call(19, 0x0400, buf, 1); break;
           case 3: (void)far_call(19, 0x1594, buf, 1); break;
           case 4: (void)far_call(21, 0x0000, buf, 1); break;
-          case 5: (void)CALL_ORIG(20, 0x0000, FAR_CDECL, 1, buf[0]); break;
+          case 5: (void)far_call(20, 0x0000, buf, 1); break;
           case 7: (void)far_call(19, 0x0000, buf, 1); break;
           default: break;
         }
@@ -471,7 +517,7 @@ void ai0_create_designs(void)
   __attribute__((unused)) uint16_t ax = 0, bx = 0, cx = 0, di = 0, dx = 0, si = 0, cx_h = 0;
   __attribute__((unused)) uint16_t es = 0;
   uint16_t t1 = 0, t2 = 0, t3 = 0;
-  FRAME_ENTER(0x90 + 4);
+  FRAME_ENTER_REGS(0x90, 2);
   di = (uint16_t)(0xb);
   L16(-0x8) = (uint16_t)(0x4804);
   L16(-0x6) = (uint16_t)(0x4);
@@ -750,7 +796,7 @@ void ai1_create_designs(void)
 {
   __attribute__((unused)) uint16_t ax = 0, bx = 0, cx = 0, di = 0, dx = 0, si = 0, cx_h = 0;
   __attribute__((unused)) uint16_t es = 0;
-  FRAME_ENTER(0x90 + 4);
+  FRAME_ENTER_REGS(0x90, 2);
   if ((uint8_t)((uint8_t)(drd8(0x465e)) & (uint8_t)(0x2)) == 0) goto L38ee;
   bx = (uint16_t)((uint16_t)((uint16_t)drd16(0x14c) * (uint16_t)0xc0));
   L16(-0x90) = (uint16_t)(bx);
@@ -961,7 +1007,7 @@ uint16_t ai0_fleet_orders(uint32_t fleet)
   __attribute__((unused)) uint16_t ds = MEM_SEL_DGROUP;
   uint16_t t3 = 0, t4 = 0, t12 = 0, t13 = 0, t14 = 0, t15 = 0, t16 = 0, t19 = 0, t20 = 0, t21 = 0, t22 = 0, t23 = 0, t24 = 0, t25 = 0, t26 = 0, t27 = 0, t28 = 0, t29 = 0, t30 = 0, t31 = 0, t32 = 0, t33 = 0, t36 = 0;
   uint32_t st0 = 0, t17 = 0;
-  FRAME_ENTER(0x22 + 4);
+  FRAME_ENTER_REGS(0x22, 2);
   bx = (uint16_t)fleet;
   es = (uint16_t)(fleet >> 16);
   if ((int16_t)(rd16(es, (uint16_t)(bx + 0x62))) <= (int16_t)(0x1)) goto L1c23;
@@ -1162,7 +1208,7 @@ L1e16:
   L16(-0x20) = (uint16_t)(dx);
   SET32(ax, ax_h, (((uint32_t)(bx) << 16) | (uint16_t)(cx)));
   SET32(cx, cx_h, 0x12);
-  { int64_t p_ = (int64_t)(int32_t)E32(ax, ax_h) * (int32_t)E32(cx, cx_h); SET32(ax, ax_h, (uint32_t)p_); SET32(dx, dx_h, (uint32_t)((uint64_t)p_ >> 32)); }
+  { uint32_t a_ = E32(ax, ax_h), d_; imul32_(&a_, &d_, E32(cx, cx_h)); SET32(ax, ax_h, a_); SET32(dx, dx_h, d_); }
   SET32(cx, cx_h, 0x4);
   SET32(dx, dx_h, ((int32_t)E32(ax, ax_h) < 0) ? 0xffffffffu : 0);
   { uint32_t a_ = E32(ax, ax_h), d_ = E32(dx, dx_h); idiv32_(&a_, &d_, E32(cx, cx_h), 0x1e5d); SET32(ax, ax_h, a_); SET32(dx, dx_h, d_); }
@@ -1385,7 +1431,7 @@ void ai0_turn(uint16_t buf)
   __attribute__((unused)) uint16_t ds = MEM_SEL_DGROUP;
   uint16_t t1 = 0, t2 = 0, t3 = 0, t4 = 0, st0 = 0, t16 = 0, t17 = 0, t18 = 0, t19 = 0, t20 = 0, t21 = 0, t22 = 0, t23 = 0, t24 = 0, t25 = 0, t26 = 0, t27 = 0, t28 = 0, t29 = 0, t30 = 0, t31 = 0, t35 = 0, t37 = 0, t48 = 0, t50 = 0, t52 = 0, t66 = 0, t67 = 0, t73 = 0, t82 = 0, t84 = 0;
   uint32_t t13 = 0;
-  FRAME_ENTER(0x92 + 4);
+  FRAME_ENTER_REGS(0x92, 2);
   bx = (uint16_t)((uint16_t)((uint16_t)drd16(0x14c) * (uint16_t)0xc0));
   ax = (uint16_t)((ax & 0x00ff) | ((uint16_t)(uint8_t)(drd8((uint16_t)(bx + 0x5a6b))) << 8));
   ax = (uint16_t)((uint16_t)(ax & 0x1c00));
@@ -1627,7 +1673,7 @@ L07a1:
   if ((uint8_t)((uint8_t)(rd8(es, (uint16_t)(bx + 0x5))) & (uint8_t)(0x2)) == 0) goto L0d18;
   if ((int32_t)(rd32(es, (uint16_t)(bx + 0x28))) < (int32_t)(0xc8)) goto L0d18;
   { uint32_t r_ = CALL_ORIG(9, 0x2a74, FAR_CDECL, 2, 0x1, rd16(es, bx)); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
-  { uint32_t r_ = CALL_ORIG(26, 0x100, FAR_CDECL, 1, buf); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
+  { uint32_t r_ = rt_call_far(MK_FP(SEG_SEL(26), 0x100), FAR_CDECL, (const uint16_t[]){buf}, 1); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
   ax = (uint16_t)(0);
   L16(-0x14) = (uint16_t)(ax);
   L16(-0xc) = (uint16_t)(ax);
@@ -1720,7 +1766,7 @@ L0909:
   dx = ((int16_t)ax < 0) ? 0xffff : 0;
   SET32(ax, ax_h, (((uint32_t)(dx) << 16) | (uint16_t)(ax)));
   SET32(cx, cx_h, t13);
-  { int64_t p_ = (int64_t)(int32_t)E32(ax, ax_h) * (int32_t)E32(cx, cx_h); SET32(ax, ax_h, (uint32_t)p_); SET32(dx, dx_h, (uint32_t)((uint64_t)p_ >> 32)); }
+  { uint32_t a_ = E32(ax, ax_h), d_; imul32_(&a_, &d_, E32(cx, cx_h)); SET32(ax, ax_h, a_); SET32(dx, dx_h, d_); }
   L32(-0x4) = (uint32_t)(E32(ax, ax_h));
   { uint32_t r_ = CALL_ORIG(9, 0x4de8, FAR_CDECL, 3, (uint16_t)(L32(-0x26)), (uint16_t)((L32(-0x26)) >> 16), drd16(0x14c)); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
   di = (uint16_t)(ax);
@@ -1980,7 +2026,7 @@ L0cd4:
 L0d0d:
   st0 = L16(-0x14);
 L0d10:
-  { uint32_t r_ = CALL_ORIG(26, 0x810, FAR_CDECL, 1, st0); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
+  { uint32_t r_ = rt_call_far(MK_FP(SEG_SEL(26), 0x810), FAR_CDECL, (const uint16_t[]){st0}, 1); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
 L0d18:
   L16(-0x28) = (uint16_t)((uint16_t)(L16(-0x28) + 0x4));
   ax = (uint16_t)(drd16(0x4b62));
@@ -2022,7 +2068,7 @@ L0d4d:
   t35 = ax;
   SET32(ax, ax_h, (((uint32_t)(dx) << 16) | (uint16_t)(ax)));
   SET32(cx, cx_h, (((uint32_t)(dx) << 16) | (uint16_t)(t35)));
-  { int64_t p_ = (int64_t)(int32_t)E32(ax, ax_h) * (int32_t)E32(cx, cx_h); SET32(ax, ax_h, (uint32_t)p_); SET32(dx, dx_h, (uint32_t)((uint64_t)p_ >> 32)); }
+  { uint32_t a_ = E32(ax, ax_h), d_; imul32_(&a_, &d_, E32(cx, cx_h)); SET32(ax, ax_h, a_); SET32(dx, dx_h, d_); }
   SET32(dx, dx_h, E32(ax, ax_h));
   SET32(dx, dx_h, (uint32_t)((uint32_t)E32(dx, dx_h) >> 16));
   es = L16(-0x10);
@@ -2038,7 +2084,7 @@ L0d4d:
   t37 = ax;
   SET32(ax, ax_h, (((uint32_t)(dx) << 16) | (uint16_t)(ax)));
   SET32(cx, cx_h, (((uint32_t)(dx) << 16) | (uint16_t)(t37)));
-  { int64_t p_ = (int64_t)(int32_t)E32(ax, ax_h) * (int32_t)E32(cx, cx_h); SET32(ax, ax_h, (uint32_t)p_); SET32(dx, dx_h, (uint32_t)((uint64_t)p_ >> 32)); }
+  { uint32_t a_ = E32(ax, ax_h), d_; imul32_(&a_, &d_, E32(cx, cx_h)); SET32(ax, ax_h, a_); SET32(dx, dx_h, d_); }
   SET32(ax, ax_h, (uint32_t)(E32(ax, ax_h) + L32(-0x90)));
   if ((int32_t)(E32(ax, ax_h)) <= (int32_t)(0x9c40)) goto L0e0e;
   es = L16(-0x10);
@@ -2692,7 +2738,7 @@ void ai1_turn(uint16_t buf)
   __attribute__((unused)) uint16_t es = 0;
   __attribute__((unused)) uint16_t ds = MEM_SEL_DGROUP;
   uint16_t t1 = 0, t2 = 0, t3 = 0, st0 = 0, t13 = 0, t14 = 0, t15 = 0, t16 = 0, t17 = 0, t18 = 0, t19 = 0, t20 = 0, t21 = 0, t22 = 0, t23 = 0, t24 = 0, t25 = 0, t26 = 0, t27 = 0, t28 = 0, t29 = 0, t30 = 0, t31 = 0, t32 = 0, t34 = 0, t41 = 0, t43 = 0, t45 = 0, t47 = 0, t54 = 0, t62 = 0, t64 = 0, t87 = 0;
-  FRAME_ENTER(0x8a + 4);
+  FRAME_ENTER_REGS(0x8a, 2);
   SET32(ax, ax_h, 0);
   L16(-0x2e) = (uint16_t)(ax);
   L16(-0x34) = (uint16_t)(ax);
@@ -2931,7 +2977,7 @@ L26e4:
   if ((uint8_t)((uint8_t)(rd8(es, (uint16_t)(si + 0x5))) & (uint8_t)(0x2)) == 0) goto L2dce;
   if ((int32_t)(rd32(es, (uint16_t)(si + 0x28))) < (int32_t)(0xc8)) goto L2dce;
   { uint32_t r_ = CALL_ORIG(9, 0x2a74, FAR_CDECL, 2, 0x1, rd16(es, si)); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
-  { uint32_t r_ = CALL_ORIG(26, 0x100, FAR_CDECL, 1, buf); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
+  { uint32_t r_ = rt_call_far(MK_FP(SEG_SEL(26), 0x100), FAR_CDECL, (const uint16_t[]){buf}, 1); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
   ax = (uint16_t)(0);
   L16(-0xa) = (uint16_t)(ax);
   L16(-0x10) = (uint16_t)(ax);
@@ -3354,7 +3400,7 @@ L2d49:
 L2d82:
   st0 = L16(-0xa);
 L2d85:
-  { uint32_t r_ = CALL_ORIG(26, 0x810, FAR_CDECL, 1, st0); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
+  { uint32_t r_ = rt_call_far(MK_FP(SEG_SEL(26), 0x810), FAR_CDECL, (const uint16_t[]){st0}, 1); ax = (uint16_t)r_; dx = (uint16_t)(r_ >> 16); }
   si = (uint16_t)(L16(-0x2c));
   goto L2e1f;
 L2d94:

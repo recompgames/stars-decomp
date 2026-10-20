@@ -33,7 +33,8 @@ secret from an environment variable (`type $NAME`).
 ```
 make            # runtime, harness, tests, build/nedump, build/run_original
 make test       # lint + every C test + the Python tool tests (needs original/stars26i.exe)
-python3 tools/progress.py [--seg N]
+python3 tools/progress.py [--seg N] [--readability]
+python3 tools/readability.py [--per-function]   # raw accesses, placeholders, magic constants, tag line
 ```
 
 `make` also generates `runtime/win16_api.inc` from the vendored Wine spec files
@@ -98,6 +99,16 @@ python3 tools/gen_globals.py          # re/globals.csv -> src/globals.h
 ```
 
 See docs/CONVENTIONS.md for the rules on 16/32-bit globals.
+
+### Golden master (turn generation)
+
+`build/tests/tests_scenarios_test_golden_turn` (source `tests/scenarios/test_golden_turn.c`, about 3 s)
+runs the original on the runtime, creates a game with 15:0x47f0 and generates turns with 22:0x0000 in
+a child process, once as ORIGINAL and once as DECOMP, and compares every produced file byte for byte.
+DECOMP uses `difftest_divert_decomp` (`harness/difftest.c`): the entry of every FAR_CDECL function of
+`build/registry.c` is patched to run its C twin inside the emulator, so the files only match when the
+C functions a turn reaches behave as the originals (it needs `docs/functions.csv` for the sizes). The
+ORIGINAL files are saved under `tests/golden/turn_N/` (git-ignored, local only).
 
 ## 5. Resources and screen captures
 

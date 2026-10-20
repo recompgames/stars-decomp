@@ -27,7 +27,7 @@
  * address; a callee that mirrors a frame (rule d) is reached through rt_call_far, a leaf (13:0x08b0
  * toolbar_item_width, 13:0x0902 toolbar_item_is_on) by its C name.
  *
- * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER(n + 2 * pushes) with
+ * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER_REGS(n, pushes) with
  * n the ENTER size and one push for each PUSH SI / PUSH DI. Memory is read and written in 16-bit
  * pieces: an offset is a uint16_t and wraps like the original's. DS = SS = DGROUP in every function
  * here. The generated globals.h types some DGROUP words by Ghidra's guess, so words are accessed with
@@ -117,6 +117,7 @@ uint16_t toolbar_item_is_on(uint16_t item)
  * adding each item's width; the first item whose end lies beyond x is hit: the point is rewritten to
  * {left edge of the item, 4} and AX is the item (a signed byte of the table). Past the end of the bar
  * the point is left alone and AX = -1. */
+/* lint: leaf-frame-ok the only callee is the leaf toolbar_item_width, which takes a value and exposes no stack address, so the original's ENTER 2,0 frame (locals left/px/py) is plain C locals and no SP is mirrored. Pass 2: convert to FRAME_ENTER/FRAME_LEAVE. */
 DECOMP(13, 0x0844, toolbar_hit_test, FAR_CDECL)
 int16_t toolbar_hit_test(uint16_t pt)
 {
@@ -150,7 +151,7 @@ int16_t toolbar_hit_test(uint16_t pt)
 DECOMP(13, 0x05a4, toolbar_paint_button, FAR_CDECL)
 void toolbar_paint_button(uint16_t hdc, uint16_t x, uint16_t y, uint16_t item, uint16_t state)
 {
-  FRAME_ENTER(0x16 + 4);
+  FRAME_ENTER_REGS(0x16, 2);
   uint16_t di = toolbar_item_width((int16_t)item);
   uint16_t gw = ((int16_t)di < 0x18) ? 7 : 0x18;          /* [BP-2] */
   uint16_t b4, b6;                                          /* [BP-4], [BP-6] */
@@ -211,7 +212,7 @@ void toolbar_paint_button(uint16_t hdc, uint16_t x, uint16_t y, uint16_t item, u
 DECOMP(13, 0x053e, toolbar_paint_bar, FAR_CDECL)
 void toolbar_paint_bar(uint16_t hdc, uint16_t rect)
 {
-  FRAME_ENTER(6 + 4);
+  FRAME_ENTER_REGS(6, 2);
   (void)rect;
   (void)SelectPalette(hdc, drd16(0x54f8), 0);
   (void)RealizePalette(hdc);
@@ -250,7 +251,7 @@ static int16_t wsprintf_w(uint16_t out, uint16_t fmt, uint16_t arg)
 DECOMP(13, 0x0fb8, toolbar_zoom_update, FAR_CDECL)
 void toolbar_zoom_update(uint16_t mode)
 {
-  FRAME_ENTER(0 + 4);
+  FRAME_ENTER_REGS(0, 2);
   dwr8(0x0794, (uint8_t)(drd8(0x0794) | 0x40));
   uint16_t pct;                                             /* DI */
   if (mode == 0) {
@@ -310,7 +311,7 @@ static uint16_t shl16(uint16_t v, uint16_t cx) { return (uint16_t)((uint32_t)v <
 DECOMP(13, 0x09ae, toolbar_set_item, FAR_CDECL)
 void toolbar_set_item(uint16_t item, uint16_t flag)
 {
-  FRAME_ENTER(0x86 + 4);
+  FRAME_ENTER_REGS(0x86, 2);
   dwr8(0x0794, (uint8_t)(drd8(0x0794) | 0x40));
   uint16_t mask = 0;
   if (item > 0x11) goto out;
@@ -554,7 +555,7 @@ out:
 DECOMP(13, 0x109e, tooltip_update, FAR_CDECL)
 void tooltip_update(uint16_t id, uint16_t rect)
 {
-  FRAME_ENTER(8 + 4);
+  FRAME_ENTER_REGS(8, 2);
   uint16_t vis = 0;                                         /* [BP-4] */
   if (drd16(0x18ce) != 0 && IsWindowVisible(drd16(0x18ce)) != 0) vis = 1;
   if ((int16_t)id < 0 || rect == 0) {
@@ -609,7 +610,7 @@ void tooltip_update(uint16_t id, uint16_t rect)
 DECOMP(13, 0x1224, TOOLTIPWNDPROC, FAR_PASCAL)
 uint32_t TOOLTIPWNDPROC(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0x30 + 4);
+  FRAME_ENTER_REGS(0x30, 2);
   if (msg == 0x14) {
     GetClientRect(hwnd, BPFP(-0x10));
     (void)FillRect(wParam, BPFP(-0x10), drd16(0x29d4));
@@ -763,7 +764,7 @@ uint32_t FAKECEPROC(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lPara
 DECOMP(13, 0x0000, TBWNDPROC, FAR_PASCAL)
 uint32_t TBWNDPROC(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0x3e + 4);
+  FRAME_ENTER_REGS(0x3e, 2);
   uint32_t ret = 0;
   uint16_t lpl = (uint16_t)lParam, lph = (uint16_t)(lParam >> 16);
   if (msg == 0x20) {

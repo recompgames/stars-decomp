@@ -35,6 +35,7 @@ enum { HR_NONE, HR_RET16, HR_RET32 };
 /* __WINFLAGS default: WINFLAGS_DEFAULT in runtime/mem.h (owner-decided). */
 
 #define HARNESS_MAX_LOG_ARGS 32
+#define HARNESS_LOG_NREGS 8 /* AX BX CX DX SI DI DS ES, in that order */
 
 typedef struct HCall HCall;
 typedef void (*HApiFn)(HCall *c);
@@ -62,6 +63,15 @@ typedef struct HLogEntry {
   const char *name;
   uint16_t argbytes;
   uint8_t args[HARNESS_MAX_LOG_ARGS]; /* first min(argbytes, 32) raw argument bytes */
+  /* REGISTER imports take their inputs in registers (KERNEL.DOS3Call, InitTask, ...): has_regs is
+   * set for them and regs holds AX BX CX DX SI DI DS ES at the call. */
+  bool has_regs;
+  uint16_t regs[HARNESS_LOG_NREGS];
+  /* VARARGS imports (USER._wsprintf, KERNEL._DebugOutput): the variable argument bytes, decoded
+   * from the format string. va_bytes is the full length, va holds the first min(va_bytes, 32). */
+  bool has_va;
+  uint16_t va_bytes;
+  uint8_t va[HARNESS_MAX_LOG_ARGS];
   uint32_t ret;
   bool implemented;
 } HLogEntry;
@@ -129,6 +139,13 @@ void harness_log_set(const HLogEntry *e, size_t n);
  * harness_log_end stores the return value. */
 size_t harness_log_begin(const char *module, uint16_t ordinal, const uint16_t *words, int nwords);
 void harness_log_end(size_t idx, uint32_t ret);
+/* Records the input registers (AX BX CX DX SI DI DS ES) of a REGISTER import on entry idx, as the
+ * thunk does. */
+void harness_log_set_regs(size_t idx, const uint16_t regs[HARNESS_LOG_NREGS]);
+/* Records the variable arguments of a VARARGS call on entry idx: fmt is the far pointer to the
+ * format string (_wsprintf and _DebugOutput share the % syntax of runtime/wsprintf.c), va the far
+ * pointer to the first variable argument word. The byte count comes from the format. */
+void harness_log_set_va(size_t idx, uint32_t fmt, uint32_t va);
 
 /* x87 control word of the emulated FPU (UC_X86_REG_FPCW), for the FP semantics
  * tests (docs/CONVENTIONS.md "Floating point"). harness_stop_emu stops the

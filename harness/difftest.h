@@ -105,6 +105,14 @@ double difftest_coverage(uint16_t seg, uint16_t off);
  * selector below 0x100 means an NE segment number as in DIFF. */
 enum { RT_MODE_ORIGINAL, RT_MODE_DECOMP };
 void rt_set_mode(int mode);
+/* Whole-program DECOMP: makes the original code that runs in the emulator call the registry's C
+ * function for every FAR_CDECL function it has (see harness/difftest.c). Call it once after
+ * harness_load (and the runtime registrations), before the first emulated call, and only in a
+ * fresh process or after harness_load again: it overwrites the entries in the loaded code.
+ * Returns the number of functions diverted, -1 on error. docs/functions.csv supplies the sizes. */
+int difftest_divert_decomp(void);
+/* Calls that went to C through the diversion since difftest_divert_decomp. */
+unsigned difftest_divert_calls(void);
 /* uint32_t rt_call_far(uint32_t fn, int conv, const uint16_t *args, int nargs); is declared in
  * runtime/frame.h. */
 

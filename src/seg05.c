@@ -27,7 +27,7 @@
  * Near calls inside the segment are PUSH CS; CALL near, so they are far calls with a 4-byte return
  * address; a callee that mirrors a frame (rule d) is reached through rt_call_far, a leaf (5:0x0474,
  * 5:0x36a8) by its C name. The functions mirror their original frames (CONVENTIONS rule d):
- * FRAME_ENTER(n + 2 * pushes) with n the ENTER size and one push for each PUSH SI / PUSH DI. Memory is
+ * FRAME_ENTER_REGS(n, pushes) with n the ENTER size and one push for each PUSH SI / PUSH DI. Memory is
  * read and written in 16-bit pieces: an offset is a uint16_t and wraps like the original's. DS = SS =
  * DGROUP in every function here (a function that loads DS from another segment restores it). The
  * generated globals.h types some DGROUP words by Ghidra's guess, so words are accessed with the helpers
@@ -167,7 +167,7 @@ static inline int16_t mid_y(int16_t lo, int16_t hi)
 DECOMP(5, 0x344a, draw_cycle_button, FAR_CDECL)
 void draw_cycle_button(uint16_t hdc, uint16_t rect, uint16_t state)
 {
-  FRAME_ENTER(4 + 4);
+  FRAME_ENTER_REGS(4, 2);
   int16_t left = (int16_t)drd16(rect), top = (int16_t)drd16((uint16_t)(rect + 2));
   int16_t right = (int16_t)drd16((uint16_t)(rect + 4)), bottom = (int16_t)drd16((uint16_t)(rect + 6));
   uint16_t mem = CreateCompatibleDC(hdc);
@@ -193,7 +193,7 @@ void draw_cycle_button(uint16_t hdc, uint16_t rect, uint16_t state)
 DECOMP(5, 0x34fc, draw_diamond_marker, FAR_CDECL)
 void draw_diamond_marker(uint16_t hdc, uint16_t rect, uint16_t brush)
 {
-  FRAME_ENTER(0x12 + 4);
+  FRAME_ENTER_REGS(0x12, 2);
   const uint32_t ROP = 0x00f00021;
   int16_t left = (int16_t)drd16(rect), top = (int16_t)drd16((uint16_t)(rect + 2));
   int16_t right = (int16_t)drd16((uint16_t)(rect + 4)), bottom = (int16_t)drd16((uint16_t)(rect + 6));
@@ -268,7 +268,7 @@ void draw_diamond_marker(uint16_t hdc, uint16_t rect, uint16_t brush)
 DECOMP(5, 0x2840, hit_test_info_zone, FAR_CDECL)
 uint16_t hit_test_info_zone(uint16_t hwnd, int16_t x, int16_t y)
 {
-  FRAME_ENTER(0x44 + 4);
+  FRAME_ENTER_REGS(0x44, 2);
   uint16_t ret = 0;
   uint16_t mode = drd16(0x4b80);
   if (mode == 4) {
@@ -363,7 +363,7 @@ static uint16_t ds_strlen(uint16_t off)
 DECOMP(5, 0x0324, invalidate_info_areas, FAR_CDECL)
 void invalidate_info_areas(void)
 {
-  FRAME_ENTER(0x16 + 4);
+  FRAME_ENTER_REGS(0x16, 2);
   uint16_t hwnd = drd16(0x0154);
   GetClientRect(hwnd, MK_FP(rt_ss, (uint16_t)(rt_bp - 0xe)));
   uint16_t dc = GetDC(hwnd);
@@ -438,7 +438,7 @@ static void ds_strcat(uint16_t dst, uint16_t src)
 DECOMP(5, 0x329a, update_info_header, FAR_CDECL)
 void update_info_header(uint16_t hwnd)
 {
-  FRAME_ENTER(0x10 + 4);
+  FRAME_ENTER_REGS(0x10, 2);
   uint16_t flag = 0;
   uint16_t src = 0x4e1;
   uint16_t mode = (drd16(0x4b80) == 4) ? drd16(0x4b82) : drd16(0x4b80);
@@ -515,7 +515,7 @@ static inline int32_t imul32(int32_t a, int32_t b) { return (int32_t)((uint32_t)
 DECOMP(5, 0x3a72, planet_mineral_output, FAR_CDECL)
 void planet_mineral_output(uint16_t off, uint16_t seg, uint16_t out, uint32_t d, uint16_t flag)
 {
-  FRAME_ENTER(0x24 + 4);
+  FRAME_ENTER_REGS(0x24, 2);
   uint16_t special = 0;                          /* [BP-0x22] */
   uint16_t explicit_rate = (d != 0xffffffffu);   /* [BP-0x24] */
   int32_t rate, factor;                          /* [BP-0x18], [BP-0x14] */
@@ -638,7 +638,7 @@ void planet_mineral_output(uint16_t off, uint16_t seg, uint16_t out, uint32_t d,
 DECOMP(5, 0x3774, popup_things_at_place, FAR_CDECL)
 void popup_things_at_place(uint16_t hwnd, uint32_t pt)
 {
-  FRAME_ENTER(0x1ba + 4);
+  FRAME_ENTER_REGS(0x1ba, 2);
   uint16_t sel = 0xffff;                            /* [BP-0x12] */
   uint16_t n = 0;                                   /* BX */
   uint16_t last_fleet = 0, last_fleet_seg = 0;      /* [BP-0x16], [BP-0x14] */
@@ -815,7 +815,7 @@ static int16_t wsprintf_w(uint16_t out_seg, uint16_t out, uint16_t fmt, uint16_t
 DECOMP(5, 0x2ab4, info_on_click, FAR_CDECL)
 void info_on_click(uint32_t pt, uint16_t msg, uint16_t wparam)
 {
-  FRAME_ENTER(0x254 + 4);
+  FRAME_ENTER_REGS(0x254, 2);
   (void)wparam;
   const uint16_t zargs[3] = {drd16(0x0154), (uint16_t)pt, (uint16_t)(pt >> 16)};
   uint16_t zone = (uint16_t)rt_call_far(MK_FP(SEG_SEL(5), 0x2840), FAR_CDECL, zargs, 3);
@@ -1858,7 +1858,7 @@ static int16_t panel_planet(uint16_t hdc, uint16_t rect)
 DECOMP(5, 0x04e8, paint_info_panel, FAR_CDECL)
 void paint_info_panel(uint16_t hdc, uint16_t rect)
 {
-  FRAME_ENTER(0x1ee + 4);
+  FRAME_ENTER_REGS(0x1ee, 2);
   uint16_t memdc = CreateCompatibleDC(hdc);                       /* [BP-0x6E] */
   uint32_t old_bk = SetBkColor(hdc, drd32(0x253a));               /* [BP-0x16] */
   uint32_t old_fg = SetTextColor(hdc, 0x0000ffff);                /* [BP-0x1A] */
@@ -1906,7 +1906,7 @@ void paint_info_panel(uint16_t hdc, uint16_t rect)
 DECOMP(5, 0x0000, MINEWNDPROC, FAR_PASCAL)
 uint32_t MINEWNDPROC(uint16_t hwnd, uint16_t msg, uint16_t wparam, uint32_t lparam)
 {
-  FRAME_ENTER(0x3e + 4);
+  FRAME_ENTER_REGS(0x3e, 2);
   uint32_t ret = 0;
   switch (msg) {
   case 0x0019:                                       /* WM_CTLCOLOR */

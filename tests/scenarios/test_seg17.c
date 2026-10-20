@@ -383,6 +383,11 @@ static const StubCfg g_stubs[S_NSTUB] = {
     [S_7_153E] = {"7:153e", 7, 0x153e, 2, -1, -1, -1, 0, 0, 0},
     [S_8_B90E] = {"8:b90e", 8, 0xb90e, 1, -1, -1, -1, 0, 0, 0},
     [S_21_1E2A] = {"21:1e2a", 21, 0x1e2a, 0, -1, -1, -1, 0, 0, 0},
+    /* Rule j2 justification: 26:0x0100 and 26:0x0810 are decompiled (src/seg26.c, diffed in tests/scenarios/test_seg26.c) but stays a double here. These
+     * scenarios build random worlds for the computer players' turn; the real function reads the planet copy at DS:0x4c08, its
+     * production queue and the player tables, which no scenario here sets up consistently. Measured with the double removed:
+     * the ORIGINAL run faults or the heap blocks the function allocates differ between the runs. Blind spot: only the call
+     * (arguments and order against the other calls) is checked here, not what the function does. */
     [S_26_0100] = {"26:0100", 26, 0x0100, 1, -1, -1, -1, 0, 0, 0},
     [S_26_0810] = {"26:0810", 26, 0x0810, 1, -1, -1, -1, 0, 0, 0},
     [S_14_2992] = {"14:2992", 14, 0x2992, 0, -1, -1, -1, 0, 0, 0},
@@ -393,6 +398,9 @@ static const StubCfg g_stubs[S_NSTUB] = {
     [S_18_60B2] = {"18:60b2", 18, 0x60b2, 0, -1, -1, -1, 0, 0, 0},
     [S_9_7D1E] = {"9:7d1e", 9, 0x7d1e, 2, -1, -1, -1, 0, 0, 0},
     [S_9_80DA] = {"9:80da", 9, 0x80da, 1, -1, -1, -1, 0, 0, 0},
+    /* 20:0x0000 is decompiled now (src/seg20.c, diffed in tests/scenarios/test_seg20.c), but it stays a test double
+     * here: the callee is the whole turn of a computer player, far too state-hungry to run in this scenario, and its
+     * logged call is the expectation (docs/CONVENTIONS.md rule j2). */
     [S_20_0000] = {"20:0000", 20, 0x0000, 1, -1, -1, -1, 0, 0, 0},
     [S_21_0000] = {"21:0000", 21, 0x0000, 1, -1, -1, -1, 0, 0, 0},
     [S_12_0232] = {"12:0232", 12, 0x0232, 2, -1, -1, -1, 0, 0, 1},

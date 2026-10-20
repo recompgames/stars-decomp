@@ -23,7 +23,7 @@
  * fleet words +0x1e to +0x24 as the ship counts at fleet +0x0c + 2 * design (the layout segment 16
  * uses). The old fn_19_<off> names are kept as aliases in the comment above each function.
  *
- * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER(n + 2 * pushes) with
+ * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER_REGS(n, pushes) with
  * n the ENTER size and one push for each PUSH SI / PUSH DI. They are written as the original's
  * basic blocks: the registers are C locals, the stack locals are BP_LOCAL slots at the original
  * offsets, and the labels carry the original offsets. Memory is read and written in 16-bit pieces: an
@@ -131,7 +131,7 @@ static inline int8_t pl_attr(uint16_t rec, uint16_t disp) { return (int8_t)drd8(
 DECOMP(19, 0x12f0, ai2_create_designs, FAR_CDECL)
 void ai2_create_designs(void)
 {
-  FRAME_ENTER(0x90 + 4);
+  FRAME_ENTER_REGS(0x90, 2);
   uint16_t bx, si;
   /* the design call: 18:0x0000(slot | hull word << 16, 19:off of the part list) */
 #define MSG(lo, hi, tabbyte) \
@@ -230,7 +230,7 @@ void ai2_create_designs(void)
 DECOMP(19, 0x0000, ai7_turn, FAR_CDECL)
 void ai7_turn(uint16_t param_1)
 {
-  FRAME_ENTER(0x40 + 4);
+  FRAME_ENTER_REGS(0x40, 2);
   uint16_t di, si = 0, bx, es;
   uint16_t flag = (drd16(0x0082) < 0x14) ? 0 : 0x0f;
   L16(-8) = (uint16_t)CALL_ORIG(18, 0x28fc, FAR_CDECL, 5, 0, 0, 0, (uint16_t)(rt_bp - 0xa), flag);
@@ -377,7 +377,7 @@ L2a3:
 DECOMP(19, 0x1594, ai3_turn, FAR_CDECL)
 void ai3_turn(uint16_t param_1)
 {
-  FRAME_ENTER(0x72 + 4);
+  FRAME_ENTER_REGS(0x72, 2);
   uint16_t di = 0, si = 0, bx = 0, cx = 0, ax = 0, dx = 0, es = 0, ds = 0;
   uint32_t r;
   uint16_t flag = (drd16(0x0082) < 0x14) ? 0 : 0x0f;
@@ -456,7 +456,7 @@ L1740:
   if ((RB(es, di, 5) & 2) == 0) goto L1867;
   if ((int32_t)RD(es, di, 0x28) < 0x3e8) goto L1867;
   (void)CALL_ORIG(9, 0x2a74, FAR_CDECL, 2, 1, RW(es, di, 0));
-  (void)CALL_ORIG(26, 0x0100, FAR_CDECL, 1, param_1);
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0100), FAR_CDECL, (const uint16_t[]){param_1}, 1);
   L16(-0xc) = 0;
   L16(-0xa) = 0;
   dx = drd16(0x0cd4);
@@ -479,7 +479,7 @@ L1740:
   di = L16(-0x12);
 L17c9:
   if (!((int16_t)L8(-0x70) <= (int16_t)cx)) {
-    (void)CALL_ORIG(26, 0x0810, FAR_CDECL, 1, 0);
+    (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0810), FAR_CDECL, (const uint16_t[]){0}, 1);
     goto L1867;
   }
   if (drd16(0x0082) != 0) goto L181a;
@@ -498,7 +498,7 @@ L181a:
   (void)CALL_ORIG(18, 0x2732, FAR_CDECL, 4, 1, 1, 2, 1);
   L16(-0xc) = 1;
 L185c:
-  (void)CALL_ORIG(26, 0x0810, FAR_CDECL, 1, L16(-0xc));
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0810), FAR_CDECL, (const uint16_t[]){L16(-0xc)}, 1);
 L1867:
   di = (uint16_t)(di + 0x38);
   if (di < L16(-8)) goto L1642;
@@ -988,7 +988,7 @@ L210c:
 DECOMP(19, 0x0400, ai2_turn, FAR_CDECL)
 void ai2_turn(uint16_t param_1)
 {
-  FRAME_ENTER(0x94 + 4);
+  FRAME_ENTER_REGS(0x94, 2);
   uint16_t di = 0, si = 0, bx = 0, cx = 0, ax = 0, dx = 0, es = 0, ds = 0;
   uint32_t r;
   L32(-0x30) = 0;
@@ -1093,7 +1093,7 @@ L068a:
   if ((RB(es, di, 5) & 2) == 0) goto L0aa1;
   if ((int32_t)RD(es, di, 0x28) < 0x5dc) goto L0aa1;
   (void)CALL_ORIG(9, 0x2a74, FAR_CDECL, 2, 1, RW(es, di, 0));
-  (void)CALL_ORIG(26, 0x0100, FAR_CDECL, 1, param_1);
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0100), FAR_CDECL, (const uint16_t[]){param_1}, 1);
   L32(-0xc) = 0;
   dx = drd16(0x0cd4);
   L32(-4) = HIGHLOW(dx, (uint16_t)(drd16(0x0cd2) + 4));
@@ -1114,7 +1114,7 @@ L068a:
   }
 L06e7:
   if (!((int16_t)L8(-0x92) <= (int16_t)cx)) {
-    (void)CALL_ORIG(26, 0x0810, FAR_CDECL, 1, 0);
+    (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0810), FAR_CDECL, (const uint16_t[]){0}, 1);
     goto L0aa1;
   }
   bx = (uint16_t)((uint16_t)drd16(0x014c) * 0xc0);
@@ -1263,7 +1263,7 @@ L0b0c:
   (void)CALL_ORIG(18, 0x2732, FAR_CDECL, 4, L16(-0x18), 4, 2, 1);
   L16(-0xa) = 1;
 L0a96:
-  (void)CALL_ORIG(26, 0x0810, FAR_CDECL, 1, L16(-0xa));
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0810), FAR_CDECL, (const uint16_t[]){L16(-0xa)}, 1);
 L0aa1:
   ax = L16(-0x24);
   L16(-0x1e) = (uint16_t)(L16(-0x1e) + 0x38);

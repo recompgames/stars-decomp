@@ -257,12 +257,12 @@ struct Planet {
   uint8_t info_level;                /* +0x04 (1): 14:0x1f0c compares it with the block detail field (4db4 & 0x7f) */
   uint8_t flags;                     /* +0x05 (1): 14:0x1f0c, 14:0x0508: bit 1 = has a starbase, bit 3 = updated this turn */
   uint8_t fld_06[3];                 /* +0x06 (3): meaning not proven: only these accesses found: 14:0x1f0c reads 3 optional bytes into +6..+8; 14:0x4926 writes them */
-  uint8_t fld_09[3];                 /* +0x09 (3): meaning not proven: only these accesses found: 14:0x1f0c: 3 bytes; 14:0x4926 */
+  uint8_t mineral_concentration_maybe[3]; /* +0x09 (3): 14:0x1f0c: 3 bytes; 14:0x4926. Name provisional: 20:0x2286 scores a planet as 8 * [0] + 10 * [1] + 7 * [2] and 20:0x0000 sums the three bytes against 15, 30 and 60 (a richness measure). Not sure: whether they are the mineral concentrations or another 3-byte measure (+0x06 and +0x0C hold other triples). */
   uint8_t env_current[3];            /* +0x0C (3): 14:0x1f0c: 3 bytes (each <= 100) read first and copied to env_original; 14:0x4926 (the three values are the planet environment; per-axis order not proven) */
   uint8_t env_original[3];           /* +0x0F (3): 14:0x1f0c: copy of env_current unless the block carries its own (word flag 0x400); 14:0x4926 sets flag 0x400 when it differs from env_current */
-  uint16_t fld_12;                   /* +0x12 (2): meaning not proven: only these accesses found: 14:0x1f0c: word read when the block has it; 14:0x4926 */
+  uint16_t population_estimate_maybe; /* +0x12 (2): 14:0x1f0c: word read when the block has it; 14:0x4926. Name provisional: 20:0x0000 and 20:0x2998 use (this & 0x0fff) of OTHER players' planets: / 250 + 1 (at most 6) as a rank, and compare it with 0x32. Not sure: that it is a population estimate (a 12-bit count) rather than another scaled value. */
   uint8_t fld_14[8];                 /* +0x14 (8): meaning not proven: only these accesses found: 14:0x1f0c: 8 bytes copied from the block via 34:0x0c98; 14:0x4926 writes words +0x14..+0x1B */
-  uint32_t fld_1c[4];                /* +0x1C (16): meaning not proven: only these accesses found: 14:0x1f0c: four 0/1/2/4-byte values widened to dwords; 14:0x4926 */
+  uint32_t surface_amounts_maybe[4]; /* +0x1C (16): 14:0x1f0c: four 0/1/2/4-byte values widened to dwords; 14:0x4926. Name provisional: [0..2] are compared with 30, 1000, 2500 and 5000 and [3] is divided by 20 into the cargo room a fleet loads (20:0x23ba, 20:0x2286), the same shape as Fleet.cargo[4] (minerals, then colonists). Not sure: that [0..2] are minerals and [3] the population (colonists). */
   uint32_t starbase;                 /* +0x2C (4): 14:0x1f0c, 14:0x4926: present when flags bit 1; low nibble of the low byte = starbase design index (14:0x0508) */
   uint16_t route_target;             /* +0x30 (2): (this & 0x3ff) = id + 1 of the planet this planet routes to, 0 = none: 16:0x13f8 (minus 1 gives the planet id); 14:0x1f0c, 14:0x4926 (written when (this & 0x3ff) != 0) */
   uint16_t turn;                     /* +0x32 (2): 14:0x1f0c: = GameHeader.turn when the planet record is refreshed */
@@ -274,12 +274,12 @@ STATIC_OFFSET(struct Planet, owner, 0x2);
 STATIC_OFFSET(struct Planet, info_level, 0x4);
 STATIC_OFFSET(struct Planet, flags, 0x5);
 STATIC_OFFSET(struct Planet, fld_06, 0x6);
-STATIC_OFFSET(struct Planet, fld_09, 0x9);
+STATIC_OFFSET(struct Planet, mineral_concentration_maybe, 0x9);
 STATIC_OFFSET(struct Planet, env_current, 0xC);
 STATIC_OFFSET(struct Planet, env_original, 0xF);
-STATIC_OFFSET(struct Planet, fld_12, 0x12);
+STATIC_OFFSET(struct Planet, population_estimate_maybe, 0x12);
 STATIC_OFFSET(struct Planet, fld_14, 0x14);
-STATIC_OFFSET(struct Planet, fld_1c, 0x1C);
+STATIC_OFFSET(struct Planet, surface_amounts_maybe, 0x1C);
 STATIC_OFFSET(struct Planet, starbase, 0x2C);
 STATIC_OFFSET(struct Planet, route_target, 0x30);
 STATIC_OFFSET(struct Planet, turn, 0x32);
@@ -399,9 +399,9 @@ struct ShipDesign {
   uint8_t slot_count;                /* +0x7A (1): 14:0x0000, 14:0x342a */
   uint8_t version;                   /* +0x7B (1): 14:0x0000: (this < 7) selects the old layout; 14:0x342a */
   uint8_t flags;                     /* +0x7C (1): 14:0x0508 sets bit 1 on every slot at load (free); 14:0x0000 tests bits 1 and 7 */
-  uint16_t fld_7d;                   /* +0x7D (2): meaning not proven: only these accesses found: 14:0x0000 and 14:0x342a (version 7 only) */
+  uint16_t turn_stamp_maybe;         /* +0x7D (2): 14:0x0000 and 14:0x342a (version 7 only). Name provisional: 20:0x1da0 and 20:0x0000 compare (g_current_turn - the previous slot's value) with 5, 15 and 20. Not sure: whether it is the turn a design was last built or queued. */
   uint32_t fld_7f;                   /* +0x7F (4): meaning not proven: only these accesses found: 14:0x0000 and 14:0x342a (version 7 only) */
-  uint32_t fld_83;                   /* +0x83 (4): meaning not proven: only these accesses found: 14:0x0000 and 14:0x342a (version 7 only) */
+  uint32_t build_progress_maybe;     /* +0x83 (4): 14:0x0000 and 14:0x342a (version 7 only). Name provisional: 20:0x1da0 and 20:0x0000 only create a design in a slot while this is 0 and compare it with 5000 and 7500. Not sure: whether it counts ships built, cost spent or something else. */
   uint8_t unknown_87[4];             /* +0x87 (4): no access found in re/decomp; kept as padding */
   uint16_t fld_8b;                   /* +0x8B (2): meaning not proven: only these accesses found: 14:0x0508 zeroes it for every design slot */
 };
@@ -418,9 +418,9 @@ STATIC_OFFSET(struct ShipDesign, slots, 0x3A);
 STATIC_OFFSET(struct ShipDesign, slot_count, 0x7A);
 STATIC_OFFSET(struct ShipDesign, version, 0x7B);
 STATIC_OFFSET(struct ShipDesign, flags, 0x7C);
-STATIC_OFFSET(struct ShipDesign, fld_7d, 0x7D);
+STATIC_OFFSET(struct ShipDesign, turn_stamp_maybe, 0x7D);
 STATIC_OFFSET(struct ShipDesign, fld_7f, 0x7F);
-STATIC_OFFSET(struct ShipDesign, fld_83, 0x83);
+STATIC_OFFSET(struct ShipDesign, build_progress_maybe, 0x83);
 STATIC_OFFSET(struct ShipDesign, unknown_87, 0x87);
 STATIC_OFFSET(struct ShipDesign, fld_8b, 0x8B);
 

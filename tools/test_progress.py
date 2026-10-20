@@ -61,6 +61,30 @@ class ProgressTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn("weird 1 (100.0%)", out)
 
+    def test_readable_status_is_counted_after_tested(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "f.csv"
+            f.write_text("seg,off,name,size,ret,callers,callees,apis,fp,origin,status,notes\n"
+                         "1,0x0,a,1,far,,,,0,game,readable,\n1,0x10,b,1,far,,,,0,game,tested,\n")
+            rc, out, _ = run(["--csv", str(f)])
+        self.assertEqual(out.splitlines()[0], "seg 1: total 2, todo 0 (0.0%), decompiled 0 (0.0%), "
+                         "tested 1 (50.0%), readable 1 (50.0%), unused 0 (0.0%)")
+
+    def test_readability_flag_appends_table(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            src = Path(d) / "src"
+            src.mkdir()
+            (src / "seg01.c").write_text("DECOMP(1, 0x0000, f, FAR_CDECL)\nvoid f(void)\n{\n  drd8(1);\n}\n")
+            rc, base, _ = run(["--csv", FIX])
+            rc, out, _ = run(["--csv", FIX, "--readability", "--src", str(src)])
+        self.assertEqual(rc, 0)
+        self.assertTrue(out.startswith(base))
+        rest = out[len(base):].splitlines()
+        self.assertEqual(rest[0].split(), ["seg", "functions", "raw", "placeholders", "magic", "untagged"])
+        self.assertEqual(rest[1].split(), ["1", "1", "1", "0", "0", "1"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -135,9 +135,9 @@ static void test_design_reader_oracle(void) {
   CHECK_EQ(d->slot_count, 2);
   CHECK_EQ(d->version, 7);
   CHECK_EQ(d->flags, 0x14);
-  CHECK_EQ(d->fld_7d, 0x5678);
+  CHECK_EQ(d->turn_stamp_maybe, 0x5678);
   CHECK_EQ(d->fld_7f, 0xAABBCCDDu);
-  CHECK_EQ(d->fld_83, 0x11223344u);
+  CHECK_EQ(d->build_progress_maybe, 0x11223344u);
   CHECK_EQ(d->fld_32 & 3, 0x2A & 3);
   CHECK_MEM(&d->slots[0], slots, 8);
   CHECK_EQ(strcmp((char *)d->name, "Zed"), 0);
@@ -178,17 +178,17 @@ static void test_planet_reader_oracle(void) {
   CHECK_EQ(pl->fld_06[0], 0x11);
   CHECK_EQ(pl->fld_06[1], 0x22);
   CHECK_EQ(pl->fld_06[2], 0);
-  CHECK_EQ(pl->fld_09[0], 0x33);
-  CHECK_EQ(pl->fld_09[2], 0x55);
+  CHECK_EQ(pl->mineral_concentration_maybe[0], 0x33);
+  CHECK_EQ(pl->mineral_concentration_maybe[2], 0x55);
   CHECK_EQ(pl->env_current[0], 0x10);
   CHECK_EQ(pl->env_current[2], 0x30);
   CHECK_EQ(pl->env_original[0], 0x10);
   CHECK_EQ(pl->env_original[2], 0x30);
-  CHECK_EQ(pl->fld_12, 0xBEEF);
-  CHECK_EQ(pl->fld_1c[0], 7);
-  CHECK_EQ(pl->fld_1c[1], 0x0102);
-  CHECK_EQ(pl->fld_1c[2], 0x0A0B0C0Du);
-  CHECK_EQ(pl->fld_1c[3], 0);
+  CHECK_EQ(pl->population_estimate_maybe, 0xBEEF);
+  CHECK_EQ(pl->surface_amounts_maybe[0], 7);
+  CHECK_EQ(pl->surface_amounts_maybe[1], 0x0102);
+  CHECK_EQ(pl->surface_amounts_maybe[2], 0x0A0B0C0Du);
+  CHECK_EQ(pl->surface_amounts_maybe[3], 0);
   CHECK_EQ(pl->turn, 0x0777);
 }
 

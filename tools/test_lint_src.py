@@ -66,6 +66,17 @@ class LintTest(unittest.TestCase):
                 (self.src / "seg01.c").write_text("#include <stdint.h>\n" + code + "\n")
                 self.assertIn(word, self.errors())
 
+    def test_lint_int64(self):
+        # rule (a): the 64-bit types are not game types; use 32-bit pieces
+        for ty in ("int64_t", "uint64_t"):
+            with self.subTest(ty=ty):
+                (self.src / "seg01.c").write_text("#include <stdint.h>\nvoid f(void) { %s v = 0; (void)v; }\n" % ty)
+                self.assertIn(ty, self.errors())
+        (self.src / "seg01.c").write_text("#include <stdint.h>\nvoid f(void) { int64_t v = 0; (void)v; }\n")
+        args = ["--src", str(self.src), "--csv", str(self.csv), "--scenarios", str(self.scn)]
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(L.main(args), 1)
+
     def test_mutable_globals_that_used_to_slip_through(self):
         # each of these used to pass: a "(" or a const anywhere exempted the statement
         cases = ["static uint16_t g = (1);",
@@ -184,6 +195,134 @@ class LintTest(unittest.TestCase):
     def test_call_orig_to_decompiled_by_csv_status_only(self):
         self.edit(self.csv, "fx_todo,10,far,,,,0,game,todo", "fx_todo,10,far,,,,0,game,decompiled")
         self.assertIn("already decompiled", self.errors())
+
+    FRAMED = ("#include <stdint.h>\n#include \"runtime/frame.h\"\n"
+              "DECOMP(1, 0x0000, fx_add, FAR_CDECL)\nint16_t fx_add(int16_t a)\n{\n%s}\n"
+              "DECOMP(1, 0x0010, fx_todo, FAR_CDECL)\nint16_t fx_todo(int16_t a)\n{\n%s}\n")
+
+    def frames(self, add, todo):
+        """seg01.c with two functions; fx_todo becomes decompiled so the csv checks stay quiet."""
+        self.csv.write_text(self.csv.read_text().replace("fx_todo,10,far,,,,0,game,todo",
+                                                         "fx_todo,10,far,,,,0,game,decompiled"))
+        (self.src / "seg01.c").write_text(self.FRAMED % (add, todo))
+
+    LEAF = "  return a;\n"
+    CALLER = "  FRAME_ENTER(2);\n  int16_t r = (int16_t)GlobalAlloc(0, 4);\n  FRAME_LEAVE();\n  return r;\n"
+
+    def test_lint_frame_missing(self):
+        self.frames("  int16_t r = (int16_t)GlobalAlloc(0, 4);\n  return r;\n", self.LEAF)
+        e = self.errors()
+        self.assertIn("seg01.c:3:", e)
+        self.assertIn("rule (d)", e)
+        self.assertIn("fx_add", e)
+
+    def test_lint_frame_missing_for_call_orig_rt_call_far_and_decomp_callee(self):
+        for call in ("(void)CALL_ORIG(1, 0x0030, FAR_CDECL, 0);", "(void)rt_call_far(0, FAR_CDECL, 0, 0);",
+                     "(void)fx_todo(a);"):
+            with self.subTest(call=call):
+                self.frames("  " + call + "\n  return a;\n", self.LEAF)
+                self.assertIn("rule (d)", self.errors())
+
+    def test_lint_frame_leaf_needs_no_frame(self):
+        self.frames(self.LEAF, "  uint16_t x = 1;\n  return a + x;\n")
+        self.assertEqual(self.lint(), [])
+
+    def test_lint_frame_exempt(self):
+        self.frames("  /* lint: leaf-frame-ok callee takes no stack address */\n"
+                    "  int16_t r = (int16_t)GlobalAlloc(0, 4);\n  return r;\n", self.LEAF)
+        self.assertEqual(self.lint(), [])
+
+    def test_lint_frame_exempt_needs_a_reason(self):
+        self.frames("  /* lint: leaf-frame-ok */\n  int16_t r = (int16_t)GlobalAlloc(0, 4);\n  return r;\n",
+                    self.LEAF)
+        self.assertIn("rule (d)", self.errors())
+
+    def test_lint_frame_return_without_leave(self):
+        self.frames("  FRAME_ENTER(2);\n  (void)GlobalAlloc(0, 4);\n  if (a) return 1;\n  FRAME_LEAVE();\n"
+                    "  return 2;\n", self.LEAF)
+        e = self.errors()
+        self.assertIn("seg01.c:8:", e)
+        self.assertIn("FRAME_LEAVE", e)
+        self.assertIn("rule (d)", e)
+
+    def test_lint_frame_leave_before_every_return_passes(self):
+        self.frames("  FRAME_ENTER(2);\n  (void)GlobalAlloc(0, 4);\n"
+                    "  if (a) { FRAME_LEAVE(); return 1; }\n  FRAME_LEAVE();\n  return 2;\n", self.LEAF)
+        self.assertEqual(self.lint(), [])
+
+    def test_lint_frame_in_comment_or_string_does_not_count(self):
+        self.frames("  /* FRAME_ENTER(2); */\n  (void)GlobalAlloc(0, 4);\n  return a;\n", self.LEAF)
+        self.assertIn("rule (d)", self.errors())
+
+    def test_lint_bare_call(self):
+        self.frames("  FRAME_ENTER(0);\n  int16_t r = fx_todo(a);\n  FRAME_LEAVE();\n  return r;\n",
+                    "  FRAME_ENTER(0);\n  FRAME_LEAVE();\n  return a;\n")
+        e = self.errors()
+        self.assertIn("rule (e)", e)
+        self.assertIn("fx_todo", e)
+        self.assertIn("rt_call_far", e)
+
+    def test_lint_call_by_name_to_leaf_is_fine_for_rule_e(self):
+        self.frames("  FRAME_ENTER(0);\n  int16_t r = fx_todo(a);\n  FRAME_LEAVE();\n  return r;\n", self.LEAF)
+        self.assertEqual(self.lint(), [])
+
+    def test_lint_bare_call_across_files(self):
+        self.frames(self.LEAF, "  FRAME_ENTER(0);\n  FRAME_LEAVE();\n  return a;\n")
+        (self.src / "seg02.c").write_text(
+            "#include <stdint.h>\nDECOMP(2, 0x0000, fx_two, FAR_CDECL)\nint16_t fx_two(int16_t a)\n{\n"
+            "  FRAME_ENTER(0);\n  int16_t r = fx_todo(a);\n  FRAME_LEAVE();\n  return r;\n}\n")
+        self.assertIn("rule (e)", "\n".join(e for e in self.lint() if "seg02.c" in e))
+
+    TAG = "/* Adds. 1:0x0000 fx_add, FAR_CDECL */\n"
+
+    def make_readable(self, body_extra="", tag=True):
+        self.edit(self.csv, "fx_add,10,far,,,,0,game,tested", "fx_add,10,far,,,,0,game,readable")
+        s = self.src / "seg01.c"
+        self.edit(s, "CALL_ORIG(1, 0x0010", "CALL_ORIG(1, 16")   # a hex callee address would count as magic
+        if tag:
+            self.edit(s, "DECOMP(1, 0x0000", self.TAG + "DECOMP(1, 0x0000")
+        if body_extra:
+            self.edit(s, "  FRAME_LEAVE();", body_extra + "  FRAME_LEAVE();")
+
+    def test_readable_clean_function_passes(self):
+        self.make_readable()
+        self.assertEqual(self.lint(), [])
+
+    def test_readable_lint(self):
+        self.make_readable("  uint16_t y = drd16(0x10);\n  (void)y;\n")
+        e = self.errors()
+        self.assertIn("readability", e)
+        self.assertIn("fx_add", e)
+        self.assertIn("raw", e)
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(L.main(["--src", str(self.src), "--csv", str(self.csv),
+                                     "--scenarios", str(self.scn)]), 1)
+
+    def test_readable_needs_placeholder_free_magic_free_and_tag(self):
+        for extra, tag, word in (("  uint16_t local_4 = 0;\n  (void)local_4;\n", True, "placeholder"),
+                                 ("  uint16_t y = x & 0x1e;\n  (void)y;\n", True, "magic"),
+                                 ("", False, "tag line")):
+            with self.subTest(word=word):
+                self.tearDown()
+                self.setUp()
+                self.make_readable(extra, tag)
+                self.assertIn(word, self.errors())
+
+    def test_readable_function_with_placeholder_name_fails(self):
+        self.make_readable()
+        s = self.src / "seg01.c"
+        s.write_text(s.read_text().replace("fx_add", "fn_01_0000"))
+        self.edit(self.csv, "fx_add", "fn_01_0000")
+        self.assertIn("placeholder", self.errors())
+
+    def test_readable_needs_diff_and_decomp(self):
+        self.make_readable()
+        self.edit(self.scn / "test_seg01.c", "DIFF(1, 0x0000", "DIFF(1, 0x0010")
+        self.assertIn("no DIFF", self.errors())
+
+    def test_non_readable_functions_are_not_held_to_readability(self):
+        self.edit(self.src / "seg01.c", "  FRAME_LEAVE();", "  uint16_t y = drd16(0x10);\n  (void)y;\n  FRAME_LEAVE();")
+        self.assertEqual(self.lint(), [])
 
     def test_unused_needs_evidence(self):
         self.edit(self.csv, "game,unused,no callers; not exported; no data refs", "game,unused,")

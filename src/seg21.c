@@ -17,7 +17,7 @@
  * pool 21:0x10c8 to 21:0x11f4 with the word tables 21:0x11f5 to 21:0x123d (string offsets) that
  * 21:0x2c74 reads through CS; they are copied below as constant tables.
  *
- * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER(n + 2 * pushes) with
+ * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER_REGS(n, pushes) with
  * n the ENTER size and one push for each PUSH SI / PUSH DI. They are written as the original's
  * basic blocks: the registers are C locals, the stack locals are BP_LOCAL slots at the original
  * offsets, and the labels carry the original offsets. Memory is read and written in 16-bit pieces: an
@@ -124,7 +124,7 @@ uint16_t fn_21_2858(uint32_t unused, uint32_t rec)
 DECOMP(21, 0x272c, fn_21_272c, FAR_CDECL)
 uint16_t fn_21_272c(uint32_t a, uint32_t b)
 {
-  FRAME_ENTER(6 + 2);
+  FRAME_ENTER_REGS(6, 1);
   uint16_t bseg = (uint16_t)(b >> 16), boff = (uint16_t)b;
   uint16_t aseg = (uint16_t)(a >> 16), aoff = (uint16_t)a;
   uint16_t ax, dx;
@@ -168,7 +168,7 @@ L0:
 DECOMP(21, 0x27ba, fn_21_27ba, FAR_CDECL)
 uint16_t fn_21_27ba(uint32_t a, uint32_t b)
 {
-  FRAME_ENTER(6 + 2);
+  FRAME_ENTER_REGS(6, 1);
   uint16_t bseg = (uint16_t)(b >> 16), boff = (uint16_t)b;
   uint16_t aseg = (uint16_t)(a >> 16), aoff = (uint16_t)a;
   uint16_t ax, dx;
@@ -228,7 +228,7 @@ static bool ficom_below(Fp80 st, int32_t v)
 DECOMP(21, 0x2882, fn_21_2882, FAR_CDECL)
 uint16_t fn_21_2882(uint32_t a, uint32_t b)
 {
-  FRAME_ENTER(0x2c + 4);
+  FRAME_ENTER_REGS(0x2c, 2);
   uint16_t aseg = (uint16_t)(a >> 16), aoff = (uint16_t)a;
   uint16_t bseg = (uint16_t)(b >> 16), boff = (uint16_t)b;
   uint16_t si, di, bx, ax, dx;
@@ -304,7 +304,7 @@ Lfail:
 DECOMP(21, 0x29da, fn_21_29da, FAR_CDECL)
 uint16_t fn_21_29da(uint32_t a, uint32_t b)
 {
-  FRAME_ENTER(0x30 + 4);
+  FRAME_ENTER_REGS(0x30, 2);
   uint16_t aseg = (uint16_t)(a >> 16), aoff = (uint16_t)a;
   uint16_t bseg = (uint16_t)(b >> 16), boff = (uint16_t)b;
   uint16_t si = boff, di = 0, cx, dx, ax, bx, es, esoff;
@@ -422,7 +422,7 @@ Lfail:
 DECOMP(21, 0x1d76, fn_21_1d76, FAR_CDECL)
 uint16_t fn_21_1d76(uint32_t fleet)
 {
-  FRAME_ENTER(0x24 + 4);
+  FRAME_ENTER_REGS(0x24, 2);
   uint16_t di = (uint16_t)fleet, cx = (uint16_t)(fleet >> 16), si = 0;
   int32_t d0, d1, d2, dsi;
   L16(-0x24) = di;
@@ -455,7 +455,7 @@ uint16_t fn_21_1d76(uint32_t fleet)
 DECOMP(21, 0x2bf8, fn_21_2bf8, FAR_CDECL)
 uint16_t fn_21_2bf8(uint32_t rec)
 {
-  FRAME_ENTER(0x100 + 2);
+  FRAME_ENTER_REGS(0x100, 1);
   uint16_t si = (uint16_t)rec, es = (uint16_t)(rec >> 16), ax;
   uint16_t r;
   if ((rd8(es, (uint16_t)(si + 5)) & 2) != 0) goto Lm1;
@@ -463,7 +463,7 @@ uint16_t fn_21_2bf8(uint32_t rec)
   if ((int16_t)ax < 0xf) goto Lm1;
   if ((int32_t)rd32(es, (uint16_t)(si + 0x28)) < 0x1f4) goto Lm1;
   (void)CALL_ORIG(9, 0x2a74, FAR_CDECL, 2, 1, rd16(es, si));
-  (void)CALL_ORIG(26, 0x0100, FAR_CDECL, 1, (uint16_t)(rt_bp - 0x100));
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0100), FAR_CDECL, (const uint16_t[]){(uint16_t)(rt_bp - 0x100)}, 1);
   if (rd8(es, (uint16_t)(si + 9)) <= 0xf) goto L2c66;
   if (rd8(es, (uint16_t)(si + 0xa)) <= 0xf) goto L2c66;
   if (rd8(es, (uint16_t)(si + 0xb)) <= 0xf) goto L2c66;
@@ -494,7 +494,7 @@ Lm1:
 DECOMP(21, 0x30c2, fn_21_30c2, FAR_CDECL)
 uint16_t fn_21_30c2(uint32_t fleet, uint16_t unused, int16_t b, int16_t c, int16_t d)
 {
-  FRAME_ENTER(6 + 4);
+  FRAME_ENTER_REGS(6, 2);
   uint16_t si = (uint16_t)fleet, hi = (uint16_t)(fleet >> 16), di, ax, dx;
   (void)unused;
   L16(-4) = (uint16_t)CALL_ORIG(8, 0x8730, FAR_CDECL, 1, 0x64);
@@ -586,7 +586,7 @@ L32a4:
 DECOMP(21, 0x1aec, fn_21_1aec, FAR_CDECL)
 uint16_t fn_21_1aec(uint32_t rec, uint16_t dir)
 {
-  FRAME_ENTER(0x20 + 2);
+  FRAME_ENTER_REGS(0x20, 1);
   uint16_t seg = (uint16_t)(rec >> 16), off = (uint16_t)rec;
   uint16_t ax, dx, bx;
   uint32_t r;
@@ -793,7 +793,7 @@ Lm1:
 DECOMP(21, 0x32aa, fn_21_32aa, FAR_CDECL)
 void fn_21_32aa(uint32_t rec)
 {
-  FRAME_ENTER(0x1a + 4);
+  FRAME_ENTER_REGS(0x1a, 2);
   uint16_t rseg = (uint16_t)(rec >> 16), roff = (uint16_t)rec;
   uint16_t si, di, ax, dx, bx, cx, es;
   uint32_t r;
@@ -992,7 +992,7 @@ static uint16_t cs_w(uint16_t addr)
 DECOMP(21, 0x2c74, fn_21_2c74, FAR_CDECL)
 void fn_21_2c74(void)
 {
-  FRAME_ENTER(0x90 + 4);
+  FRAME_ENTER_REGS(0x90, 2);
   uint16_t si, di, ax, cx, bx;
 
   if ((drd8(0x41f6) & 2) != 0) goto L2cd1;
@@ -1197,7 +1197,7 @@ L30af:
 DECOMP(21, 0x23d0, fn_21_23d0, FAR_CDECL)
 void fn_21_23d0(uint32_t rec, uint32_t tab)
 {
-  FRAME_ENTER(0x2a + 4);
+  FRAME_ENTER_REGS(0x2a, 2);
   uint16_t rseg = (uint16_t)(rec >> 16), roff = (uint16_t)rec;
   uint16_t tseg = (uint16_t)(tab >> 16), toff = (uint16_t)tab;
   uint16_t si = 0, di, ax, bx, cx, es;
@@ -1384,7 +1384,7 @@ L2728:
 DECOMP(21, 0x1e8a, fn_21_1e8a, FAR_CDECL)
 uint16_t fn_21_1e8a(uint32_t rec)
 {
-  FRAME_ENTER(0x82 + 4);
+  FRAME_ENTER_REGS(0x82, 2);
   uint16_t rseg = (uint16_t)(rec >> 16), roff = (uint16_t)rec;
   uint16_t si, di, ax, dx, bx, cx, ls;
   uint32_t eax;
@@ -1465,7 +1465,7 @@ L1fec:
   ax = (uint16_t)(ax - L16(-8));
   L16(-0x10) = ax;
 L2018:
-  (void)CALL_ORIG(26, 0x21e4, FAR_CDECL, 7, di, rseg, (uint16_t)(drd16(0x5a62) + si), MEM_SEL_DGROUP, (uint16_t)(rt_bp - 0x58), drd16(0x014c), 1);
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x21e4), FAR_CDECL, (const uint16_t[]){di, rseg, (uint16_t)(drd16(0x5a62) + si), MEM_SEL_DGROUP, (uint16_t)(rt_bp - 0x58), drd16(0x014c), 1}, 7);
 L2035:
   bx = drd16(0x5a62);
   eax = drd32((uint16_t)(bx + si)) & 0x1fc00;
@@ -1489,12 +1489,12 @@ L2082:
   ax = (uint16_t)(ax - L16(-0xa));
   L16(-0x12) = ax;
 L20ae:
-  (void)CALL_ORIG(26, 0x21e4, FAR_CDECL, 7, di, rseg, (uint16_t)(drd16(0x5a62) + si), MEM_SEL_DGROUP, (uint16_t)(rt_bp - 0x68), drd16(0x014c), 1);
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x21e4), FAR_CDECL, (const uint16_t[]){di, rseg, (uint16_t)(drd16(0x5a62) + si), MEM_SEL_DGROUP, (uint16_t)(rt_bp - 0x68), drd16(0x014c), 1}, 7);
 L20cb:
   bx = drd16(0x5a62);
   eax = drd32((uint16_t)(bx + si)) & 0x1fc00;
   if (eax != 0x2c00) goto L20fc;
-  (void)CALL_ORIG(26, 0x21e4, FAR_CDECL, 7, di, rseg, (uint16_t)(bx + si), MEM_SEL_DGROUP, (uint16_t)(rt_bp - 0x78), drd16(0x014c), 1);
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x21e4), FAR_CDECL, (const uint16_t[]){di, rseg, (uint16_t)(bx + si), MEM_SEL_DGROUP, (uint16_t)(rt_bp - 0x78), drd16(0x014c), 1}, 7);
 L20fc:
   bx = drd16(0x5a62);
   eax = drd32((uint16_t)(bx + si)) & 0x1fc00;
@@ -1627,7 +1627,7 @@ L216e:
 DECOMP(21, 0x1e2a, fn_21_1e2a, FAR_CDECL)
 void fn_21_1e2a(void)
 {
-  FRAME_ENTER(0x104 + 4);
+  FRAME_ENTER_REGS(0x104, 2);
   uint16_t si, di = 0;
   uint32_t r;
 
@@ -1637,12 +1637,12 @@ L1e3a:
   L32(-4) = rd32(drd16(0x160a), (uint16_t)(drd16(0x1608) + si));
   if (L32(-4) == 0) goto L1e86;
   (void)CALL_ORIG(9, 0x2a74, FAR_CDECL, 2, 1, rd16(L16(-2), L16(-4)));
-  (void)CALL_ORIG(26, 0x0100, FAR_CDECL, 1, (uint16_t)(rt_bp - 0x104));
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0100), FAR_CDECL, (const uint16_t[]){(uint16_t)(rt_bp - 0x104)}, 1);
   {
     const uint16_t a_[] = {L16(-4), L16(-2)};
     r = rt_call_far(MK_FP(SEG_SEL(21), 0x1e8a), FAR_CDECL, a_, 2);
   }
-  (void)CALL_ORIG(26, 0x0810, FAR_CDECL, 1, (uint16_t)r);
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0810), FAR_CDECL, (const uint16_t[]){(uint16_t)r}, 1);
   si = (uint16_t)(si + 4);
   di++;
   if ((int16_t)di < (int16_t)drd16(0x4b62)) goto L1e3a;
@@ -1691,7 +1691,7 @@ static void w4c36_step2(uint16_t v)
 DECOMP(21, 0x123e, fn_21_123e, FAR_CDECL)
 void fn_21_123e(void)
 {
-  FRAME_ENTER(0x188 + 4);
+  FRAME_ENTER_REGS(0x188, 2);
   uint16_t ax, dx, bx, cx, si, es, tseg, toff;
   uint32_t r;
   Fp80 st, st1;
@@ -2061,7 +2061,7 @@ L1994:
 L199c:
   wr8(es, bx, (uint8_t)(rd8(es, bx) & 0xef));
 L19a0:
-  (void)CALL_ORIG(26, 0x0810, FAR_CDECL, 1, L16(-0x10a));
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0810), FAR_CDECL, (const uint16_t[]){L16(-0x10a)}, 1);
 L19ac:
   L16(-0x140) = (uint16_t)(L16(-0x140) + 1);
 L19b0:
@@ -2089,7 +2089,7 @@ L19b0:
   L16(-0x132) = ax;
   L16(-0x130) = dx;
   (void)CALL_ORIG(9, 0x2a74, FAR_CDECL, 2, 1, rd16(es, bx));
-  (void)CALL_ORIG(26, 0x0100, FAR_CDECL, 1, (uint16_t)(rt_bp - 0x100));
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0100), FAR_CDECL, (const uint16_t[]){(uint16_t)(rt_bp - 0x100)}, 1);
   L16(-0x10a) = 0;
   (void)CALL_ORIG(18, 0x3558, FAR_CDECL, 3, L16(-0x104), L16(-0x102), (uint16_t)(rt_bp - 0x11a));
   (void)CALL_ORIG(18, 0x3600, FAR_CDECL, 3, L16(-0x104), L16(-0x102), (uint16_t)(rt_bp - 0x12a));
@@ -2150,7 +2150,7 @@ static uint32_t call21(uint16_t off, int16_t nargs, const uint16_t *args)
 DECOMP(21, 0x0000, fn_21_0000, FAR_CDECL)
 void fn_21_0000(uint16_t param_1)
 {
-  FRAME_ENTER(0x122 + 4);
+  FRAME_ENTER_REGS(0x122, 2);
   uint16_t ax, bx, cx, dx, si, di, es, ls;
   uint32_t r, eax;
   int32_t q;
@@ -2870,11 +2870,12 @@ L0c20:
   L16(-0x2c) = bx;
   L16(-0x2a) = dx;
   (void)CALL_ORIG(9, 0x2a74, FAR_CDECL, 2, 1, cx);
-  (void)CALL_ORIG(26, 0x0100, FAR_CDECL, 1, param_1);
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0100), FAR_CDECL, (const uint16_t[]){param_1}, 1);
   ax = (uint16_t)CALL_ORIG(28, 0x41d4, FAR_CDECL, 1, drd16(0x014c));
   dx = (uint16_t)((int16_t)ax < 0 ? 0xffff : 0);
   es = L16(-0x14);
-  L32(-6) = (uint32_t)((int32_t)((int64_t)(int32_t)rd32(es, (uint16_t)(si + 0x28)) * (int32_t)(int16_t)ax));
+  /* the low 32 bits of the signed product: the same as the unsigned one, the sign extension of AX is a uint32_t */
+  L32(-6) = rd32(es, (uint16_t)(si + 0x28)) * (uint32_t)(int32_t)(int16_t)ax;
   (void)CALL_ORIG(18, 0x3558, FAR_CDECL, 3, si, L16(-0x14), (uint16_t)(rt_bp - 0x74));
   (void)CALL_ORIG(18, 0x3600, FAR_CDECL, 3, si, L16(-0x14), (uint16_t)(rt_bp - 0x84));
   L16(-0x1c) = 0;
@@ -3054,7 +3055,7 @@ L0ffe:
   if (di == 2) L16(-0x3c) = (uint16_t)(L16(-0x3c) + 1);
   if (di == 3) L16(-0x40) = (uint16_t)(L16(-0x40) + 1);
 L1038:
-  (void)CALL_ORIG(26, 0x0810, FAR_CDECL, 1, L16(-0x1c));
+  (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0810), FAR_CDECL, (const uint16_t[]){L16(-0x1c)}, 1);
   L16(-0x26) = (uint16_t)(L16(-0x26) + 4);
   ax = drd16(0x4b62);
   L16(-0x28) = (uint16_t)(L16(-0x28) + 1);

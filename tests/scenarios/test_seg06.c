@@ -115,7 +115,7 @@ typedef struct StubCfg {
   int8_t watch;  /* argument word index of a byte count followed by a far pointer, -1 none */
 } StubCfg;
 enum { S_14_51CC, S_14_579A, S_14_305A, S_9_3E72, S_7_1C00, S_7_1902, S_7_1CCE, S_7_1A70, S_7_25CE,
-       S_7_14A8, S_9_2ED8, S_10_26B2, S_26_0000, S_29_0000, S_31_61B0, S_7_063E, S_7_01A0, S_11_62F2, S_11_5142,
+       S_7_14A8, S_9_2ED8, S_10_26B2, S_29_0000, S_31_61B0, S_7_063E, S_7_01A0, S_11_62F2, S_11_5142,
        S_8_8D94, S_8_9958, S_8_9318, S_NSTUB };
 static const StubCfg g_stubs[S_NSTUB] = {
     [S_14_51CC] = {"14:51cc", 14, 0x51cc, 4, -1},
@@ -130,7 +130,6 @@ static const StubCfg g_stubs[S_NSTUB] = {
     [S_7_14A8] = {"7:14a8", 7, 0x14a8, 1, -1},
     [S_9_2ED8] = {"9:2ed8", 9, 0x2ed8, 2, -1},
     [S_10_26B2] = {"10:26b2", 10, 0x26b2, 2, -1},
-    [S_26_0000] = {"26:0000", 26, 0x0000, 1, -1},
     [S_29_0000] = {"29:0000", 29, 0x0000, 1, -1},
     [S_31_61B0] = {"31:61b0", 31, 0x61b0, 0, -1},
     [S_7_063E] = {"7:063e", 7, 0x063e, 1, -1},
@@ -1042,9 +1041,9 @@ static void t_774a(void) {
  * edit controls (EDIT) of the runtime. ShowWindow, SetWindowPos, EnableWindow, SetWindowText, SendMessage,
  * the GDI calls (a memory DC and two bitmaps of the test) and DrawText run for real in both runs; so do
  * 8:0x9958 / 0x9318 / 0x9398 / 0x9482 / 0x96e6 (drawing and rectangle helpers), 8:0xa666 (the unpacker),
- * 8:0x8dc0 / 0x8df4, 7:0x0b84, 7:0x3ef4, 9:0x641c and the dialog MSGDLG behind DialogBox (original code,
+ * 8:0x8dc0 / 0x8df4, 7:0x0b84, 7:0x3ef4, 9:0x641c, 26:0x0000 (decompiled: the production dialog runs for real) and the dialog MSGDLG behind DialogBox (original code,
  * answered by queued keys). Doubles (logged thunks, nothing real, the scenario's return values): 7:0x14a8 (a
- * fleet by id), 9:0x2ed8, 10:0x26b2 (select a planet / fleet), 26:0x0000, 29:0x0000, 31:0x61b0, 7:0x063e,
+ * fleet by id), 9:0x2ed8, 10:0x26b2 (select a planet / fleet), 29:0x0000, 31:0x61b0, 7:0x063e,
  * 7:0x01a0, 11:0x62f2, 11:0x5142, 8:0x8d94 (a message box), and those of the message text (see t_7778). */
 static uint16_t g_mw, g_main, g_other, g_btn[4], g_cb, g_ed1, g_ed2, g_bmp1, g_bmp2, g_dlg, g_dlged;
 static uint16_t mkwin(const char *cls, const char *title, uint32_t style, int x, int y, int cx, int cy, uint16_t parent, uint16_t id) {

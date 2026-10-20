@@ -410,7 +410,12 @@ static bool log_entry_eq(const HLogEntry *a, const HLogEntry *b) {
       a->ret != b->ret)
     return false;
   n = a->argbytes < HARNESS_MAX_LOG_ARGS ? a->argbytes : HARNESS_MAX_LOG_ARGS;
-  return memcmp(a->args, b->args, n) == 0;
+  if (memcmp(a->args, b->args, n) != 0) return false;
+  /* register inputs (REGISTER imports) and variable arguments (VARARGS imports) */
+  if (a->has_regs != b->has_regs || memcmp(a->regs, b->regs, sizeof a->regs) != 0) return false;
+  if (a->has_va != b->has_va || a->va_bytes != b->va_bytes) return false;
+  n = a->va_bytes < HARNESS_MAX_LOG_ARGS ? a->va_bytes : HARNESS_MAX_LOG_ARGS;
+  return memcmp(a->va, b->va, n) == 0;
 }
 
 static void fmt_bytes(char *out, size_t n, const uint8_t *p, size_t cnt) {
@@ -420,11 +425,23 @@ static void fmt_bytes(char *out, size_t n, const uint8_t *p, size_t cnt) {
 }
 
 static void fmt_log(char *out, size_t n, const HLogEntry *e) {
-  char b[HARNESS_MAX_LOG_ARGS * 3 + 1];
+  static const char *const rn[HARNESS_LOG_NREGS] = {"AX", "BX", "CX", "DX", "SI", "DI", "DS", "ES"};
+  char b[HARNESS_MAX_LOG_ARGS * 3 + 1], v[HARNESS_MAX_LOG_ARGS * 3 + 1], rg[HARNESS_LOG_NREGS * 9 + 8];
   unsigned c = e->argbytes < HARNESS_MAX_LOG_ARGS ? e->argbytes : HARNESS_MAX_LOG_ARGS;
+  unsigned cv = e->va_bytes < HARNESS_MAX_LOG_ARGS ? e->va_bytes : HARNESS_MAX_LOG_ARGS;
+  size_t k = 0;
   fmt_bytes(b, sizeof b, e->args, c);
-  snprintf(out, n, "%s.%u (%s) args[%s] ret=0x%x", e->module, e->ordinal, e->name ? e->name : "?", b,
-           e->ret);
+  rg[0] = 0;
+  if (e->has_regs) {
+    k += (size_t)snprintf(rg, sizeof rg, " regs[");
+    for (unsigned i = 0; i < HARNESS_LOG_NREGS; i++)
+      k += (size_t)snprintf(rg + k, sizeof rg - k, "%s%s=%04x", i ? " " : "", rn[i], e->regs[i]);
+    snprintf(rg + k, sizeof rg - k, "]");
+  }
+  v[0] = 0;
+  if (e->has_va) fmt_bytes(v, sizeof v, e->va, cv);
+  snprintf(out, n, "%s.%u (%s) args[%s]%s%s%s%s ret=0x%x", e->module, e->ordinal,
+           e->name ? e->name : "?", b, rg, e->has_va ? " va[" : "", v, e->has_va ? "]" : "", e->ret);
 }
 
 /* ---- one comparison ---- */
@@ -538,6 +555,7 @@ static DtResult run_once(const Snap *snap, uint16_t seg, uint16_t off, int conv,
   /* DECOMP run on the same emulated stack layout. */
   {
     uint16_t sv_ss = rt_ss, sv_sp = rt_sp, sv_bp = rt_bp;
+    uint16_t sv_si = rt_entry_si, sv_di = rt_entry_di;
     uint16_t sp = top;
     if (conv == FAR_CDECL || conv == NEAR_CDECL) {
       for (int i = nargs - 1; i >= 0; i--) push_word(&sp, args[i]);
@@ -552,7 +570,11 @@ static DtResult run_once(const Snap *snap, uint16_t seg, uint16_t off, int conv,
     }
     rt_ss = MEM_SEL_DGROUP;
     rt_sp = sp;
-    rt_bp = 0;
+    /* The original pushes the caller's BP, SI and DI into its frame: the C side writes the same
+     * words (only a REGISTER function takes them from the input registers). */
+    rt_bp = isreg && in ? in->bp : 0;
+    rt_entry_si = isreg && in ? in->si : 0;
+    rt_entry_di = isreg && in ? in->di : 0;
     /* The C side starts from the registers the original starts with: the
      * caller's input registers, DS = DGROUP, ES = in->es or 0, SS:SP at the
      * return address, CS:IP at the entry (harness_call). */
@@ -568,6 +590,8 @@ static DtResult run_once(const Snap *snap, uint16_t seg, uint16_t off, int conv,
     rt_ss = sv_ss;
     rt_sp = sv_sp;
     rt_bp = sv_bp;
+    rt_entry_si = sv_si;
+    rt_entry_di = sv_di;
   }
   dl = log_copy();
   dirty_collect(snap, &dd);
@@ -831,9 +855,17 @@ static const DtEntry *lookup_sel(uint16_t sel, uint16_t off) {
 static uint32_t call_emulated(uint16_t sel, uint16_t off, int conv, const uint16_t *args, int nargs) {
   uint16_t sv_sp = rt_sp, sv_call = harness_get_call_sp();
   uint32_t ret;
-  if (rt_sp != 0) harness_set_call_sp(rt_sp);
+  Regs16 io;
+  /* The original callee pushes the caller's BP: with a C frame active that is the mirrored rt_bp,
+   * not whatever the emulator's BP register holds. Every other register is as without io. */
+  harness_regs(&io);
+  if (harness_depth() == 0) io.ax = io.bx = io.cx = io.dx = io.si = io.di = io.es = 0;
+  if (rt_sp != 0) {
+    io.bp = rt_bp;
+    harness_set_call_sp(rt_sp);
+  }
   rt_sp = 0;
-  ret = harness_call(sel, off, hconv(conv), args, nargs, NULL);
+  ret = harness_call(sel, off, hconv(conv), args, nargs, sv_sp != 0 ? &io : NULL);
   rt_sp = sv_sp;
   harness_set_call_sp(sv_call);
   return ret;
@@ -854,17 +886,22 @@ uint32_t rt_call_far(uint32_t fn, int conv, const uint16_t *args, int nargs) {
   }
   if (e) {
     uint16_t sv_ss = rt_ss, sv_sp = rt_sp, sv_bp = rt_bp, sp;
+    uint16_t sv_si = rt_entry_si, sv_di = rt_entry_di, new_bp = rt_bp, new_si = 0, new_di = 0;
     Regs16 regs;
     uint32_t ret;
     if (rt_sp != 0) {
       sp = rt_sp; /* an active C frame: build below it, keep its stack segment */
+      /* The original callee pushes the caller's BP (the mirrored rt_bp); the caller's live SI/DI
+       * are C locals the runtime cannot see, so those slots get 0. */
     } else if (harness_depth() > 0) {
       harness_regs(&regs);
       sp = regs.sp;
       rt_ss = regs.ss;
+      new_bp = regs.bp; new_si = regs.si; new_di = regs.di; /* called back from the emulator */
     } else {
       sp = harness_stack_top();
       rt_ss = MEM_SEL_DGROUP;
+      new_bp = 0;
     }
     memset(&regs, 0, sizeof regs);
     if (conv == FAR_CDECL) {
@@ -883,11 +920,15 @@ uint32_t rt_call_far(uint32_t fn, int conv, const uint16_t *args, int nargs) {
     sp = (uint16_t)(sp - 2);
     memcpy(LIN(MK_FP(rt_ss, sp)), &(uint16_t){HARNESS_THUNK_RET_OFF}, 2);
     rt_sp = sp;
-    rt_bp = 0;
+    rt_bp = new_bp;
+    rt_entry_si = new_si;
+    rt_entry_di = new_di;
     ret = e->adapter(rt_ss, rt_sp, &regs);
     rt_ss = sv_ss;
     rt_sp = sv_sp;
     rt_bp = sv_bp;
+    rt_entry_si = sv_si;
+    rt_entry_di = sv_di;
     return ret;
   }
   return call_emulated(sel, off, conv, args, nargs);
@@ -906,4 +947,68 @@ uint32_t rt_call_orig(unsigned seg, unsigned off, int conv, int nargs, ...) {
   for (int i = 0; i < nargs; i++) words[i] = (uint16_t)va_arg(ap, int);
   va_end(ap);
   return call_emulated(seg_sel((uint16_t)seg), (uint16_t)off, conv, words, nargs);
+}
+
+/* ---- whole-program DECOMP mode: decompiled C inside the emulator ---- */
+
+/* rt_call_far only picks C for the function a scenario calls itself. For the golden master the
+ * original code runs and calls the functions we have decompiled; each of those must run as C. The
+ * entry of every FAR_CDECL function of the registry gets "JMP FAR thunk" written over its first
+ * 5 bytes (the technique the segment scenarios use for test doubles); the thunk is a logged
+ * import whose handler runs the registry adapter on the stack as the caller left it (return
+ * address at SS:SP, arguments above), like rt_call_far does for a callback from the emulator.
+ * A CDECL callee leaves its arguments to the caller, so the thunk's plain RETF is exactly the
+ * return. FAR_PASCAL entries are window and dialog procedures that only the Win16 runtime calls,
+ * and functions shorter than 5 bytes cannot hold the jump: both keep running as original code. */
+#define DIVERT_MAX 512
+static const DtEntry *g_divert[DIVERT_MAX];
+static unsigned g_divert_calls;
+
+static void divert_handler(HCall *c) {
+  const DtEntry *e = g_divert[c->ordinal];
+  g_divert_calls++;
+  uint16_t sv_ss = rt_ss, sv_sp = rt_sp, sv_bp = rt_bp, sv_si = rt_entry_si, sv_di = rt_entry_di;
+  Regs16 regs;
+  memset(&regs, 0, sizeof regs);
+  rt_ss = c->regs->ss;
+  rt_sp = c->regs->sp;
+  rt_bp = c->regs->bp;
+  rt_entry_si = c->regs->si;
+  rt_entry_di = c->regs->di;
+  c->ret = e->adapter(rt_ss, rt_sp, &regs);
+  rt_ss = sv_ss;
+  rt_sp = sv_sp;
+  rt_bp = sv_bp;
+  rt_entry_si = sv_si;
+  rt_entry_di = sv_di;
+}
+
+unsigned difftest_divert_calls(void) { return g_divert_calls; }
+
+int difftest_divert_decomp(void) {
+  int n = 0;
+  g_divert_calls = 0;
+  memset(g_divert, 0, sizeof g_divert);
+  load_csv();
+  for (unsigned i = 0; i < dt_registry_count && i < DIVERT_MAX; i++) {
+    const DtEntry *e = difftest_lookup(dt_registry[i].seg, dt_registry[i].off);
+    const Fn *f;
+    uint32_t th;
+    uint8_t jmp[5];
+    uint8_t *code;
+    if (!e || e->conv != FAR_CDECL || e->seg >= 0x100) continue;
+    f = fn_find(e->seg, e->off, false);
+    if (!f || f->size < 5) continue;
+    th = harness_add_import("DECOMP", (uint16_t)i, e->name, HK_PASCAL, 0,
+                            e->ret_words == 0 ? HR_NONE : e->ret_words == 1 ? HR_RET16 : HR_RET32,
+                            divert_handler);
+    if (!th) return -1;
+    g_divert[i] = e;
+    jmp[0] = 0xEA;
+    memcpy(jmp + 1, &th, 4);
+    code = LIN(MK_FP(MEM_SEL_SEG(e->seg), e->off));
+    memcpy(code, jmp, sizeof jmp);
+    n++;
+  }
+  return n;
 }

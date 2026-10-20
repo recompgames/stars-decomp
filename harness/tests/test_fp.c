@@ -163,6 +163,9 @@ static uint64_t rnd_near(uint64_t a) {
 #define BATCH 1000u
 
 static uint16_t g_code_arith[4], g_code_fistp16, g_code_fistp32, g_code_fistp64, g_code_fsqrt, g_code_fyl2x, g_code_f2xm1;
+/* stars-z3l.4: 32-bit, 16-bit and 64-bit integer forms (setup_code_ext). */
+static uint16_t g_code_fld32_fstp64, g_code_fld64_fstp32, g_code_fld32_fadd_fstp32, g_code_fild16, g_code_fild64,
+    g_code_fimul16, g_code_fimul32, g_code_fidiv16, g_code_fidiv32;
 static uint16_t g_data; /* data selector: BATCH records of 24 bytes (a, b, result) */
 
 static uint16_t mk(const uint8_t *c, size_t n) {
@@ -548,6 +551,216 @@ static void test_ftol_cases(void) {
   CHECK_EQ(fp80_to_i32_ftol(fp80_from_f64(dbl(0x7FF8000000000000ull))), 0);
 }
 
+/* ---- FLD m32, FSTP m32, FILD m16/m64, FIMUL m16/m32, FIDIV m16/m32 (stars-z3l.4) ----
+ * Each sequence loops over BATCH records as the ones above; the integer or float operand of the
+ * form under test is at es:[si] (loads) or es:[si+8] (FIMUL / FIDIV), the result at es:[si+16]. */
+static void setup_code_ext(void) {
+#define LOOP_TAIL 0x83, 0xC6, 0x18
+  { uint8_t c[] = {0x26, 0xD9, 0x04, 0x26, 0xDD, 0x5C, 0x10, LOOP_TAIL, 0xE2, 0xF4, 0xCB};
+    g_code_fld32_fstp64 = mk(c, sizeof c); }                       /* fld dword; fstp qword */
+  { uint8_t c[] = {0x26, 0xDD, 0x04, 0x26, 0xD9, 0x5C, 0x10, LOOP_TAIL, 0xE2, 0xF4, 0xCB};
+    g_code_fld64_fstp32 = mk(c, sizeof c); }                       /* fld qword; fstp dword */
+  { uint8_t c[] = {0x26, 0xD9, 0x04, 0x26, 0xDC, 0x44, 0x08, 0x26, 0xD9, 0x5C, 0x10, LOOP_TAIL, 0xE2, 0xF0, 0xCB};
+    g_code_fld32_fadd_fstp32 = mk(c, sizeof c); }                  /* fld dword; fadd qword; fstp dword */
+  { uint8_t c[] = {0x26, 0xDF, 0x04, 0x26, 0xDD, 0x5C, 0x10, LOOP_TAIL, 0xE2, 0xF4, 0xCB};
+    g_code_fild16 = mk(c, sizeof c); }                             /* fild word; fstp qword */
+  { uint8_t c[] = {0x26, 0xDF, 0x2C, 0x26, 0xDD, 0x5C, 0x10, LOOP_TAIL, 0xE2, 0xF4, 0xCB};
+    g_code_fild64 = mk(c, sizeof c); }                             /* fild qword; fstp qword */
+  { uint8_t c[] = {0x26, 0xDD, 0x04, 0x26, 0xDE, 0x4C, 0x08, 0x26, 0xDD, 0x5C, 0x10, LOOP_TAIL, 0xE2, 0xF0, 0xCB};
+    g_code_fimul16 = mk(c, sizeof c); }                            /* fld qword; fimul word; fstp qword */
+  { uint8_t c[] = {0x26, 0xDD, 0x04, 0x26, 0xDA, 0x4C, 0x08, 0x26, 0xDD, 0x5C, 0x10, LOOP_TAIL, 0xE2, 0xF0, 0xCB};
+    g_code_fimul32 = mk(c, sizeof c); }
+  { uint8_t c[] = {0x26, 0xDD, 0x04, 0x26, 0xDE, 0x74, 0x08, 0x26, 0xDD, 0x5C, 0x10, LOOP_TAIL, 0xE2, 0xF0, 0xCB};
+    g_code_fidiv16 = mk(c, sizeof c); }                            /* fidiv word: ST0 / m16 */
+  { uint8_t c[] = {0x26, 0xDD, 0x04, 0x26, 0xDA, 0x74, 0x08, 0x26, 0xDD, 0x5C, 0x10, LOOP_TAIL, 0xE2, 0xF0, 0xCB};
+    g_code_fidiv32 = mk(c, sizeof c); }
+#undef LOOP_TAIL
+}
+
+static float f32of(uint32_t u) { float f; memcpy(&f, &u, 4); return f; }
+static uint32_t f32bits(float f) { uint32_t u; memcpy(&u, &f, 4); return u; }
+
+/* A float bit pattern: any pattern (NaN of both kinds, infinity, denormal), plus the specials. */
+static uint64_t rnd_f32_operand(void) {
+  static const uint32_t special[] = {0, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u, 0xFFC00000u,
+                                     0x7F800001u, 0xFFBFFFFFu, 0x00000001u, 0x007FFFFFu, 0x80000001u,
+                                     0x00800000u, 0x7F7FFFFFu, 0xFF7FFFFFu, 0x3F800000u, 0x7FFFFFFFu};
+  uint64_t r = rnd();
+  if (((r >> 59) & 3) == 0) return special[(r >> 20) % (sizeof special / sizeof special[0])];
+  return (uint32_t)(r >> 8); /* includes high-garbage-free 32-bit pattern */
+}
+
+/* A double that is hard to narrow to float: a float value plus the half-ulp pattern +-1 in the low
+ * 29 bits, the float overflow and denormal ranges, and the rest of the range. */
+static uint64_t rnd_f64_for_f32(void) {
+  uint64_t r = rnd(), sign = (r & 1) << 63, mant = (r >> 8) & 0xFFFFFFFFFFFFFull;
+  unsigned kind = (unsigned)(r >> 1) % 8;
+  int e = 1023 - 155 + (int)(rnd() % 290);                    /* float denormal .. overflow, +-2 binades */
+  if (kind == 0) return sign;                                 /* +-0 */
+  if (kind == 1) return sign | (0x7FFull << 52);              /* +-inf */
+  if (kind == 2) e = 1 + (int)(rnd() % 2046);                 /* any finite double exponent */
+  if (kind >= 3 && kind <= 5) {                               /* tie, one below, one above */
+    mant = (mant & ~0x1FFFFFFFull) | 0x10000000ull;
+    if (kind == 4) mant -= 1;
+    if (kind == 5) mant += 1;
+  }
+  if (kind == 6) e = 1023 + 127 + (int)(rnd() % 3) - 1;       /* around float max */
+  return sign | ((uint64_t)e << 52) | (mant & 0xFFFFFFFFFFFFFull);
+}
+
+/* Runs one sequence over BATCH random records and compares each result with expect(rec). Returns
+ * the number of mismatches. gen fills rec[i][0], rec[i][1]. */
+typedef uint64_t (*ExtExpect)(uint64_t a, uint64_t b);
+typedef void (*ExtGen)(uint64_t *a, uint64_t *b);
+static unsigned test_ext(const char *name, uint16_t sel, ExtGen gen, ExtExpect expect, uint16_t cw, unsigned n) {
+  unsigned bad = 0;
+  uint64_t rec[BATCH][3];
+  fp80_set_cw(cw);
+  for (unsigned done = 0; done < n; done += BATCH) {
+    for (unsigned i = 0; i < BATCH; i++) { gen(&rec[i][0], &rec[i][1]); rec[i][2] = 0; }
+    run_x87(sel, cw, rec);
+    for (unsigned i = 0; i < BATCH; i++) {
+      uint64_t a = rec[i][0], b = rec[i][1], x = rec[i][2], f = expect(a, b);
+      if (x != f && bad++ == 0)
+        fprintf(stderr, "%s mismatch cw %04x: %016llx %016llx x87 %016llx fp80 %016llx\n", name, cw,
+                (unsigned long long)a, (unsigned long long)b, (unsigned long long)x, (unsigned long long)f);
+    }
+  }
+  return bad;
+}
+
+/* MEASURED GAP: the Unicorn x87 (QEMU 5.0) does not quiet a signaling NaN on FLD m32 followed by
+ * FSTP m64 (it stores 0x7FF0000020000000 for 0x7F800001); a real x87 gives the quiet NaN, which fp80
+ * does (pinned by hand in test_ext_vectors). So this pass sets the quiet bit of NaN operands. */
+static void gen_f32(uint64_t *a, uint64_t *b) {
+  uint32_t u = (uint32_t)rnd_f32_operand();
+  if ((u & 0x7F800000u) == 0x7F800000u && (u & 0x7FFFFFu)) u |= 0x400000u;
+  *a = u; *b = 0;
+}
+static void gen_f64_f32(uint64_t *a, uint64_t *b) { *a = rnd_f64_for_f32(); *b = 0; }
+static void gen_f32_f64(uint64_t *a, uint64_t *b) { *a = rnd_f32_operand(); *b = rnd_f64_for_f32(); }
+static uint64_t ex_fld32(uint64_t a, uint64_t b) { (void)b; return bits(fp80_to_f64(fp80_from_f32(f32of((uint32_t)a)))); }
+static uint64_t ex_fstp32(uint64_t a, uint64_t b) { (void)b; return f32bits(fp80_to_f32(fp80_from_f64(dbl(a)))); }
+static uint64_t ex_f32_add_f32(uint64_t a, uint64_t b) {
+  return f32bits(fp80_to_f32(fp80_add(fp80_from_f32(f32of((uint32_t)a)), fp80_from_f64(dbl(b)))));
+}
+
+/* Integer operands: ties of the double narrowing, limits, zero, random. */
+static void gen_i16(uint64_t *a, uint64_t *b) {
+  static const int16_t sp[] = {0, 1, -1, 32767, -32768, 2, -2, 255, 256};
+  uint64_t r = rnd();
+  *a = r & 0xFFFF;
+  if (((r >> 20) & 3) == 0) *a = (uint16_t)sp[(r >> 24) % (sizeof sp / sizeof sp[0])];
+  *a |= (rnd() & 0xFFFFFFFFFFFF0000ull); /* only the low word may be read */
+  *b = 0;
+}
+static uint64_t rnd_i64(void) {
+  static const int64_t sp[] = {0, 1, -1, INT64_MAX, INT64_MIN, INT64_MIN + 1, 0x20000000000001ll, -0x20000000000001ll,
+                               0x20000000000003ll, 0x1FFFFFFFFFFFFFll, 0x7FFFFFFFFFFFFC00ll, 0x7FFFFFFFFFFFFBFFll,
+                               0x7FFFFFFFFFFFFC01ll};
+  uint64_t r = rnd();
+  switch ((r >> 60) & 3) {
+    case 0: return (uint64_t)sp[(r >> 20) % (sizeof sp / sizeof sp[0])];
+    case 1: return rnd() >> (rnd() % 64);                        /* any magnitude */
+    case 2: return (uint64_t)-(int64_t)(rnd() >> (rnd() % 64));
+    default: return rnd();
+  }
+}
+static void gen_i64(uint64_t *a, uint64_t *b) { *a = rnd_i64(); *b = 0; }
+static uint64_t ex_fild16(uint64_t a, uint64_t b) { (void)b; return bits(fp80_to_f64(fp80_from_i16((int16_t)a))); }
+static uint64_t ex_fild64(uint64_t a, uint64_t b) { (void)b; return bits(fp80_to_f64(fp80_from_i64((int64_t)a))); }
+
+/* FIMUL / FIDIV: a double (no NaN, as the arithmetic tests) times or over a 16- or 32-bit integer. */
+/* rnd_bits() plus NaNs: one operand in eight is a NaN of either sign, quiet or signaling, any payload. */
+static uint64_t rnd_bits_nan(void) {
+  uint64_t r = rnd_bits();
+  if (rnd() % 8) return r;
+  r = (rnd() & 0x800FFFFFFFFFFFFFull) | (0x7FFull << 52);
+  if (!(r & 0xFFFFFFFFFFFFFull)) r |= 1;
+  return r;
+}
+static void gen_dbl_i16(uint64_t *a, uint64_t *b) { gen_i16(b, a); *a = rnd_bits_nan(); }
+static void gen_dbl_i32(uint64_t *a, uint64_t *b) {
+  static const int32_t sp[] = {0, 1, -1, INT32_MAX, INT32_MIN, 3, -3, 10, 65536};
+  uint64_t r = rnd();
+  *a = rnd_bits_nan();
+  *b = (uint32_t)(r >> 8);
+  if (((r >> 3) & 3) == 0) *b = (uint32_t)sp[(r >> 24) % (sizeof sp / sizeof sp[0])];
+  *b |= (rnd() & 0xFFFFFFFF00000000ull); /* only the low dword may be read */
+}
+static uint64_t ex_fimul16(uint64_t a, uint64_t b) { return bits(fp80_to_f64(fp80_imul_i16(fp80_from_f64(dbl(a)), (int16_t)b))); }
+static uint64_t ex_fimul32(uint64_t a, uint64_t b) { return bits(fp80_to_f64(fp80_imul_i32(fp80_from_f64(dbl(a)), (int32_t)b))); }
+static uint64_t ex_fidiv16(uint64_t a, uint64_t b) { return bits(fp80_to_f64(fp80_idiv_i16(fp80_from_f64(dbl(a)), (int16_t)b))); }
+static uint64_t ex_fidiv32(uint64_t a, uint64_t b) { return bits(fp80_to_f64(fp80_idiv_i32(fp80_from_f64(dbl(a)), (int32_t)b))); }
+
+/* Hand-computed vectors, independent of the Unicorn. */
+static void test_ext_vectors(void) {
+  fp80_set_cw(PINNED_CW);
+  CHECK_EQ(f32bits(fp80_to_f32(fp80_from_f64(1.0))), 0x3F800000u);
+  CHECK_EQ(f32bits(fp80_to_f32(fp80_from_f64(dbl(0x3FD5555555555555ull)))), 0x3EAAAAABu); /* 1/3 */
+  CHECK_EQ(bits(fp80_to_f64(fp80_from_f32(f32of(0x3DCCCCCDu)))), 0x3FB99999A0000000ull);  /* 0.1f */
+  CHECK_EQ(bits(fp80_to_f64(fp80_from_i16(-32768))), bits(-32768.0));
+  CHECK_EQ(bits(fp80_to_f64(fp80_from_i64(INT64_MIN))), 0xC3E0000000000000ull);            /* -2^63 */
+  CHECK_EQ(bits(fp80_to_f64(fp80_from_i64(0x20000000000001ll))), 0x4340000000000000ull);   /* 2^53+1 ties to even */
+  CHECK_EQ(bits(fp80_to_f64(fp80_from_i64(0x20000000000003ll))), 0x4340000000000002ull);   /* 2^53+3 -> 2^53+4 */
+  CHECK_EQ(bits(fp80_to_f64(fp80_imul_i16(fp80_from_f64(1.5), -4))), bits(-6.0));
+  CHECK_EQ(bits(fp80_to_f64(fp80_imul_i32(fp80_from_f64(0.5), INT32_MIN))), bits(-1073741824.0));
+  CHECK_EQ(bits(fp80_to_f64(fp80_idiv_i16(fp80_from_f64(1.0), 4))), bits(0.25));
+  CHECK_EQ(bits(fp80_to_f64(fp80_idiv_i32(fp80_from_f64(-9.0), 3))), bits(-3.0));
+  CHECK_EQ(bits(fp80_to_f64(fp80_idiv_i16(fp80_from_f64(1.0), 0))), 0x7FF0000000000000ull); /* 1/0 = +inf (masked) */
+  /* FLD m32 of a signaling NaN gives the quiet NaN (the Unicorn does not: see gen_f32) and raises IE. */
+  fp80_clear_exceptions();
+  CHECK_EQ(bits(fp80_to_f64(fp80_from_f32(f32of(0x7F800001u)))), 0x7FF8000020000000ull);
+  CHECK_EQ(fp80_exceptions() & FP80_EXC_IE, FP80_EXC_IE);
+  /* FLD m32 of a denormal float and FIDIV by zero raise DE and ZE; FSTP m32 overflow raises OE. */
+  fp80_clear_exceptions();
+  (void)fp80_from_f32(f32of(1));
+  CHECK_EQ(fp80_exceptions() & FP80_EXC_DE, FP80_EXC_DE);
+  fp80_clear_exceptions();
+  (void)fp80_idiv_i16(fp80_from_f64(1.0), 0);
+  CHECK_EQ(fp80_exceptions() & FP80_EXC_ZE, FP80_EXC_ZE);
+  /* FSTP does not raise DE for a denormal extended source (2^-16352 * 2^-40 is denormal in extF80). */
+  {
+    Fp80 d = fp80_from_f64(1.0);
+    for (int i = 0; i < 16; i++) d = fp80_mul(d, fp80_from_f64(dbl(0x0010000000000000ull)));
+    d = fp80_mul(d, fp80_from_f64(dbl((uint64_t)(1023 - 40) << 52)));
+    fp80_clear_exceptions();
+    (void)fp80_mul(d, fp80_from_f64(1.0)); /* control: an arithmetic operation does raise DE */
+    CHECK_EQ(fp80_exceptions() & FP80_EXC_DE, FP80_EXC_DE);
+    fp80_clear_exceptions();
+    (void)fp80_to_f64(d);
+    (void)fp80_to_f32(d);
+    CHECK_EQ(fp80_exceptions() & FP80_EXC_DE, 0);
+  }
+  fp80_clear_exceptions();
+  (void)fp80_to_f32(fp80_from_f64(1e300));
+  CHECK_EQ(fp80_exceptions() & (FP80_EXC_OE | FP80_EXC_PE), FP80_EXC_OE | FP80_EXC_PE);
+  fp80_clear_exceptions();
+}
+
+static void test_ext_forms(void) {
+  static const uint16_t cws[] = {0x037F, 0x077F, 0x0B7F, 0x0F7F, 0x027F, 0x007F, 0x0A7F};
+  setup_code_ext();
+  test_ext_vectors();
+  for (unsigned c = 0; c < sizeof cws / sizeof cws[0]; c++) {
+    uint16_t cw = cws[c];
+    unsigned n = cw == PINNED_CW ? N_PAIRS : N_PAIRS_CW;
+    CHECK_EQ(test_ext("FLD m32", g_code_fld32_fstp64, gen_f32, ex_fld32, cw, n), 0);
+    CHECK_EQ(test_ext("FSTP m32", g_code_fld64_fstp32, gen_f64_f32, ex_fstp32, cw, n), 0);
+    CHECK_EQ(test_ext("FLD m32 FADD m64 FSTP m32", g_code_fld32_fadd_fstp32, gen_f32_f64, ex_f32_add_f32, cw, n), 0);
+    CHECK_EQ(test_ext("FILD m16", g_code_fild16, gen_i16, ex_fild16, cw, n), 0);
+    CHECK_EQ(test_ext("FILD m64", g_code_fild64, gen_i64, ex_fild64, cw, n), 0);
+    CHECK_EQ(test_ext("FIMUL m16", g_code_fimul16, gen_dbl_i16, ex_fimul16, cw, n), 0);
+    CHECK_EQ(test_ext("FIMUL m32", g_code_fimul32, gen_dbl_i32, ex_fimul32, cw, n), 0);
+    CHECK_EQ(test_ext("FIDIV m16", g_code_fidiv16, gen_dbl_i16, ex_fidiv16, cw, n), 0);
+    CHECK_EQ(test_ext("FIDIV m32", g_code_fidiv32, gen_dbl_i32, ex_fidiv32, cw, n), 0);
+  }
+  printf("FLD m32, FSTP m32, FILD m16/m64, FIMUL/FIDIV m16/m32: %d operands at cw=%04x, %d at 6 other words\n",
+         N_PAIRS, PINNED_CW, N_PAIRS_CW);
+  fp80_set_cw(PINNED_CW);
+  harness_set_fpcw(PINNED_CW);
+}
+
 static void test_equivalence(void) {
   static const char *name[4] = {"FADD", "FSUB", "FMUL", "FDIV"};
   setup_code();
@@ -698,6 +911,7 @@ int main(void) {
   test_control_word_sentinel();
   test_equivalence();
   test_other_control_words();
+  test_ext_forms();
   test_exceptional_paths();
   test_default_control_word_registered();
   harness_shutdown();

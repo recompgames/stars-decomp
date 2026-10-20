@@ -50,7 +50,7 @@ uint32_t kind400_record(int16_t index)
 DECOMP(2, 0x507c, kind4000_400_record, FAR_CDECL)
 uint32_t kind4000_400_record(int16_t index)
 {
-  FRAME_ENTER(2);
+  FRAME_ENTER_REGS(0, 1);
   uint32_t r;
   if (index >= 0x20) {
     uint16_t a[1] = {(uint16_t)(index - 0x20)};
@@ -148,7 +148,7 @@ static uint16_t trait(uint16_t n)
 DECOMP(2, 0x50f8, check_item_usable, FAR_CDECL)
 uint16_t check_item_usable(uint16_t p)
 {
-  FRAME_ENTER(6 + 4);
+  FRAME_ENTER_REGS(6, 2);
   uint16_t di, kind;
   di = (uint16_t)CALL_ORIG(28, 0x21ee, FAR_CDECL, 2, row_off(), 0x0e);
   kind = drd16(p);
@@ -442,7 +442,7 @@ uint16_t set_item_and_check(uint16_t p, uint16_t kind, uint8_t index)
 DECOMP(2, 0x5842, find_highest_usable_kind8000, FAR_CDECL)
 uint16_t find_highest_usable_kind8000(uint16_t p)
 {
-  FRAME_ENTER(2);
+  FRAME_ENTER_REGS(0, 1);
   uint16_t r;
   /* MOV AX,[SI+2]; AND AL,8; OR AL,8: the low byte becomes 8 */
   dwr16((uint16_t)(p + 2), (uint16_t)((drd16((uint16_t)(p + 2)) & 0xff00) | 8));

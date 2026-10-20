@@ -37,7 +37,7 @@
  * mass. route_fleet_from_planet is a placeholder name: that the planet word +0x30 names the planet new
  * fleets are routed to is read from the code (waypoint task 8), not confirmed. The old fn_16_<off>
  * names are kept as aliases in the comment above each function.
- * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER(n + 2 * pushes) with
+ * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER_REGS(n, pushes) with
  * n the ENTER size and one push for each PUSH SI / PUSH DI. Locals whose address goes to a callee
  * live at their original BP offsets (BP_LOCAL); the other locals are ordinary C variables. Callees
  * in other segments are not decompiled yet: CALL_ORIG. Near calls inside the segment are
@@ -127,7 +127,7 @@ static uint16_t dlg_erase(uint16_t hwnd, uint16_t hdc, int16_t rc) {
 DECOMP(16, 0x0606, zip_enable_preset_buttons, FAR_CDECL)
 uint16_t zip_enable_preset_buttons(uint16_t hwnd, uint16_t preset)
 {
-  FRAME_ENTER(0 + 4);
+  FRAME_ENTER_REGS(0, 2);
   uint16_t on = drd8((uint16_t)(0x545f + (uint16_t)(preset * 0x18)));
   (void)EnableWindow(GetDlgItem(hwnd, 0x817), on);
   uint16_t ret = EnableWindow(GetDlgItem(hwnd, 0x41b), on);
@@ -256,7 +256,7 @@ static void zip_rename(uint16_t hwnd, uint16_t cmd)
 DECOMP(16, 0x0000, ZIPORDERDLG, FAR_PASCAL)
 uint16_t ZIPORDERDLG(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0x3e + 4);
+  FRAME_ENTER_REGS(0x3e, 2);
   uint16_t ret = 0;
   switch (msg) {
   case 0x000f: /* WM_PAINT */
@@ -326,7 +326,7 @@ uint16_t ZIPORDERDLG(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lPar
 DECOMP(16, 0x063e, RENAMEZIPDLG, FAR_PASCAL)
 uint16_t RENAMEZIPDLG(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(8 + 4);
+  FRAME_ENTER_REGS(8, 2);
   uint16_t ret = 0;
   if (msg == 0x0014) { /* WM_ERASEBKGND */
     ret = dlg_erase(hwnd, wParam, -8);
@@ -368,7 +368,7 @@ uint16_t RENAMEZIPDLG(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lPa
 DECOMP(16, 0x0794, RENAMEDLG, FAR_PASCAL)
 uint16_t RENAMEDLG(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0xc + 2);
+  FRAME_ENTER_REGS(0xc, 1);
   uint16_t ret = 0;
   if (msg == 0x0014) { /* WM_ERASEBKGND */
     ret = dlg_erase(hwnd, wParam, -0xc);
@@ -511,7 +511,7 @@ static uint32_t part_entry(int16_t slot_bp)
 DECOMP(16, 0x20c8, slot_cloak_units, FAR_CDECL)
 uint16_t slot_cloak_units(uint32_t slot)
 {
-  FRAME_ENTER(0x0a + 4);
+  FRAME_ENTER_REGS(0x0a, 2);
   uint16_t seg = FP_SEG(slot), off = FP_OFF(slot);
   uint8_t item = rd8(seg, (uint16_t)(off + 2)), count = rd8(seg, (uint16_t)(off + 3));
   uint16_t value = 0;
@@ -551,7 +551,7 @@ uint16_t slot_cloak_units(uint32_t slot)
 DECOMP(16, 0x1d1c, design_beam_rating, FAR_CDECL)
 uint32_t design_beam_rating(uint32_t design)
 {
-  FRAME_ENTER(0x1e + 4);
+  FRAME_ENTER_REGS(0x1e, 2);
   uint16_t seg = FP_SEG(design), off = FP_OFF(design);
   int16_t big = (int16_t)rd16(seg, off) >= 0x20 ? 1 : 0;
   uint16_t nslots = rd8(seg, (uint16_t)(off + 0x7a));
@@ -585,7 +585,7 @@ uint32_t design_beam_rating(uint32_t design)
 DECOMP(16, 0x1ca2, fleet_beam_rating, FAR_CDECL)
 uint32_t fleet_beam_rating(uint32_t fleet)
 {
-  FRAME_ENTER(0x0e + 4);
+  FRAME_ENTER_REGS(0x0e, 2);
   uint16_t seg = FP_SEG(fleet), off = FP_OFF(fleet);
   uint32_t total = 0;
   for (uint16_t i = 0; (int16_t)(0x8d * i) < 0x8d0; i++) {
@@ -609,7 +609,7 @@ uint32_t fleet_beam_rating(uint32_t fleet)
 DECOMP(16, 0x193e, fleet_mining_rate, FAR_CDECL)
 uint32_t fleet_mining_rate(uint32_t fleet)
 {
-  FRAME_ENTER(0x22 + 4);
+  FRAME_ENTER_REGS(0x22, 2);
   uint16_t seg = FP_SEG(fleet), off = FP_OFF(fleet);
   uint32_t total = 0;
   uint16_t di = 0;
@@ -676,7 +676,7 @@ uint32_t fleet_orbital_adjusters(uint32_t fleet)
 DECOMP(16, 0x1aea, fleet_mine_laying_rate, FAR_CDECL)
 uint32_t fleet_mine_laying_rate(uint32_t fleet, int16_t group, int16_t which)
 {
-  FRAME_ENTER(0x2c + 4);
+  FRAME_ENTER_REGS(0x2c, 2);
   uint16_t seg = FP_SEG(fleet), off = FP_OFF(fleet);
   uint16_t lo = group == 0 ? 0 : group == 1 ? 4 : group == 2 ? 7 : 0;
   uint16_t hi = group == 0 ? 3 : group == 1 ? 6 : 9;
@@ -736,7 +736,7 @@ static void fold_entry_maxima(uint32_t entry)
 DECOMP(16, 0x244c, tally_design_parts, FAR_CDECL)
 void tally_design_parts(uint32_t design, uint16_t player)
 {
-  FRAME_ENTER(0x12 + 4);
+  FRAME_ENTER_REGS(0x12, 2);
   uint16_t seg = FP_SEG(design), off = FP_OFF(design);
   uint16_t saved = drd16(0x014c);
   dwr16(0x014c, player);
@@ -802,7 +802,7 @@ static int32_t add32(int32_t a, int32_t b) { return (int32_t)((uint32_t)a + (uin
 DECOMP(16, 0x0e10, stargate_jump_loss, FAR_CDECL)
 uint16_t stargate_jump_loss(uint16_t item1, uint16_t item2, int16_t n, int16_t d, uint16_t out)
 {
-  FRAME_ENTER(0x22 + 4);
+  FRAME_ENTER_REGS(0x22, 2);
   BP_LOCAL(uint16_t, -0x18) = 0x0200;
   BP_LOCAL(uint16_t, -0x10) = 0x0200;
   BP_LOCAL(uint8_t, -0x0e) = (uint8_t)item1;
@@ -878,7 +878,7 @@ static void post_message(uint16_t owner, uint16_t kind, uint16_t id, uint16_t pl
 DECOMP(16, 0x0962, apply_stargate_losses, FAR_CDECL)
 uint16_t apply_stargate_losses(uint32_t fleet, uint16_t a, uint16_t b, uint16_t c)
 {
-  FRAME_ENTER(0x13e + 4);
+  FRAME_ENTER_REGS(0x13e, 2);
 #define FB (-0xc2)
 #define GB (-0x13e)
 #define LB (-0x46)
@@ -1045,7 +1045,7 @@ uint16_t apply_stargate_losses(uint32_t fleet, uint16_t a, uint16_t b, uint16_t 
 DECOMP(16, 0x17c2, set_mining_waypoint_task, FAR_CDECL)
 void set_mining_waypoint_task(uint32_t fleet, uint32_t planet)
 {
-  FRAME_ENTER(0x12 + 4);
+  FRAME_ENTER_REGS(0x12, 2);
   uint16_t seg = FP_SEG(fleet), off = FP_OFF(fleet), pseg = FP_SEG(planet), poff = FP_OFF(planet);
   uint32_t list = rd32(seg, (uint16_t)(off + 0x64));
   uint16_t lseg = FP_SEG(list), wp0 = (uint16_t)(FP_OFF(list) + 4);
@@ -1110,7 +1110,7 @@ void set_mining_waypoint_task(uint32_t fleet, uint32_t planet)
 DECOMP(16, 0x1e02, fleet_cloak_percent, FAR_CDECL)
 uint16_t fleet_cloak_percent(uint32_t fleet)
 {
-  FRAME_ENTER(0x3a + 4);
+  FRAME_ENTER_REGS(0x3a, 2);
   uint16_t seg = FP_SEG(fleet), off = FP_OFF(fleet);
   int32_t a = 0, b = 0;
   double dbl_a, dbl_b;
@@ -1202,7 +1202,7 @@ uint16_t fleet_cloak_percent(uint32_t fleet)
 DECOMP(16, 0x1060, update_fleet_waypoints, FAR_CDECL)
 void update_fleet_waypoints(void)
 {
-  FRAME_ENTER(0x0c + 4);
+  FRAME_ENTER_REGS(0x0c, 2);
   for (uint16_t n = 0; (int16_t)n < (int16_t)drd16(0x553a); n++) {
     uint16_t at = (uint16_t)(drd16(0x00ba) + 4 * n);
     uint16_t fo = rd16(drd16(0x00bc), at), fs = rd16(drd16(0x00bc), (uint16_t)(at + 2));
@@ -1302,7 +1302,7 @@ static void set_speed_nibble(uint16_t seg, uint16_t off, int16_t speed)
 DECOMP(16, 0x13f8, route_fleet_from_planet, FAR_CDECL)
 void route_fleet_from_planet(uint32_t fleet, uint32_t planet)
 {
-  FRAME_ENTER(0x26 + 4);
+  FRAME_ENTER_REGS(0x26, 2);
   uint16_t seg = FP_SEG(fleet), off = FP_OFF(fleet), pseg = FP_SEG(planet), poff = FP_OFF(planet);
   wr16(seg, (uint16_t)(off + 0x62), 2);
   uint32_t list = rd32(seg, (uint16_t)(off + 0x64));
@@ -1393,7 +1393,7 @@ void route_fleet_from_planet(uint32_t fleet, uint32_t planet)
 DECOMP(16, 0x21bc, MERGEFLEETSDLG, FAR_PASCAL)
 uint16_t MERGEFLEETSDLG(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0x60 + 4);
+  FRAME_ENTER_REGS(0x60, 2);
   uint16_t ret = 0;
   if (msg == 0x0014) { /* WM_ERASEBKGND */
     ret = dlg_erase(hwnd, wParam, -0x0e);

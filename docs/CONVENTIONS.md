@@ -13,7 +13,7 @@ pseudo-C.
 **(a) Types.** Only `int8_t`, `int16_t`, `int32_t` and the `uint` forms, `FARPTR` (`uint32_t`
 selector:offset, `runtime/include/win16.h`) and `NEARPTR` (`uint16_t` offset into DGROUP,
 `src/stars.h`), plus `bool`. Banned in `src/`: plain `int`, `short`, `long`, `unsigned`, `signed`;
-`char` (use `int8_t`/`uint8_t`); `uintptr_t`/`intptr_t`/`ptrdiff_t`; host pointers stored in arena
+`char` (use `int8_t`/`uint8_t`); `int64_t`/`uint64_t` (the original is 16/32-bit: a 32 by 32 multiply or a 64 by 32 divide is written with 32-bit pieces, see `imul32_`/`udivmod64_` in `src/seg17.c`); `uintptr_t`/`intptr_t`/`ptrdiff_t`; host pointers stored in arena
 memory (a host pointer from `LIN()` lives only inside one expression or one function and is never
 written to game memory or kept in a game struct); `malloc`/`calloc`/`realloc`/`free`; mutable C
 globals (game globals live in DGROUP and are reached through the macros in `src/globals.h`,
@@ -43,8 +43,8 @@ of every field, so a layout mistake fails the build. Stepping a huge pointer (th
 
 **(d) Frames.** Each decompiled function mirrors SP at every call site: it reproduces its full
 original frame, INCLUDING the registers it pushes after `ENTER`, so the stack addresses its callees
-(and the callbacks they invoke) see are those of the original. `FRAME_ENTER(n + 2 * r)` stands for
-`ENTER n,0` followed by `r` register pushes (PUSH SI, PUSH DI, ...), `FRAME_LEAVE()` before each
+(and the callbacks they invoke) see are those of the original. `FRAME_ENTER_REGS(n, r)` stands for
+`ENTER n,0` followed by `r` register pushes (the original's order is PUSH DI then PUSH SI, bytes 57 56, so DI sits at BP-n-2 and SI at BP-n-4), `FRAME_LEAVE()` before each
 return, `BP_LOCAL(type, -x)` for the local at BP-x (`runtime/frame.h`). Every non-leaf function whose
 callees may expose a stack address mirrors its frame, not only functions whose own locals have their
 address taken; a leaf function that never exposes a stack address may use ordinary C locals. Original
@@ -55,7 +55,23 @@ caller that pushes SI/DI after `ENTER` without accounting for it, or a nested C 
 frame would shift SP and the pointer. A decompiled callee that mirrors a frame is therefore never
 reached by a bare C call (which pushes no arguments and no return address): it is called through
 `rt_call_far` (or a helper that pushes the arguments and a return address). Exported procedures start
-with `ENTER n,0`.
+with `ENTER n,0`. The words in the frame must match too, because a callee may copy a stack buffer
+into game state: the pushed SI and DI (written from `rt_entry_si` / `rt_entry_di`, the caller's
+registers at entry: the input registers of a REGISTER function under DIFF, else 0), the saved BP
+(`rt_bp` of the caller, which `rt_call_far` and `CALL_ORIG` also hand to an emulated callee as its BP)
+and the return-address slots. Write the entry as `FRAME_ENTER_REGS(n, r)` (r = 1: PUSH SI; r = 2: PUSH DI then PUSH SI, in the
+original's order 57 56) or `FRAME_ENTER_DI(n)` (PUSH DI alone), which fill those slots; plain
+`FRAME_ENTER(n)` reserves only the locals (a frame that pushes no SI/DI). Check the prologue bytes
+of the original (ENTER/SUB SP size, then which of 56/57 follow) before choosing the form.
+Known gaps (decided in stars-decomp-z3l.50): the return address under `rt_call_far` / `CALL_ORIG` is the
+harness thunk, not the CS:IP of the original call site. This is not done, by choice. `rt_call_far(fn,
+conv, args, nargs)` and `CALL_ORIG(seg, off, ...)` receive only the callee, and a decompiled caller
+is C with no record of the original CALL's CS:IP. The CS:IP could be passed as an extra argument at
+every call in `src/`, and the callee's return slot written from it; that is not implemented (it
+touches every call site), so a callee that copies its own return slot out of the frame would show
+the difference. Likewise the caller's live SI/DI at a call are C locals, so a callee pushes 0 for
+them (`rt_entry_si` / `rt_entry_di` are non-zero only for a REGISTER function under DIFF or a call
+back from the emulator).
 
 **(e) Calls.** Decompiled to decompiled: by C name when the callee mirrors no frame (a leaf using
 ordinary C locals); when the callee mirrors a frame (rule d) it is called through `rt_call_far`
@@ -101,9 +117,12 @@ registers and anything Ghidra's output hides (for example DX = CS in the return 
   struct, or `HUGE_ADD` for huge pointers.
 
 **(i) Statuses** in `docs/functions.csv` go `todo`, then `decompiled` (a DECOMP line exists), then
-`tested` (its DIFF scenarios pass). `unused` means no callers, not an entry point and not
+`tested` (its DIFF scenarios pass), then `readable` (pass 2: it meets the readability targets of rule (k):
+zero raw `rd*`/`wr*`/`drd*`/`dwr*`/`LINN` accesses, zero placeholder names, zero unnamed hex constants and the
+tag line; `tools/lint_src.py` check 8 enforces it). `unused` means no callers, not an entry point and not
 referenced from data; the evidence is written in `notes`. `python3 tools/progress.py [--seg N]`
-prints the counts and percentages.
+prints the counts and percentages; `--readability` adds the per-segment readability table
+(`python3 tools/readability.py [--per-function]` prints it alone).
 
 Globals: `src/globals.h` is generated, never hand-edited (`ghidra/ExportGlobals.java` writes
 `re/globals.csv`, `python3 tools/gen_globals.py` turns it into the header; a 16/32-bit global at a
@@ -207,7 +226,9 @@ and `SEG_SEL(2)` to `SEG_SEL(3)` (DX differs).
 `third_party/softfloat/`), not C `double`, for every x87 basic operation in
 decompiled code.** The helpers are in `runtime/fp80.h` / `runtime/fp80.c`
 (`fp80_from_f64`, `fp80_add/sub/mul/div`, `fp80_sqrt`, `fp80_to_f64`, `fp80_to_i16/i32`,
-`fp80_to_i32_ftol`, `fp80_set_cw`). A decompiled `FLD m64; FADD m64; FSTP m64` becomes
+`fp80_to_i32_ftol`, `fp80_set_cw`, and for the other memory forms `fp80_from_f32` / `fp80_to_f32`
+(FLD / FSTP m32), `fp80_from_i16` / `fp80_from_i64` (FILD m16 / m64; FILD m32 is `fp80_from_i32`) and
+`fp80_imul_i16/i32`, `fp80_idiv_i16/i32` (FIMUL / FIDIV m16 / m32, ST0 op integer)). A decompiled `FLD m64; FADD m64; FSTP m64` becomes
 `fp80_to_f64(fp80_add(fp80_from_f64(a), fp80_from_f64(b)))`, and values that
 stay on the x87 stack between instructions stay `Fp80`.
 
@@ -264,9 +285,8 @@ stay on the x87 stack between instructions stay `Fp80`.
     see those traps (the test pins this); only `fp80` reports them. The check is
     after the fact, per top-level call, not per instruction.
   - UE and PE are masked in 0x1330, so underflow and inexact never trap here. Other
-    unmasked words, FPREM / transcendental / FSQRT exceptions, FXAM, compare (FCOM)
-    invalid on NaN and the 32-bit and 16-bit load/store forms are not modelled
-    (helpers pending: stars-4vx).
+    unmasked words, FPREM / transcendental / FSQRT exceptions, FXAM and compare (FCOM)
+    invalid on NaN are not modelled.
 - The C runtime only changes the word temporarily, inside its own helpers, in
   segment 34 (Ghidra counts 12 FLDCW and 7 FSTCW there; the issue text said 11 and
   6):
@@ -332,9 +352,13 @@ FISTP m16/m32 (ties and out-of-range values give the integer indefinite 0x8000 /
 2. Loads (FLD m32/m64, FILD) convert exactly to `Fp80`; stores (FSTP m32/m64)
    round with the current rounding control (FSTP m32 double-rounds like m64: 64-bit
    significand first, then 24); FISTP rounds by RC (nearest even by default) and gives
-   the indefinite value on overflow. **Helpers pending: stars-4vx.** Only
-   `fp80_from_f64`, `fp80_from_i32`, `fp80_to_f64`, `fp80_to_i16/i32` and
-   `fp80_to_i32_ftol` exist today; FLD m32, FSTP m32, FILD m16/m64 have none yet.
+   the indefinite value on overflow. The helpers are `fp80_from_f64/f32/i16/i32/i64`,
+   `fp80_to_f64/f32` and `fp80_to_i16/i32/i32_ftol`; FIMUL / FIDIV are `fp80_imul_i16/i32` and
+   `fp80_idiv_i16/i32`. They are proven bit for bit against the Unicorn x87 by `test_ext_forms` in
+   `harness/tests/test_fp.c` (random patterns plus NaN, infinity, denormal, float half-ulp ties and
+   int64 limits; 0x037F and six other control words). One measured gap: the Unicorn does not quiet a
+   signaling NaN (measured on FLD m32 followed by FSTP m64), so that test feeds it quiet NaNs only; `fp80_from_f32` returns the quiet
+   NaN a real x87 gives and raises IE (pinned by hand in `test_ext_vectors`).
 3. Leave the control word at the default unless the original code sets it; mirror its
    FLDCW with `fp80_set_cw`. Full runs use `FPU_CW_DEFAULT` (0x1330): call
    `fp80_set_cw(FPU_CW_DEFAULT)` and install a trap handler that stops the run.

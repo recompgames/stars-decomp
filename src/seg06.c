@@ -54,7 +54,7 @@
  * records in that form (without byte 0). The old fn_06_<off> names are kept as aliases in the comment
  * above each function.
  *
- * Every function that calls anything mirrors its original frame (CONVENTIONS rule d): FRAME_ENTER(n + 2 *
+ * Every function that calls anything mirrors its original frame (CONVENTIONS rule d): FRAME_ENTER_REGS(n,
  * pushes) with n the ENTER size (or 0 after PUSH BP; MOV BP,SP) and one push for each PUSH SI / PUSH DI.
  * Leaves that never expose a stack address use ordinary C locals. Near calls inside the segment are
  * PUSH CS; CALL near, i.e. far calls with a 4-byte return address; a callee that mirrors a frame is
@@ -212,7 +212,7 @@ uint16_t message_id(uint16_t idx)
 DECOMP(6, 0x6ef4, next_message_index, FAR_CDECL)
 uint16_t next_message_index(uint16_t flag)
 {
-  FRAME_ENTER(0 + 2);
+  FRAME_ENTER_REGS(0, 1);
   uint16_t si = drd16(0x0ab6), r;
   if (drd16(0x0aba) != 0 && flag == 0) {
     uint16_t ax = (uint16_t)(drd16(0x0ab4) + drd16(0x0ac4) - 1);
@@ -245,7 +245,7 @@ uint16_t next_message_index(uint16_t flag)
 DECOMP(6, 0x6f66, prev_message_index, FAR_CDECL)
 uint16_t prev_message_index(uint16_t flag)
 {
-  FRAME_ENTER(0 + 2);
+  FRAME_ENTER_REGS(0, 1);
   uint16_t si = drd16(0x0ab6), r;
   if (drd16(0x0aba) != 0 && flag == 0) {
     r = ((int16_t)si <= 0) ? 0xffff : (uint16_t)(si - 1);
@@ -283,7 +283,7 @@ uint16_t prev_message_index(uint16_t flag)
 DECOMP(6, 0x7294, hit_test_message_window, FAR_CDECL)
 uint16_t hit_test_message_window(int16_t x, int16_t y)
 {
-  FRAME_ENTER(2 + 2);
+  FRAME_ENTER_REGS(2, 1);
   uint16_t r = 0;
   uint32_t pt = ((uint32_t)(uint16_t)y << 16) | (uint16_t)x;
   if (PtInRect(dsfp(0x4b64), pt) == 0) goto out;
@@ -329,7 +329,7 @@ out:
 DECOMP(6, 0x7410, build_message_record, FAR_CDECL)
 uint16_t build_message_record(uint16_t out, uint16_t player, uint16_t id, uint16_t subject)
 {
-  FRAME_ENTER(0x14 + 4);
+  FRAME_ENTER_REGS(0x14, 2);
   uint16_t r;
   if (player == 0xffff) {
     r = 0;
@@ -401,7 +401,7 @@ DECOMP(6, 0x7344, add_message, FAR_CDECL)
 uint16_t add_message(uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3, uint16_t a4, uint16_t a5, uint16_t a6,
                     uint16_t a7, uint16_t a8, uint16_t a9)
 {
-  FRAME_ENTER(0x28 + 2);
+  FRAME_ENTER_REGS(0x28, 1);
   const uint16_t a[11] = {bpoff(-0x28), a0, a1, a2, a3, a4, a5, a6, a7, a8, a9};
   uint16_t si = (uint16_t)call6(0x7410, a, 11), r;
   if ((int16_t)si <= 0) {
@@ -437,7 +437,7 @@ DECOMP(6, 0x739e, add_message_front, FAR_CDECL)
 uint16_t add_message_front(uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3, uint16_t a4, uint16_t a5, uint16_t a6,
                     uint16_t a7, uint16_t a8, uint16_t a9)
 {
-  FRAME_ENTER(0x28 + 2);
+  FRAME_ENTER_REGS(0x28, 1);
   const uint16_t a[11] = {bpoff(-0x28), a0, a1, a2, a3, a4, a5, a6, a7, a8, a9};
   uint16_t si = (uint16_t)call6(0x7410, a, 11), r;
   if ((int16_t)si <= 0) {
@@ -466,7 +466,7 @@ uint16_t add_message_front(uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3, u
 DECOMP(6, 0x752e, add_player_message, FAR_CDECL)
 uint16_t add_player_message(uint16_t front, uint16_t id, uint16_t subject)
 {
-  FRAME_ENTER(0x4a + 4);
+  FRAME_ENTER_REGS(0x4a, 2);
   if ((uint16_t)(drd16(0x0ab0) + 0x14) > 0xffc8) {
     FRAME_LEAVE();
     return 0;
@@ -570,7 +570,7 @@ uint16_t has_message(uint16_t player, uint16_t id, uint16_t subject)
 DECOMP(6, 0x81b4, visit_message_planets, FAR_CDECL)
 void visit_message_planets(uint16_t player)
 {
-  FRAME_ENTER(0x10 + 4);
+  FRAME_ENTER_REGS(0x10, 2);
   uint16_t si = drd16(0x0aac);
   L16(-8) = drd16(0x0aae);
   uint16_t end = (uint16_t)(si + drd16(0x0ab0));
@@ -653,7 +653,7 @@ void mark_comment_authors(uint16_t player)
 DECOMP(6, 0x8308, write_player_messages, FAR_CDECL)
 void write_player_messages(uint16_t player)
 {
-  FRAME_ENTER(0x408 + 4);
+  FRAME_ENTER_REGS(0x408, 2);
   uint16_t di = 0;
   if (player == 0xffff) goto done;
   {
@@ -857,7 +857,7 @@ void set_message_filter(uint16_t id, uint16_t on)
 DECOMP(6, 0x8460, load_player_messages, FAR_CDECL)
 uint16_t load_player_messages(void)
 {
-  FRAME_ENTER(0x2a + 4);
+  FRAME_ENTER_REGS(0x2a, 2);
   uint16_t bx = 0, di, si;
   L16(-0x16) = 0;
   di = (uint16_t)(drd16(0x0aac) + drd16(0x0ab0));
@@ -974,7 +974,7 @@ static inline uint16_t abs16(uint16_t v) { return (int16_t)v < 0 ? (uint16_t)(0u
 DECOMP(6, 0x8640, store_edited_comment, FAR_CDECL)
 uint16_t store_edited_comment(uint16_t dir)
 {
-  FRAME_ENTER(0x12 + 4);
+  FRAME_ENTER_REGS(0x12, 2);
   uint16_t si, di, r;
   {
     uint16_t es = MEM_SEL_DGROUP, sb = 0x0ac0;
@@ -1148,7 +1148,7 @@ static uint16_t far_strcpy(uint16_t dst, uint16_t seg, uint16_t src)
 DECOMP(6, 0x7778, format_message, FAR_CDECL)
 uint16_t format_message(uint16_t fmt, uint32_t args)
 {
-  FRAME_ENTER(0x1f4 + 4);
+  FRAME_ENTER_REGS(0x1f4, 2);
   uint16_t aseg = (uint16_t)(args >> 16), aoff = (uint16_t)args;
 #define ARG(k) rd16(aseg, (uint16_t)(aoff + (k)))
   L16(-0x10) = 0xffff;
@@ -1518,7 +1518,7 @@ static inline uint16_t mid16(uint16_t a, uint16_t b, uint16_t k)
 DECOMP(6, 0x6fc6, draw_message_icons, FAR_CDECL)
 void draw_message_icons(uint16_t hdc, uint16_t rect)
 {
-  FRAME_ENTER(0x16 + 4);
+  FRAME_ENTER_REGS(0x16, 2);
   uint16_t di, si;
   L16(-0x16) = CreateCompatibleDC(hdc);
   L16(-0x14) = SelectObject(L16(-0x16), drd16(0x5a54));
@@ -1629,7 +1629,7 @@ L7207:
 DECOMP(6, 0x6a68, update_message_controls, FAR_CDECL)
 void update_message_controls(uint16_t hwnd)
 {
-  FRAME_ENTER(0x70 + 4);
+  FRAME_ENTER_REGS(0x70, 2);
   uint16_t si, cx;
   if (hwnd == 0 || drd16(0x15fe) != 0) goto out;
   L8(-1) = drd16(0x007e) == 0 ? 0x20 : 0x2a;
@@ -1809,7 +1809,7 @@ out:
 DECOMP(6, 0x7ed0, MSGDLG, FAR_PASCAL)
 uint16_t MSGDLG(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0x130 + 4);
+  FRAME_ENTER_REGS(0x130, 2);
   uint16_t r = 1;
   uint16_t si, di;
   switch (msg) {
@@ -1932,7 +1932,7 @@ static uint16_t shown_filtered(void)
 DECOMP(6, 0x0000, MESSAGEWNDPROC, FAR_PASCAL)
 uint32_t MESSAGEWNDPROC(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0x4a + 4);
+  FRAME_ENTER_REGS(0x4a, 2);
   uint32_t ret = 0;
   uint16_t si, di, ax;
   switch (msg) {
@@ -2293,7 +2293,7 @@ L0a50: /* goto */
       si = call6_1(0x7646, drd16(0x0ab6));
       if (si == 0x3e || si == 0x3f || ((int16_t)si >= 0xaf && (int16_t)si <= 0xb4)) {
         if ((drd8(0x0791) & 0x10) == 0) goto L0ae3;
-        if (drd16(0x4b74) == 1 && drd16(0x4160) == drd16(0x4b78)) (void)CALL_ORIG(26, 0x0000, FAR_CDECL, 1, 0);
+        if (drd16(0x4b74) == 1 && drd16(0x4160) == drd16(0x4b78)) (void)rt_call_far(MK_FP(SEG_SEL(26), 0x0000), FAR_CDECL, (const uint16_t[]){0}, 1);
       }
       goto L0a27;
     case 2:

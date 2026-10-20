@@ -49,10 +49,26 @@ Fp80 fp80_from_f64(double d); /* FLD m64: exact */
 Fp80 fp80_from_i32(int32_t v);
 double fp80_to_f64(Fp80 x);   /* FSTP m64: rounds by RC */
 
+/* FLD m32 / FSTP m32 (a denormal float load raises DE; the store rounds by RC straight from the
+ * 64-bit significand to 24 bits, as the x87 does, and raises OE, UE, PE, IE as it would). */
+Fp80 fp80_from_f32(float f);
+float fp80_to_f32(Fp80 x);
+
+/* FILD m16 / m64: exact (an int64 fits the 64-bit significand). FILD m32 is fp80_from_i32. */
+Fp80 fp80_from_i16(int16_t v);
+Fp80 fp80_from_i64(int64_t v);
+
 Fp80 fp80_add(Fp80 a, Fp80 b); /* FADD, FSUB, FMUL, FDIV */
 Fp80 fp80_sub(Fp80 a, Fp80 b);
 Fp80 fp80_mul(Fp80 a, Fp80 b);
 Fp80 fp80_div(Fp80 a, Fp80 b);
+
+/* FIMUL m16 / m32: ST0 * int; FIDIV m16 / m32: ST0 / int (the integer converts exactly, then
+ * the operation rounds by PC and RC; division by zero raises ZE, 0/0 and inf*0 raise IE). */
+Fp80 fp80_imul_i16(Fp80 a, int16_t v);
+Fp80 fp80_imul_i32(Fp80 a, int32_t v);
+Fp80 fp80_idiv_i16(Fp80 a, int16_t v);
+Fp80 fp80_idiv_i32(Fp80 a, int32_t v);
 
 /* FSQRT: the correctly rounded square root, rounded by the precision control (PC) and rounding
  * control (RC) of the control word. A negative operand (not -0) raises IE and gives the real

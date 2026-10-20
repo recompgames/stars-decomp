@@ -76,6 +76,35 @@ Fp80 fp80_from_f64(double d) {
 }
 
 Fp80 fp80_from_i32(int32_t v) { return i32_to_extF80(v); }
+Fp80 fp80_from_i16(int16_t v) { return i32_to_extF80(v); }
+Fp80 fp80_from_i64(int64_t v) { return i64_to_extF80(v); }
+
+Fp80 fp80_from_f32(float f) {
+  float32_t g;
+  uint32_t u;
+  uint_fast8_t saved = softfloat_exceptionFlags;
+  Fp80 r;
+  memcpy(&g, &f, sizeof g);
+  memcpy(&u, &f, sizeof u);
+  softfloat_exceptionFlags = 0;
+  r = f32_to_extF80(g);
+  /* FLD m32 of a denormal float raises DE (the extended result is normal); a signaling NaN raises IE. */
+  raise(softfloat_exceptionFlags, ((u >> 23) & 0xFF) == 0 && (u & 0x7FFFFFu) ? FP80_EXC_DE : 0);
+  softfloat_exceptionFlags = saved;
+  return r;
+}
+
+float fp80_to_f32(Fp80 x) {
+  uint_fast8_t saved = softfloat_exceptionFlags;
+  float32_t g;
+  float f;
+  softfloat_exceptionFlags = 0;
+  g = extF80_to_f32(x);
+  raise(softfloat_exceptionFlags, 0); /* FST/FSTP do not raise DE */
+  softfloat_exceptionFlags = saved;
+  memcpy(&f, &g, sizeof f);
+  return f;
+}
 
 double fp80_to_f64(Fp80 x) {
   uint_fast8_t saved = softfloat_exceptionFlags;
@@ -83,7 +112,7 @@ double fp80_to_f64(Fp80 x) {
   double d;
   softfloat_exceptionFlags = 0;
   f = extF80_to_f64(x);
-  raise(softfloat_exceptionFlags, de(x));
+  raise(softfloat_exceptionFlags, 0); /* FST/FSTP do not raise DE */
   softfloat_exceptionFlags = saved;
   memcpy(&d, &f, sizeof d);
   return d;
@@ -93,6 +122,10 @@ Fp80 fp80_add(Fp80 a, Fp80 b) { BINOP(extF80_add, a, b); }
 Fp80 fp80_sub(Fp80 a, Fp80 b) { BINOP(extF80_sub, a, b); }
 Fp80 fp80_mul(Fp80 a, Fp80 b) { BINOP(extF80_mul, a, b); }
 Fp80 fp80_div(Fp80 a, Fp80 b) { BINOP(extF80_div, a, b); }
+Fp80 fp80_imul_i16(Fp80 a, int16_t v) { return fp80_mul(a, fp80_from_i16(v)); }
+Fp80 fp80_imul_i32(Fp80 a, int32_t v) { return fp80_mul(a, fp80_from_i32(v)); }
+Fp80 fp80_idiv_i16(Fp80 a, int16_t v) { return fp80_div(a, fp80_from_i16(v)); }
+Fp80 fp80_idiv_i32(Fp80 a, int32_t v) { return fp80_div(a, fp80_from_i32(v)); }
 
 Fp80 fp80_sqrt(Fp80 a) {
   uint_fast8_t saved = softfloat_exceptionFlags;

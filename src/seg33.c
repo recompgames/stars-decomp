@@ -15,8 +15,8 @@
  *   33:0x0784  the turn processing of the minefields: fleets inside them are hit
  *   33:0x1194  record a tech flag for a player and pick a message and a string word
  *
- * The functions that call out mirror their original frames (CONVENTIONS rule d): FRAME_ENTER(n +
- * 2 * pushes) with n the ENTER size and one push for each PUSH SI / PUSH DI. A callee that is
+ * The functions that call out mirror their original frames (CONVENTIONS rule d): FRAME_ENTER_REGS(n,
+ * pushes) with n the ENTER size and one push for each PUSH SI / PUSH DI. A callee that is
  * decompiled and mirrors a frame (12:0x0232, 12:0x03ec) is reached through rt_call_far. Callees
  * that are not decompiled yet use CALL_ORIG. Memory is reached in 16-bit pieces: an offset is a
  * uint16_t and wraps like the original's. DS = SS = DGROUP in every function here (the few
@@ -119,7 +119,7 @@ uint16_t fn_33_1194(uint16_t flag, int16_t player, uint16_t out)
 DECOMP(33, 0x015a, fn_33_015a, FAR_CDECL)
 void fn_33_015a(uint16_t off, uint16_t seg)
 {
-  FRAME_ENTER(2);
+  FRAME_ENTER_REGS(0, 1);
   uint16_t count = g_map_object_count;
   uint16_t last = (uint16_t)((uint16_t)(count * 0x12u) + g_map_objects - 0x12);
   if (last > off) {
@@ -145,7 +145,7 @@ void fn_33_015a(uint16_t off, uint16_t seg)
 DECOMP(33, 0x0000, fn_33_0000, FAR_CDECL)
 uint32_t fn_33_0000(int16_t player, int16_t kind)
 {
-  FRAME_ENTER(0x18 + 4);
+  FRAME_ENTER_REGS(0x18, 2);
   if ((int16_t)g_map_object_count >= 0xfd2) {
     FRAME_LEAVE();
     return 0;
@@ -232,7 +232,7 @@ uint32_t fn_33_0000(int16_t player, int16_t kind)
 DECOMP(33, 0x0456, fn_33_0456, FAR_CDECL)
 uint16_t fn_33_0456(uint32_t obj)
 {
-  FRAME_ENTER(0x20 + 4);
+  FRAME_ENTER_REGS(0x20, 2);
   uint16_t poff = FP_OFF(obj), pseg = FP_SEG(obj);
   uint16_t limit = (uint16_t)((uint32_t)g_universe_size_index * 0x190u + 0x578);
   uint16_t x = rd16(pseg, (uint16_t)(poff + 2));
@@ -353,10 +353,10 @@ uint16_t fn_33_0456(uint32_t obj)
 DECOMP(33, 0x01a0, fn_33_01a0, FAR_CDECL)
 int16_t fn_33_01a0(int16_t x, int16_t y, int32_t r2)
 {
-  FRAME_ENTER(0x12 + 4);
-  uint64_t cbits = (uint64_t)drd32(0x207c) | ((uint64_t)drd32(0x2080) << 32);
+  FRAME_ENTER_REGS(0x12, 2);
+  uint32_t cbits[2] = {drd32(0x207c), drd32(0x2080)}; /* the double c, low dword first (little endian) */
   double cd;
-  memcpy(&cd, &cbits, 8);
+  memcpy(&cd, cbits, 8);
   Fp80 c = fp80_from_f64(cd);
   Fp80 root = crt_sqrt_34_0d68(fp80_from_i32(r2));
   uint16_t r = (uint16_t)fp80_to_i32_ftol(fp80_add(root, c));
@@ -427,7 +427,7 @@ int16_t fn_33_01a0(int16_t x, int16_t y, int32_t r2)
 DECOMP(33, 0x02d6, fn_33_02d6, FAR_CDECL)
 void fn_33_02d6(uint16_t hdc, uint16_t prect, uint32_t obj, int16_t mode)
 {
-  FRAME_ENTER(0x2c + 4);
+  FRAME_ENTER_REGS(0x2c, 2);
   uint16_t di = FP_OFF(obj), oseg = FP_SEG(obj);
   uint16_t si = (uint16_t)mode;
   uint16_t flag = 0;                                   /* [bp-0xe] */
@@ -514,7 +514,7 @@ static inline int8_t lvl(uint16_t off) { return (int8_t)drd8(off); }
 DECOMP(33, 0x0784, fn_33_0784, FAR_CDECL)
 void fn_33_0784(int16_t enable)
 {
-  FRAME_ENTER(0xd0 + 4);
+  FRAME_ENTER_REGS(0xd0, 2);
   uint16_t ax, bx, cx, dx, si, di, es;
   uint32_t r;
   if (enable == 0) goto done;

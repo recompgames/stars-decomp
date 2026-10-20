@@ -21,7 +21,7 @@
  * generic (FUN_1010_<off>), so the C names describe what each function does (CONVENTIONS rule f).
  * The old fn_03_<off> names are kept as aliases in the comment above each function.
  *
- * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER(n + 2 * pushes) with
+ * The functions mirror their original frames (CONVENTIONS rule d): FRAME_ENTER_REGS(n, pushes) with
  * n the ENTER size and one push for each PUSH SI / PUSH DI. 3:0x054c has no BP frame and pushes DI
  * and SI, 3:0x0c7a pushes its own arguments: both move rt_sp by hand so the callees see the original
  * stack. A callee that mirrors a frame is reached through rt_call_far; callees not decompiled yet use
@@ -69,6 +69,7 @@ static inline uint32_t dsfp(uint16_t off) { return MK_FP(MEM_SEL_DGROUP, off); }
  * pointer to the format); the words 2, 60, 105 stay on the stack and are the arguments of
  * _wsprintf(DS:0x5866, DS:format, ...). The words are written to the emulated stack where the
  * original leaves them, and the call to 8:0x8df4 starts where the original's pushed argument is. */
+/* lint: leaf-frame-ok the original has no BP frame: it writes the three _wsprintf argument words just below the return address and lowers SP by hand (rt_sp = sp0 - 6) so CALL_ORIG and _wsprintf see the original's SP; rt_sp is restored before the return. Pass 2: convert to FRAME_ENTER/FRAME_LEAVE. */
 DECOMP(3, 0x0c7a, format_version_string, FAR_CDECL)
 uint16_t format_version_string(void)
 {
@@ -125,7 +126,7 @@ uint16_t ORDERINFODLG(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lPa
 DECOMP(3, 0x0f3a, filter_char_message, FAR_CDECL)
 uint16_t filter_char_message(uint16_t hwnd, uint16_t ch, uint32_t lParam)
 {
-  FRAME_ENTER(0 + 4);
+  FRAME_ENTER_REGS(0, 2);
   (void)hwnd;
   uint16_t si = ch;
   uint16_t ret = 0;
@@ -151,7 +152,7 @@ uint16_t filter_char_message(uint16_t hwnd, uint16_t ch, uint32_t lParam)
 DECOMP(3, 0x04a2, find_player_key_conflict, FAR_CDECL)
 int16_t find_player_key_conflict(int16_t n)
 {
-  FRAME_ENTER(8 + 4);
+  FRAME_ENTER_REGS(8, 2);
   uint16_t bx = (uint16_t)((uint16_t)n << 4);          /* [bp-8] */
   uint32_t tab = drd32(0x0980);
   uint16_t si = FP_OFF(tab), es = FP_SEG(tab);
@@ -199,7 +200,7 @@ int16_t find_player_key_conflict(int16_t n)
 DECOMP(3, 0x03e0, read_batch_file_name, FAR_CDECL)
 int16_t read_batch_file_name(void)
 {
-  FRAME_ENTER(0x18 + 2);
+  FRAME_ENTER_REGS(0x18, 1);
   int16_t result = 0;                                    /* [bp-6] */
   uint16_t jb = (uint16_t)(rt_bp - 0x18);                /* the catch buffer */
   dwr16(0x006e, jb);
@@ -264,6 +265,7 @@ static void patch_colour(uint16_t handle, uint16_t at)
   (void)GlobalUnlock(handle);
 }
 
+/* lint: leaf-frame-ok the original has no ENTER, only PUSH DI; PUSH SI: rt_sp is lowered by 4 at entry and restored before the return, and no callee gets a pointer to a stack object (the Win16 calls take values and handles). Pass 2: convert to FRAME_ENTER/FRAME_LEAVE. */
 DECOMP(3, 0x054c, update_system_colors, FAR_CDECL)
 uint16_t update_system_colors(void)
 {
@@ -337,7 +339,7 @@ uint16_t update_system_colors(void)
 DECOMP(3, 0x0f90, filter_key_message, FAR_CDECL)
 uint16_t filter_key_message(uint16_t hwnd, uint16_t msg, uint16_t key, uint32_t lParam)
 {
-  FRAME_ENTER(8 + 4);
+  FRAME_ENTER_REGS(8, 2);
   (void)hwnd;
   uint16_t si = key;
   uint16_t di;
@@ -489,7 +491,7 @@ static void free_res(uint16_t slot)
 DECOMP(3, 0x0766, release_all_resources, FAR_CDECL)
 void release_all_resources(void)
 {
-  FRAME_ENTER(2 + 4);
+  FRAME_ENTER_REGS(2, 2);
   static const uint16_t cond_brushes[] = {0x10, 0x14, 0x16, 0x12, 0x1a, 0x18, 0x1c, 0x1e, 0x24, 0x26, 0x28, 0x290c, 0x29d4};
   for (uint16_t i = 0; i < (uint16_t)(sizeof cond_brushes / sizeof cond_brushes[0]); i++) release_brush(cond_brushes[i]);
   for (uint16_t p = 0x27f6; p <= 0x27fe; p = (uint16_t)(p + 2)) release_brush(p);
@@ -587,7 +589,7 @@ void release_all_resources(void)
 DECOMP(3, 0x0ca0, ABOUT, FAR_PASCAL)
 uint16_t ABOUT(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 {
-  FRAME_ENTER(0xc + 4);
+  FRAME_ENTER_REGS(0xc, 2);
   uint16_t rectp = (uint16_t)(rt_bp - 0xc);
   uint32_t rect = MK_FP(rt_ss, rectp);
   uint16_t ret = 0;
@@ -699,7 +701,7 @@ uint16_t ABOUT(uint16_t hwnd, uint16_t msg, uint16_t wParam, uint32_t lParam)
 DECOMP(3, 0x0000, WinMain, FAR_PASCAL)
 uint16_t WinMain(uint16_t hInstance, uint16_t hPrevInstance, uint32_t lpCmdLine, uint16_t nCmdShow)
 {
-  FRAME_ENTER(0x18 + 4);
+  FRAME_ENTER_REGS(0x18, 2);
   uint16_t ret = 0;
   uint16_t es = FP_SEG(lpCmdLine);
   uint16_t si = FP_OFF(lpCmdLine);

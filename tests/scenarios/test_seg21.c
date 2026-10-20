@@ -156,6 +156,11 @@ static const StubCfg g_stubs[S_NSTUB] = {
     [S_18_5D3C] = {"18:5d3c", 18, 0x5d3c, 5, -1, 0, -1, 0, 3, 2, 4, 16},
     [S_18_5E82] = {"18:5e82", 18, 0x5e82, 8, 0, 0x80, -1, 0, -1, 0, -1, 0},
     [S_18_5FE6] = {"18:5fe6", 18, 0x5fe6, 2, 0, 0x80, -1, 0, -1, 0, -1, 0},
+    /* Rule j2 justification: 26:0x0100, 26:0x0810 and 26:0x21e4 are decompiled (src/seg26.c, diffed in tests/scenarios/test_seg26.c) but stays a double here. These
+     * scenarios build random worlds for the computer players' turn; the real function reads the planet copy at DS:0x4c08, its
+     * production queue and the player tables, which no scenario here sets up consistently. Measured with the double removed:
+     * the ORIGINAL run faults or the heap blocks the function allocates differ between the runs. Blind spot: only the call
+     * (arguments and order against the other calls) is checked here, not what the function does. */
     [S_26_0100] = {"26:0100", 26, 0x0100, 1, -1, 0, -1, 0, -1, 0, -1, 0},
     [S_26_0810] = {"26:0810", 26, 0x0810, 1, -1, 0, -1, 0, -1, 0, -1, 0},
     [S_26_21E4] = {"26:21e4", 26, 0x21e4, 7, 0, 0x80, -1, 0, 4, 16, -1, 0},
@@ -530,6 +535,7 @@ static void t_2882(void) {
   }
   memcpy(LINN(0x20bc), k_saved, 8);
   if (ties == 0) fprintf(stderr, "t_2882: no FICOM tie scenario was found\n");
+  CHECK(ties > 0);
 }
 
 /* ---- 21:0x29da: a fleet-vs-fleet filter with the weapon power, sqrt, pow and ftol ---- */
