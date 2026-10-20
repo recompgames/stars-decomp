@@ -1,0 +1,59 @@
+# Open and close the dialogs reachable from the original's start screen, dumping each one.
+# Run: build/run_original --strict --script tests/scripts/open_each_dialog.txt --dump re/frames
+# Positions are screen pixels of the 800x600 display (see re/frames/od_main_window.bmp): New Game
+# (100,555), Open Game (300,555), Continue Game (500,555), Exit Stars! (700,555). The New Game dialog
+# (resource 209) opens at screen (247,132); its buttons are Customize Race (457,217), Advanced Game
+# (457,384), Begin Tutorial (307,441), Ok (400,441), Cancel (458,441), Help (516,441).
+# The in-game dialogs (Ship Design, Research, Battle Plans, Player Relations, Planet Production, ...)
+# need a started game, which this run cannot reach yet (see docs/M3 notes in the bd issue
+# stars-9gm.3): the menu bar does not exist on the start screen, so Alt+letter does nothing there.
+# No captures exist to compare against; the owner reviews the dumps.
+
+# --- start-up: the "Register Serial Number" dialog (see boot.txt). Enter on the empty field raises
+# --- the "not valid" message box; Enter again dismisses it. The dialog stays open and does not
+# --- block the main window (the message box has no owner). Cancel would exit the game.
+wait 1000
+dump od_serial_dialog
+key VK_RETURN
+wait 1000
+dump od_serial_invalid
+key VK_RETURN
+wait 1000
+dump od_main_window
+
+# --- New Game dialog (resource 209) ---
+click 100 555
+wait 1000
+dump od_new_game
+
+# --- Customize Race (the race wizard), cancelled with Esc ---
+click 457 217
+wait 1000
+dump od_customize_race
+key VK_ESCAPE
+wait 1000
+
+# --- Advanced Game, cancelled with Esc ---
+click 457 384
+wait 1000
+dump od_advanced_game
+key VK_ESCAPE
+wait 1000
+
+# --- Help button (WinHelp is accepted and does nothing) ---
+click 516 441
+wait 1000
+dump od_new_game_after_help
+
+# --- close the New Game dialog with Cancel ---
+click 458 441
+wait 1000
+dump od_new_game_cancelled
+
+# --- Open Game: the COMMDLG file-open dialog, then Cancel with Esc ---
+click 300 555
+wait 1000
+dump od_open_game
+key VK_ESCAPE
+wait 1000
+dump od_end

@@ -1,0 +1,8 @@
+seg,off,name,size,ret,callers,callees,apis,fp,origin,status,notes
+1,0x0000,a,10,far,,,,0,game,tested,
+1,0x0010,b,10,far,,,,0,game,decompiled,
+1,0x0020,c,10,far,,,,0,game,todo,
+1,0x0030,d,10,far,,,,0,game,todo,
+2,0x0000,e,10,far,,,,0,game,tested,
+2,0x0010,f,10,far,,,,0,game,unused,no callers; not exported; not in data
+2,0x0020,g,10,far,,,,0,game,todo,

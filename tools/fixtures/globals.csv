@@ -1,0 +1,6 @@
+name,offset,type
+counter,0x1234,int16_t
+flags,0x0010,uint8_t
+total,0x2000,uint32_t
+table,0x3000,uint16_t[8]
+oddword,0x0011,uint16_t

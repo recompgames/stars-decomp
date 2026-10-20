@@ -1,0 +1,4 @@
+seg,off,name,size,ret,callers,callees,apis,fp,origin,status,notes
+1,0x0000,WNDPROC,32,far,,1:0x0030 1:0x0050,USER.GETDC,0,game,todo,
+1,0x0030,helper,16,near,1:0x0000,,,0,game,todo,
+2,0x0000,entry,64,far,,,,1,crt,todo,

@@ -1,0 +1,4 @@
+seg,off,name,size,ret,callers,callees,apis,fp,origin,status,notes
+1,0x0000,fx_add,10,far,,,,0,game,tested,
+1,0x0010,fx_todo,10,far,,,,0,game,todo,
+1,0x0020,fx_dead,10,far,,,,0,game,unused,no callers; not exported; no data refs

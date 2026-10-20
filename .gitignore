@@ -1,0 +1,22 @@
+# Original Stars! 2.6i distribution files (copyrighted, the user's licensed copy). Never commit.
+/original/
+# Registration serials. Never commit.
+/private/
+# Generated reverse-engineering artifacts: Ghidra project, dumps, frame captures.
+/re/
+# Build output.
+/build/
+# Game-derived outputs stay local (docs/PLAN.md decision 6). Decompiled src/ and tests/scenarios/ are public.
+/tests/golden/
+/docs/functions.csv
+/docs/inventory.md
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*
+
+# Python bytecode (owner decision 2026-10-17: never track)
+__pycache__/

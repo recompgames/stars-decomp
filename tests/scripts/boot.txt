@@ -1,0 +1,17 @@
+# Boot the original stars26i.exe to its main window and dump it.
+# Run: build/run_original --strict --script tests/scripts/boot.txt --dump re/frames
+#
+# Without a registered Stars.ini the game opens "Register Serial Number" over the main window.
+# Cancel exits the game, and no valid serial is available here (it is the owner's: never put it
+# in a script or log). Pressing Enter on the empty field raises "The serial number you have
+# entered is not valid." (a message box with no owner, so it does not block the main window).
+# Setting STARS_SERIAL in the environment types it into the field before the Enter below.
+wait 1000
+dump serial_dialog
+type $STARS_SERIAL
+key VK_RETURN
+wait 1000
+dump serial_invalid
+key VK_RETURN
+wait 1000
+dump main_window

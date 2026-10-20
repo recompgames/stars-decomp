@@ -1,0 +1,28 @@
+# Create a new game through the New Game dialog of the original.
+# Run: build/run_original --strict --script tests/scripts/new_game.txt --dump re/frames
+# The New Game
+# dialog (resource 209) has Easy/Standard/Harder/Expert, Tiny..Huge, a player-count combo,
+# "Customize Race...", "Advanced Game...", "Begin Tutorial", Ok (default), Cancel, Help.
+
+# --- start-up: the "Register Serial Number" dialog (see boot.txt). Enter on the empty field raises
+# --- the "not valid" message box; Enter again dismisses it. The dialog stays open and does not
+# --- block the main window (the message box has no owner). Cancel would exit the game.
+wait 1000
+key VK_RETURN
+wait 1000
+key VK_RETURN
+wait 1000
+dump ng_main_window
+
+# --- New Game dialog: keep the defaults (Standard, Small), press Ok ---
+click 100 555
+wait 1000
+dump ng_dialog
+key VK_RETURN
+wait 2000
+dump ng_after_ok
+
+# --- the game may now show a race / password prompt; accept the defaults ---
+key VK_RETURN
+wait 2000
+dump ng_game_window
