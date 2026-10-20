@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "stars_decomp",
+  "project_id": "36004a4d-3c96-4926-8662-06921111c366"
+}
