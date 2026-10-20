@@ -6,7 +6,7 @@
 /re/
 # Build output.
 /build/
-# Game-derived outputs stay local (docs/PLAN.md decision 6). Decompiled src/ and tests/scenarios/ are public.
+# Game-derived outputs stay local (docs/PLAN.md decision 8). Decompiled src/ and tests/scenarios/ are public.
 /tests/golden/
 /docs/functions.csv
 /docs/inventory.md

@@ -3,7 +3,7 @@
  * No harness dependency: the native harness decodes the PASCAL stack into these calls in
  * harness/gdi_thunks.c (gdi_register). Far pointers are FARPTR (selector:offset).
  *
- * Display (docs/PLAN.md decision 8): 800x600, 8-bpp indexed, the 20 static colours plus
+ * Display: 800x600, 8-bpp indexed, the 20 static colours plus
  * logical palettes. All GDI state lives in the arena (runtime/mem.h rt_alloc), so a snapshot
  * of the arena is a snapshot of GDI. Text functions belong to the fonts task; they use the
  * hooks and object helpers at the end of this file.

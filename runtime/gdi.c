@@ -3,7 +3,7 @@
  * screen and system palette in framebuffer.c. Plain C: no harness dependency.
  *
  * Behaviour is specified from the Windows 3.1 SDK documentation with Wine's 16-bit code as a
- * behavioural reference; there are no reference captures yet (docs/PLAN.md decision 9), so
+ * behavioural reference; there are no reference captures yet (docs/PLAN.md decision 7), so
  * the pixel-exact shapes marked "unverified" in docs/inventory.md follow the definitions
  * given there. */
 #include <limits.h>

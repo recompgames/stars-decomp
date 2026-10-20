@@ -1,5 +1,5 @@
 /* run_original: runs the ORIGINAL stars26i.exe on the runtime under the Unicorn harness
- * (milestone M3, docs/PLAN.md section 5), headless and scripted.
+ * (golden master, docs/PLAN.md decision 9), headless and scripted.
  *
  *   build/run_original [--strict] [--script FILE] [--dump DIR] [--exe FILE]
  *                      [--max-api N] [--timeout SECONDS] [--list-imports]

@@ -2,8 +2,9 @@
 
 Rules (a) to (j2) apply to every file in `src/` (stars-bfj.1). Existing rules change only with the
 owner's approval; new rules may be added. The "Floating point" section after them was written by
-stars-dwf.4 and is rule (g). `src/`, `tests/scenarios/` and `docs/functions.csv` are local-only
-(docs/PLAN.md decision 10). `python3 tools/lint_src.py` (also run by `make test`) enforces what a
+stars-dwf.4 and is rule (g). `src/` and `tests/scenarios/` are public; `docs/functions.csv` is
+local-only (docs/PLAN.md decision 8). Readable code (pass 2) follows docs/PLAN.md §3 decisions 3
+and 4 and the metrics in §5. `python3 tools/lint_src.py` (also run by `make test`) enforces what a
 tool can check; the diff tests enforce the rest. The original binary is the oracle, never Ghidra's
 pseudo-C.
 
@@ -73,9 +74,9 @@ function (`CONV` is `FAR_PASCAL`, `FAR_CDECL`, `NEAR_PASCAL`, `NEAR_CDECL` or `R
 `tools/gen_registry.py` builds the diff-test registry from it. The function is external (not
 `static`, not `inline`). One file per original segment, `src/segNN.c` with a two-digit NN. A
 function takes its export name if it has one, otherwise a meaningful Ghidra name, otherwise a
-readable name derived from what the function does (owner decision 2026-10-20, Epic G), otherwise
+readable name derived from what the function does (owner decision 2026-10-20, PLAN.md phase 5), otherwise
 `fn_NN_OOOO` (segment, hex offset). The C name in `src/` is the canonical name. For a segment that
-has been renamed under Epic G, the `name` column of `docs/functions.csv` holds the same name; for a
+has been renamed in phase 5, the `name` column of `docs/functions.csv` holds the same name; for a
 segment not yet renamed it keeps Ghidra's name. The `DECOMP` line carries the C name only. The
 comment above the function records the address, the Ghidra name (for example `FUN_1008_0000`) and
 the old `fn_NN_OOOO` alias, so the mapping stays traceable. A comment above it records the instructions, the return

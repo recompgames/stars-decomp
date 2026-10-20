@@ -1,5 +1,5 @@
 /* Screen surface and system palette (task stars-0z4.4). 800x600, 8-bpp indexed, the 20
- * Windows static colours at 0-9 and 246-255 (docs/PLAN.md decision 8). All state is in the
+ * Windows static colours at 0-9 and 246-255. All state is in the
  * GdiState block of the arena. Plain C: no harness dependency. */
 #include <limits.h>
 #include <string.h>
