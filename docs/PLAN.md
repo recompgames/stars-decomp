@@ -4,10 +4,6 @@ Goal: decompile `original/stars26i.exe` (Stars! 2.6i, Win16) into C, and check e
 against the original machine code. The work is test-driven: each function is "done" only when its
 differential tests pass against the original code running under an x86 emulator.
 
-Out of scope: a browser or WebAssembly build, a playable port, visual or pixel fidelity work, and a
-Windows 3.1 look-alike runtime. The Win16 code kept in the repo exists only to run the original code
-under the test harness.
-
 Work is tracked in beads (`bd ready`, prefix `stars`). This document is the shared reference that
 the bd tasks point to.
 
