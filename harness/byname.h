@@ -1174,4 +1174,30 @@ static inline uint16_t byname_lstrlen(uint32_t str) {
 }
 #define lstrlen byname_lstrlen
 
+/* Added by stars-decomp-z3l.35 (segment 27): USER.IsDlgButtonChecked, GDI.MoveTo, GDI.LineTo. */
+static inline uint16_t byname_IsDlgButtonChecked(uint16_t dlg, int16_t id) {
+  const uint16_t w[] = {dlg, (uint16_t)id};
+  size_t i = harness_log_begin("USER", 98, w, 2);
+  uint16_t r = (IsDlgButtonChecked)(dlg, id);
+  harness_log_end(i, r);
+  return r;
+}
+static inline uint32_t byname_MoveTo(uint16_t hdc, int16_t x, int16_t y) {
+  const uint16_t w[] = {hdc, (uint16_t)x, (uint16_t)y};
+  size_t i = harness_log_begin("GDI", 20, w, 3);
+  uint32_t r = (MoveTo)(hdc, x, y);
+  harness_log_end(i, r);
+  return r;
+}
+static inline uint16_t byname_LineTo(uint16_t hdc, int16_t x, int16_t y) {
+  const uint16_t w[] = {hdc, (uint16_t)x, (uint16_t)y};
+  size_t i = harness_log_begin("GDI", 19, w, 3);
+  uint16_t r = (LineTo)(hdc, x, y);
+  harness_log_end(i, r);
+  return r;
+}
+#define IsDlgButtonChecked byname_IsDlgButtonChecked
+#define MoveTo byname_MoveTo
+#define LineTo byname_LineTo
+
 #endif /* STARS_HARNESS_BYNAME_H */

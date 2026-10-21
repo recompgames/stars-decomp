@@ -104,6 +104,10 @@ static inline void popw(uint16_t n) { rt_sp = (uint16_t)(rt_sp + 2 * n); }
 static inline uint32_t call4(uint16_t off, const uint16_t *a, uint16_t nw) {
   return rt_call_far(MK_FP(SEG_SEL(4), off), FAR_CDECL, a, nw);
 }
+/* Segment 22 (the turn generation, src/seg22.c): 22:0x0000 mirrors a frame, so it is reached through rt_call_far. */
+static inline uint32_t call22(uint16_t off, const uint16_t *a, uint16_t nw) {
+  return rt_call_far(MK_FP(SEG_SEL(22), off), FAR_CDECL, a, nw);
+}
 
 /* host_options_paint_nop: 4:0x4db8 (Ghidra FUN_1018_4db8, alias fn_04_4db8).
  * 1 byte: RETF. The caller 4:0x4cec (HOSTOPTIONSDIALOG) calls it and
@@ -1006,7 +1010,7 @@ L4f33:
   if (L16(-4) != 0) goto L4fc3;
   if ((drd8(0x0793) & 4) != 0) (void)CALL_ORIG(8, 0xb8cc, FAR_CDECL, 0);
   (void)call4(0x39f8, NULL, 0);
-  (void)CALL_ORIG(22, 0x0000, FAR_CDECL, 0);
+  (void)call22(0x0000, NULL, 0);
   (void)CALL_ORIG(8, 0xb8f6, FAR_CDECL, 0);
   if ((drd8(0x251a) & 8) != 0) {
     PostQuitMessage((int16_t)drd16(0x0366));
@@ -1062,7 +1066,7 @@ L40d6:
 L4113:
   if ((drd8(0x0793) & 4) != 0) (void)CALL_ORIG(8, 0xb8cc, FAR_CDECL, 0);
   (void)call4(0x39f8, NULL, 0);
-  (void)CALL_ORIG(22, 0x0000, FAR_CDECL, 0);
+  (void)call22(0x0000, NULL, 0);
   if (drd16(0x0378) != 0) {
     dwr16(0x0378, (uint16_t)(drd16(0x0378) - 1));
     if ((int16_t)GetAsyncKeyState(0x10) < 0) goto L4149;
@@ -2086,7 +2090,7 @@ L1039:
     }
   }
   (void)call4(0x39f8, NULL, 0);
-  (void)CALL_ORIG(22, 0x0000, FAR_CDECL, 0);
+  (void)call22(0x0000, NULL, 0);
   if ((drd8(0x251b) & 2) != 0 && drd16(0x5394) > drd16(0x015e)) goto L1087;
   if (drd16(0x2526) == 0) goto L067d;
   dwr16(0x2526, (uint16_t)(drd16(0x2526) - 1));
@@ -2659,7 +2663,7 @@ L346e:
   for (;;) {
     (void)CALL_ORIG(8, 0xb8cc, FAR_CDECL, 0);
     (void)call4(0x39f8, NULL, 0);
-    (void)CALL_ORIG(22, 0x0000, FAR_CDECL, 0);
+    (void)call22(0x0000, NULL, 0);
     if (idarg != 0x5208 && idarg != 0x5209 && idarg != 0x520a) break;
     dwr16(0x0378, (uint16_t)(drd16(0x0378) - 1));
     if ((int16_t)drd16(0x0378) <= 0) break;

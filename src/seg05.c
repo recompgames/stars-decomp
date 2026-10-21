@@ -704,8 +704,8 @@ void popup_things_at_place(uint16_t hwnd, uint32_t pt)
       } while (di < end);
     }
   }
-  int16_t chosen = (int16_t)(uint16_t)CALL_ORIG(24, 0x0e24, FAR_CDECL, 8, hwnd, (uint16_t)pt, (uint16_t)(pt >> 16), n,
-                                                (uint16_t)(rt_bp - 0x1b6), 0, sel, 1);
+  int16_t chosen = (int16_t)(uint16_t)rt_call_far(MK_FP(SEG_SEL(24), 0x0e24), FAR_CDECL,
+      (const uint16_t[]){hwnd, (uint16_t)pt, (uint16_t)(pt >> 16), n, (uint16_t)(rt_bp - 0x1b6), 0, sel, 1}, 8);
   if (chosen < 0) {
     FRAME_LEAVE();
     return;
@@ -786,7 +786,8 @@ static uint16_t strlen_far(uint16_t seg, uint16_t off)
 /* The descriptor DS:0x0BC0 of the clicked thing is shown with 24:0x091e (window DS:0x0154, the point). */
 static void show_descriptor(uint32_t pt)
 {
-  (void)CALL_ORIG(24, 0x091e, FAR_CDECL, 3, drd16(0x0154), (uint16_t)pt, (uint16_t)(pt >> 16));
+  (void)rt_call_far(MK_FP(SEG_SEL(24), 0x091e), FAR_CDECL,
+      (const uint16_t[]){drd16(0x0154), (uint16_t)pt, (uint16_t)(pt >> 16)}, 3);
 }
 
 /* _wsprintf with one variable word, as in 13:0x0fb8: the argument sits below the frame. */
@@ -895,8 +896,8 @@ void info_on_click(uint32_t pt, uint16_t msg, uint16_t wparam)
       di = (uint16_t)(di + 1);
       LW(-2) = (uint16_t)(LW(-2) + 0xa);
     } while (LW(-2) < BPN(-0x2a));
-    int16_t chosen = (int16_t)(uint16_t)CALL_ORIG(24, 0x0e24, FAR_CDECL, 8, drd16(0x0154), (uint16_t)pt, (uint16_t)(pt >> 16), 9, 0,
-                                                  BPN(-0x2a), LW(-6), 1);
+    int16_t chosen = (int16_t)(uint16_t)rt_call_far(MK_FP(SEG_SEL(24), 0x0e24), FAR_CDECL,
+        (const uint16_t[]){drd16(0x0154), (uint16_t)pt, (uint16_t)(pt >> 16), 9, 0, BPN(-0x2a), LW(-6), 1}, 8);
     LW(-4) = (uint16_t)chosen;
     if (chosen == -1) goto done;
     LW(-0x254) = LW((int16_t)(-0x18 + 2 * (uint16_t)chosen));
@@ -1096,8 +1097,8 @@ l_2f77:
       }
       uint16_t si = LW(-0xe);
       if ((int16_t)si > 1) {
-        int16_t chosen = (int16_t)(uint16_t)CALL_ORIG(24, 0x0e24, FAR_CDECL, 8, drd16(0x0154), (uint16_t)pt, (uint16_t)(pt >> 16),
-                                                      si, 0, BPN(-0x52), 0xffff, 1);
+        int16_t chosen = (int16_t)(uint16_t)rt_call_far(MK_FP(SEG_SEL(24), 0x0e24), FAR_CDECL,
+            (const uint16_t[]){drd16(0x0154), (uint16_t)pt, (uint16_t)(pt >> 16), si, 0, BPN(-0x52), 0xffff, 1}, 8);
         si = (uint16_t)chosen;
         if (chosen == -1) goto done;
       } else {

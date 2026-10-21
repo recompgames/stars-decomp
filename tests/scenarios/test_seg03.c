@@ -12,12 +12,11 @@
  * The runtime state the scenarios touch (windows, GDI objects, the message queue, the VFS, the global
  * heap) lives in the arena, so DIFF restores it between the ORIGINAL run and the C run. Callees that
  * are not decompiled and cannot run in isolation (the dialog and
- * painting helpers of segments 7, 8, 9, 10, 32, and the pop-up menu 24:0x0e24 and 31:0x61b0
- * that the toolbar functions of segment 13 call) are replaced in the code image by recording test
+ * painting helpers of segments 7, 8, 9, 10, 32 and 31:0x61b0) are replaced in the code image by recording test
  * doubles (stub_install): the same bytes serve both runs, and each stubbed call is an entry of the
  * API log, compared in order with the real API calls. Scenarios never stub the function under test.
- * Segment 13 itself (13:0x0902, 0x09ae, 0x0fb8) and segment 4 (4:0x0000, 4:0x1f40) are decompiled
- * (src/seg13.c, src/seg04.c): they run for real in both runs (rule j2: never doubled), the ORIGINAL code
+ * Segment 13 itself (13:0x0902, 0x09ae, 0x0fb8), segment 4 (4:0x0000, 4:0x1f40) and the pop-up menu 24:0x0e24
+ * that the toolbar functions of segment 13 call are decompiled (src/seg13.c, src/seg04.c, src/seg24.c): they run for real in both runs (rule j2: never doubled), the ORIGINAL code
  * in one and the C version in the other.
  * See the comment above each scenario for what it does and does not reach. */
 #include <stdbool.h>
@@ -1051,7 +1050,6 @@ int main(void) {
   register_test_class();
   mem_local_init(harness_stack_top(), (uint16_t)(harness_stack_top() + 8192u)); /* 1:0x08a4 (via 3:0x054c) uses LocalAlloc */
   stubs_init();
-  stub_install(24, 0x0e24, 16, 8); /* the pop-up menu of the toolbar (13:0x09ae items 8, 0xd, 0xf, 0x10) */
   stub_install(31, 0x61b0, 17, 0);
   stub_install(10, 0x606a, 4, 1);
   stub_install(7, 0x153e, 5, 2);

@@ -1310,7 +1310,7 @@ uint16_t production_dialog_proc(uint16_t hwnd, uint16_t msg, uint16_t wParam, ui
       dwr32(0x0bc0, 0x00b4000a);
       dwr16(0x0bc4, 0x4c86);
       (void)CALL_ORIG(8, 0x8dc0, FAR_CDECL, 2, 0x00cf, 0x4c86);
-      (void)CALL_ORIG(24, 0x091e, FAR_CDECL, 3, hwnd, L16(-0xc), L16(-0xa));
+      (void)rt_call_far(MK_FP(SEG_SEL(24), 0x091e), FAR_CDECL, (const uint16_t[]){hwnd, L16(-0xc), L16(-0xa)}, 3);
       break;
     }
     L16(-8) = 0x00ff;
@@ -1328,7 +1328,8 @@ uint16_t production_dialog_proc(uint16_t hwnd, uint16_t msg, uint16_t wParam, ui
     n++;
     wr16(rt_ss, (uint16_t)(bpoff(-0x20) + 2 * n), more);
     n++;
-    int16_t sel = (int16_t)(uint16_t)CALL_ORIG(24, 0x0e24, FAR_CDECL, 8, hwnd, L16(-0xc), L16(-0xa), n, 0, bpoff(-0x20), 0xffff, 1);
+    int16_t sel = (int16_t)(uint16_t)rt_call_far(MK_FP(SEG_SEL(24), 0x0e24), FAR_CDECL,
+        (const uint16_t[]){hwnd, L16(-0xc), L16(-0xa), n, 0, bpoff(-0x20), 0xffff, 1}, 8);
     if ((uint16_t)(n - (uint16_t)sel - 1) == 0) {
       for (uint16_t k = 0; k < 40; k++) wr32(rt_ss, (uint16_t)(bpoff(-0xf0) + 4 * k), drd32((uint16_t)(0x2576 + 4 * k)));
       uint32_t proc = MakeProcInstance(MK_FP(SEG_SEL(26), 0x2d26), g_app_instance);

@@ -195,6 +195,16 @@ static const StubCfg g_stubs[S_NSTUB] = {
     [S_8_B8F6] = {"8:b8f6", 8, 0xb8f6, 0, -1},
     [S_14_54EA] = {"14:54ea", 14, 0x54ea, 4, -1},
     [S_14_2F40] = {"14:2f40", 14, 0x2f40, 1, -1},
+    /* Rule j2 justification: 22:0x0000 (the turn generation) is decompiled (src/seg22.c, diffed against the original in
+     * tests/scenarios/test_seg22.c on a real game made by 15:0x47f0), but it stays a double here for three measured reasons.
+     * (1) The countdown scenarios of 4:0x4090 (Return pressed with Shift / Control / both held) call it up to 10, 100 and
+     * 1000 times in a row and need the held key released at its FIRST call (stub_eff_key below): the real function neither
+     * releases a key nor is running up to 1000 real turns per iteration affordable. (2) These worlds are a random state of DGROUP
+     * without a loaded game; with the double removed the ORIGINAL run faults (#GP at 22:0x061d, the fleet walk, reached from
+     * 4:0x4dba and 4:0x1f40) because the fleet, planet and map-object tables (DS:0xba, 0xb6, 0x188e and their counts) are random.
+     * (3) The C code's call goes through rt_call_far, which would run the C function, so the adapter double_22_0000 sends it
+     * to the stubbed code. Blind spot: what the turn does is not checked here, only the calls (count, order) and the scripted
+     * key release; the turn itself is diffed in tests/scenarios/test_seg22.c. */
     [S_22_0000] = {"22:0000", 22, 0x0000, 0, -1},
     [S_14_52BC] = {"14:52bc", 14, 0x52bc, 2, -1},
     [S_28_0000] = {"28:0000", 28, 0x0000, 3, -1},
@@ -2075,6 +2085,14 @@ static void load_module(void) {
   free(img);
 }
 
+/* The double of 22:0x0000 stays the callee of the C code's rt_call_far (see the justification at S_22_0000). */
+static uint32_t double_22_0000(uint16_t ss, uint16_t sp, Regs16 *r) {
+  (void)ss;
+  (void)sp;
+  (void)r;
+  return rt_call_orig(22, 0x0000, FAR_CDECL, 0);
+}
+
 int main(void) {
   g_only = getenv("SEG04_ONLY");
   if (harness_load(EXE) != 0) {
@@ -2094,6 +2112,10 @@ int main(void) {
   mem_local_init(harness_stack_top(), (uint16_t)(harness_stack_top() + 8192u)); /* LocalAlloc (41:0x41f8, the dialogs) */
   register_test_class();
   stubs_init();
+  {
+    static const DtEntry e22 = {22, 0x0000, "double_22_0000", FAR_CDECL, double_22_0000, 0};
+    difftest_register(&e22);
+  }
   pf_init();
   commdlg_warm();
   if (want("0000")) t_0000();

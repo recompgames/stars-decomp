@@ -1067,7 +1067,7 @@ Ldfa:                                                         /* 0dfa: no flag, 
     W(-2) = ax;
     ax = W(-0x12);
     g_current_player = ax;
-    r = CALL_ORIG(27, 0x49ee, FAR_CDECL, 2, (uint16_t)(rt_bp - 0x2c), rt_ss);
+    r = rt_call_far(MK_FP(SEG_SEL(27), 0x49ee), FAR_CDECL, (const uint16_t[]){(uint16_t)(rt_bp - 0x2c), rt_ss}, 2);
     W(-0xc) = (uint16_t)r;
     W(-0xa) = (uint16_t)(r >> 16);
     ax = W(-2);

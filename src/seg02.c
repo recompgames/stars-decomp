@@ -317,7 +317,7 @@ L55a4: /* kind 0x800: 0x36-byte records from cs:0x3fe2, 17 */
   if (W6 >= 0x11) goto L51a5;
   SET_PTR((uint16_t)(W6 * 0x36 + 0x3fe2));
   if (NOPLAYER) goto L582e;
-  if ((uint16_t)CALL_ORIG(27, 0x4af6, FAR_CDECL, 1, p) != 0) goto L51cb;
+  if ((uint16_t)rt_call_far(MK_FP(SEG_SEL(27), 0x4af6), FAR_CDECL, &p, 1) != 0) goto L51cb;
   /* the original jumps through a word table at cs:0x55ec indexed by the index byte */
   switch (B2) {
     case 0:
@@ -343,7 +343,7 @@ L5626: /* kind 0x1000: 0x36-byte records from cs:0x3d90, 11 */
   if (W6 >= 0x0b) goto L51a5;
   SET_PTR((uint16_t)(W6 * 0x36 + 0x3d90));
   if (NOPLAYER) goto L582e;
-  if ((uint16_t)CALL_ORIG(27, 0x4af6, FAR_CDECL, 1, p) != 0) goto L51cb;
+  if ((uint16_t)rt_call_far(MK_FP(SEG_SEL(27), 0x4af6), FAR_CDECL, &p, 1) != 0) goto L51cb;
   W6 = B2;
   if (W6 == 0 && di == 8) goto L51cb;
   if (W6 != 1) goto L582e;
@@ -396,7 +396,7 @@ L57a8: /* kind 0x8000: 0x36-byte records from cs:0x369a, 15 (the table of 2:0x50
   goto L5244;
 
 L5244: /* 27:0x4af6(p) == 0 allows the item */
-  Z((uint16_t)CALL_ORIG(27, 0x4af6, FAR_CDECL, 1, p) == 0);
+  Z((uint16_t)rt_call_far(MK_FP(SEG_SEL(27), 0x4af6), FAR_CDECL, &p, 1) == 0);
 
 L51cb:
   FRAME_LEAVE();

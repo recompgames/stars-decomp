@@ -365,7 +365,7 @@ void toolbar_set_item(uint16_t item, uint16_t flag)
       ScreenToClient(drd16(0x015a), BPFP(-0xe));
       const uint16_t a[] = {drd16(0x015a), rd16(rt_ss, (uint16_t)(rt_bp - 0xe)), rd16(rt_ss, (uint16_t)(rt_bp - 0xc)), cnt,
                             (uint16_t)(rt_bp - 0x56), (uint16_t)(rt_bp - 0x26), 0xfffe, 0};
-      int16_t sel = (int16_t)CALL_ORIG(24, 0x0e24, FAR_CDECL, 8, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
+      int16_t sel = (int16_t)rt_call_far(MK_FP(SEG_SEL(24), 0x0e24), FAR_CDECL, a, 8);
       if (sel == -1) goto out;
       if (sel < 3) dwr16(0x4c76, (sel == 0) ? 0x000f : 0);
       else dwr16(0x4c76, (uint16_t)(drd16(0x4c76) ^ shl16(1, (uint16_t)(sel - 3))));
@@ -407,9 +407,8 @@ void toolbar_set_item(uint16_t item, uint16_t flag)
       }
       GetCursorPos(BPFP(-0xe));
       ScreenToClient(drd16(0x015a), BPFP(-0xe));
-      int16_t sel = (int16_t)CALL_ORIG(24, 0x0e24, FAR_CDECL, 8, drd16(0x015a), rd16(rt_ss, (uint16_t)(rt_bp - 0xe)),
-                                       rd16(rt_ss, (uint16_t)(rt_bp - 0xc)), cnt, (uint16_t)(rt_bp - 0x86),
-                                       (uint16_t)(rt_bp - 0x36), 0xfffe, 0);
+      int16_t sel = (int16_t)rt_call_far(MK_FP(SEG_SEL(24), 0x0e24), FAR_CDECL,
+          (const uint16_t[]){drd16(0x015a), rd16(rt_ss, (uint16_t)(rt_bp - 0xe)), rd16(rt_ss, (uint16_t)(rt_bp - 0xc)), cnt, (uint16_t)(rt_bp - 0x86), (uint16_t)(rt_bp - 0x36), 0xfffe, 0}, 8);
       if (sel == -1) goto out;
       uint16_t m;                                                                  /* the layer bit chosen, for the last test */
       if (sel < 4) {
@@ -475,9 +474,8 @@ void toolbar_set_item(uint16_t item, uint16_t flag)
       }
       GetCursorPos(BPFP(-0xc));
       ScreenToClient(drd16(0x015a), BPFP(-0xc));
-      int16_t sel = (int16_t)CALL_ORIG(24, 0x0e24, FAR_CDECL, 8, drd16(0x015a), rd16(rt_ss, (uint16_t)(rt_bp - 0xc)),
-                                       rd16(rt_ss, (uint16_t)(rt_bp - 0xa)), cnt, (uint16_t)(rt_bp - 0x54),
-                                       (uint16_t)(rt_bp - 0x24), 0xfffe, 0);
+      int16_t sel = (int16_t)rt_call_far(MK_FP(SEG_SEL(24), 0x0e24), FAR_CDECL,
+          (const uint16_t[]){drd16(0x015a), rd16(rt_ss, (uint16_t)(rt_bp - 0xc)), rd16(rt_ss, (uint16_t)(rt_bp - 0xa)), cnt, (uint16_t)(rt_bp - 0x54), (uint16_t)(rt_bp - 0x24), 0xfffe, 0}, 8);
       if (sel == -1) goto out;
       uint16_t m;
       uint16_t cl = 0;
@@ -519,9 +517,8 @@ void toolbar_set_item(uint16_t item, uint16_t flag)
       }
       GetCursorPos(BPFP(-0xc));
       ScreenToClient(drd16(0x015a), BPFP(-0xc));
-      int16_t sel = (int16_t)CALL_ORIG(24, 0x0e24, FAR_CDECL, 8, drd16(0x015a), rd16(rt_ss, (uint16_t)(rt_bp - 0xc)),
-                                       rd16(rt_ss, (uint16_t)(rt_bp - 0xa)), 9, (uint16_t)(rt_bp - 0x42),
-                                       (uint16_t)(rt_bp - 0x1e), 0xfffe, 0);
+      int16_t sel = (int16_t)rt_call_far(MK_FP(SEG_SEL(24), 0x0e24), FAR_CDECL,
+          (const uint16_t[]){drd16(0x015a), rd16(rt_ss, (uint16_t)(rt_bp - 0xc)), rd16(rt_ss, (uint16_t)(rt_bp - 0xa)), 9, (uint16_t)(rt_bp - 0x42), (uint16_t)(rt_bp - 0x1e), 0xfffe, 0}, 8);
       if (sel == -1) goto out;
       {
         const uint16_t a[2] = {drd16(0x2806), (uint16_t)(sel + 0xf3d)};
